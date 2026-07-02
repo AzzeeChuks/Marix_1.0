@@ -3,11 +3,11 @@ const cors = require('cors');
 require('dotenv').config();
 
 // Import Database Connection
-const connectDB = require('./utils/db');
+const connectDB = require('./Utilities/db');
 
 // Import Controllers / Middleware
-const authController = require('./controllers/authController');
-const protect = require('./middleware/authMiddleware');
+const protect = require('./Middlewears/auth');
+const authRoutes = require('./Router/routeAuths');
 
 const app = express();
 
@@ -19,8 +19,7 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
-app.post('/api/auth/register', authController.registerUser);
-app.post('/api/auth/login', authController.loginUser);
+app.use('/api/auth', authRoutes);
 app.get('/api/auth/dashboard', protect, (req, res) => {
   res.json({ message: `Access granted! User ID: ${req.user}` });
 });

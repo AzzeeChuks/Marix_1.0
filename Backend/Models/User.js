@@ -18,7 +18,9 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: true
-  }
+  },
+  passwordResetToken: String,
+  passwordResetExpires: Date
 }, { timestamps: true });
 
 // Built-in Middleware: Automatically hash password before saving to DB
