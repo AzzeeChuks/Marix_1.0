@@ -54,9 +54,9 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
           // Send user's name or fallback character up to update navbar initials tracking state parameters
           onSuccessLogin(authMode === 'signup' ? formData.firstName : formData.email.split('@')[0]); 
         }
-      }, 2000);
+      }, 500);
 
-    }, 2000); 
+    }, 500); 
   };
 
   return (
@@ -298,7 +298,7 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
 
       {/* Footer */}
       <footer className="w-full text-center text-[11px] opacity-40 py-4 border-t border-gray-200 max-w-6xl mx-auto mt-auto shrink-0">
-        &copy; {new Date().getFullYear()} Marix Technologies. All rights reserved.
+        &copy; {new Date().getFullYear()} Marix 1.0. All rights reserved.
       </footer>
 
     </div>
