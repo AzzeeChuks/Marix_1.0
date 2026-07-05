@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import marixLogoM from '../images/marix-logo-m.png';
 
 export default function Terms({ 
@@ -10,18 +10,55 @@ export default function Terms({
   onNavigateToSignup,
   savedCount,
   onNavigateToSaved,
-  onNavigateToUploads, // 🚀 Added routing link hook
+  onNavigateToUploads, 
   onSignOut,
   setShowCreateModal
 }) {
-  useEffect(() => { window.scrollTo({ top: 0 }); }, []);
+  // 🚀 ACTIVE NAVBAR SCROLL TRACKING ENGINE: Cushion Buffer & Strict Thresholds
+  const [isVisibleTopNavbar, setIsVisibleTopNavbar] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, []);
+
+  useEffect(() => {
+    const handleSubScrollPhysics = () => {
+      const currentScrollY = window.scrollY;
+      const navbarHeight = 76; 
+      const tolerance = 15;    
+
+      // 1. Lock absolute top anchor position flat
+      if (currentScrollY <= navbarHeight) {
+        setIsVisibleTopNavbar(true);
+        setLastScrollY(currentScrollY);
+        return;
+      }
+
+      const scrollDifference = currentScrollY - lastScrollY;
+
+      // 2. Intent analysis loop check
+      if (Math.abs(scrollDifference) >= tolerance) {
+        if (scrollDifference > 0) {
+          setIsVisibleTopNavbar(false);
+        } else {
+          setIsVisibleTopNavbar(true);
+        }
+        setLastScrollY(currentScrollY);
+      }
+    };
+
+    window.addEventListener('scroll', handleSubScrollPhysics, { passive: true });
+    return () => window.removeEventListener('scroll', handleSubScrollPhysics);
+  }, [lastScrollY]);
+
   const userInitial = userName ? userName.trim().charAt(0).toUpperCase() : 'M';
 
   return (
-    <div className="min-h-screen bg-marix-cream text-[#111111] flex flex-col justify-between w-full select-none text-left animate-fadeIn">
+    <div className="min-h-screen bg-marix-cream text-[#111111] flex flex-col justify-between w-full select-none text-left animate-fadeIn pt-[116px] md:pt-[76px]">
       
-      {/* 🏡 Global Navbar */}
-      <nav className="w-full border-b border-[#452b1f]/10 px-2 lg:px-4 py-3 md:py-4 sticky top-0 z-40 select-none bg-marix-cream/80 backdrop-blur-[6px]">
+      {/* 🏡 Global Sliding Navbar: Strict fixed layout matrix execution */}
+      <nav className={`w-full border-b border-[#452b1f]/10 px-2 lg:px-4 py-3 md:py-4 fixed top-0 left-0 right-0 z-40 select-none bg-marix-cream/80 backdrop-blur-[6px] transition-transform duration-300 ${isVisibleTopNavbar ? 'translate-y-0' : '-translate-y-full'}`}>
         <div className="max-w-[95%] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-2.5 md:gap-4">
           
           {/* 📱 TOP ROW: Logo + Mobile Triggers */}
@@ -50,12 +87,12 @@ export default function Terms({
             </div>
           </div>
 
-          {/* 🎯 UNIVERSAL EMBEDDED SEARCH BAR: Inline on Desktop, cleanly drops underneath on Mobile */}
+          {/* 🎯 UNIVERSAL EMBEDDED SEARCH BAR: Text-base standard bypasses iOS Safari auto-zoom penalty */}
           <div className="w-full md:flex-1 max-w-md mx-auto relative flex animate-fadeIn">
             <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
               <i className="ph ph-magnifying-glass text-xs sm:text-sm font-bold"></i>
             </div>
-            <input type="text" placeholder="Search for anything..." className="w-full bg-white/50 border border-gray-200/80 rounded-xl pl-8 pr-3 py-1.5 text-[11px] sm:text-xs focus:outline-none focus:border-marix-teal text-[#111111] font-medium placeholder-gray-400 shadow-sm md:shadow-none" />
+            <input type="text" placeholder="Search for anything..." className="w-full bg-white/50 border border-gray-200/80 rounded-xl pl-8 pr-3 py-1.5 text-base md:text-xs focus:outline-none focus:border-marix-teal text-[#111111] font-medium placeholder-gray-400 shadow-sm md:shadow-none" />
           </div>
 
           {/* 💻 DESKTOP ACTIONS DOCK */}
@@ -196,6 +233,7 @@ export default function Terms({
         </div>
       </main>
 
+      {/* 🚀 System Footprint Copyright Row */}
       <div className="w-full text-center text-[11px] text-gray-400 font-bold py-6 border-t border-gray-100 bg-white">
         &copy; {new Date().getFullYear()} <span className="text-marix-teal font-bold">Marix</span>. Built for Campus Commerce.
       </div>

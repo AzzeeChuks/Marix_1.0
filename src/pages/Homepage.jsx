@@ -22,7 +22,7 @@ export default function Homepage({
   const [unreadNotifications, setUnreadNotifications] = useState(3);
   const savedCount = savedProducts.length;
   
-  // 🚀 INTERACTIVE SCROLLING PHYSICS ENGINE
+  // 🚀 PREMIUM INTENT SCROLLING PHYSICS ENGINE: Unified cushions for cross-device viewports
   const [isVisibleMobileDock, setIsVisibleMobileDock] = useState(true);
   const [isVisibleTopNavbar, setIsVisibleTopNavbar] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -30,20 +30,34 @@ export default function Homepage({
   useEffect(() => {
     const handleScrollNavigationPhysics = () => {
       const currentScrollY = window.scrollY;
-      
-      if (currentScrollY < 40) {
-        setIsVisibleMobileDock(true);
+      const navbarHeight = 76; // Cushion zone matches desktop header block
+      const tolerance = 15;    // Core pixel intent threshold buffer
+
+      // 1. Absolute Top Anchor Cushion Zone: Locks navbar flat when close to header boundary
+      if (currentScrollY <= navbarHeight) {
         setIsVisibleTopNavbar(true);
-      } else if (currentScrollY > lastScrollY) {
-        // Scrolling Down: Hide upper search track, reveal thumb control dock
-        setIsVisibleTopNavbar(false);
         setIsVisibleMobileDock(true);
-      } else {
-        // Scrolling Up: Smoothly drop top navbar back down, hide bottom bar
-        setIsVisibleTopNavbar(true);
-        setIsVisibleMobileDock(false);
+        setLastScrollY(currentScrollY);
+        return;
       }
-      setLastScrollY(currentScrollY);
+
+      // Compute displacement vector
+      const scrollDifference = currentScrollY - lastScrollY;
+
+      // 2. Intent Analysis Framework: Triggers only when the user clears the tolerance gap
+      if (Math.abs(scrollDifference) >= tolerance) {
+        if (scrollDifference > 0) {
+          // Intentional Scroll Down: Slide upper nav up out of bounding grid securely
+          setIsVisibleTopNavbar(false);
+          setIsVisibleMobileDock(true);
+        } else {
+          // Intentional Scroll Up: Instant sliding dropdown reveal anywhere on screen
+          setIsVisibleTopNavbar(true);
+          setIsVisibleMobileDock(false);
+        }
+        // Sync reference history anchors only once threshold is broken
+        setLastScrollY(currentScrollY);
+      }
     };
 
     window.addEventListener('scroll', handleScrollNavigationPhysics, { passive: true });
@@ -87,18 +101,18 @@ export default function Homepage({
   };
 
   return (
-    <div className="min-h-screen bg-marix-cream text-[#111111] flex flex-col justify-between w-full relative overflow-x-hidden">
+    <div className="min-h-screen bg-marix-cream text-[#111111] flex flex-col justify-between w-full relative overflow-x-hidden pt-[116px] md:pt-[76px]">
       
       <style>{`
         .scrollbar-none::-webkit-scrollbar { display: none; }
         .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
       
-      {/* 🏡 Fixed Unified Navbar Container Element */}
-      <nav className={`w-full border-b border-[#452b1f]/10 px-2 lg:px-4 py-3 md:py-4 fixed md:sticky top-0 left-0 right-0 z-40 select-none bg-marix-cream/80 backdrop-blur-[6px] transition-transform duration-300 ${isVisibleTopNavbar ? 'translate-y-0' : '-translate-y-full md:translate-y-0'}`}>
+      {/* 🏡 Fixed Unified Navbar: Cross-device viewport layout alignment tracks */}
+      <nav className={`w-full border-b border-[#452b1f]/10 px-2 lg:px-4 py-3 md:py-4 fixed top-0 left-0 right-0 z-40 select-none bg-marix-cream/80 backdrop-blur-[6px] transition-transform duration-300 ${isVisibleTopNavbar ? 'translate-y-0' : '-translate-y-full'}`}>
         <div className="max-w-[95%] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-2.5 md:gap-4">
           
-          {/* Top Brand Block: Houses Logo, Label text and Mobile Profile Action Triggers */}
+          {/* Top Brand Block */}
           <div className="flex items-center justify-between w-full md:w-auto shrink-0">
             <div className="flex items-center cursor-pointer" onClick={() => setActiveTab('browse')}>
               <img src={marixLogoM} alt="M" style={{ width: '52px', height: '52px', margin: '0 -8px', objectFit: 'contain' }} />
@@ -124,18 +138,13 @@ export default function Homepage({
             </div>
           </div>
 
-          {/* 🎯 STRUCTURED SEARCH DIV: Embedded directly into nav tree, handles both desktop inline track and stacked mobile flex natively */}
-          {activeTab !== 'uploads' && activeTab !== 'saved-mobile' ? (
-            <div className="w-full md:flex-1 max-w-md mx-auto relative flex animate-fadeIn">
-              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
-                <i className="ph ph-magnifying-glass text-xs sm:text-sm font-bold"></i>
-              </div>
-              <input type="text" placeholder="Search campus discoveries..." className="w-full bg-white/50 border border-gray-200/80 rounded-xl pl-8 pr-3 py-1.5 text-[11px] sm:text-xs focus:outline-none focus:border-marix-teal text-[#111111] font-medium placeholder-gray-400 shadow-sm md:shadow-none" />
+          {/* 🎯 FIXED: Search bar now stays fully active on Uploads and Saved view states for unified global scanning */}
+          <div className="w-full md:flex-1 max-w-md mx-auto relative flex animate-fadeIn">
+            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+              <i className="ph ph-magnifying-glass text-xs sm:text-sm font-bold"></i>
             </div>
-          ) : (
-            /* Blank space filler tracking element for desktop row layouts when search is deactivated */
-            <div className="hidden md:block md:flex-1 max-w-md mx-auto"></div>
-          )}
+            <input type="text" placeholder="Search campus discoveries..." className="w-full bg-white/50 border border-gray-200/80 rounded-xl pl-8 pr-3 py-1.5 text-base md:text-xs focus:outline-none focus:border-marix-teal text-[#111111] font-medium placeholder-gray-400 shadow-sm md:shadow-none" />
+          </div>
 
           {/* Desktop Navigation Track Actions Block */}
           <div className="hidden md:flex items-center gap-4 shrink-0">
@@ -173,9 +182,6 @@ export default function Homepage({
           </div>
         </div>
       </nav>
-
-      {/* Dynamic structural spacer to balance stacked mobile navigation tracks properly without clipping text grids */}
-      <div className={`shrink-0 md:hidden transition-all duration-300 ${activeTab !== 'uploads' && activeTab !== 'saved-mobile' ? 'h-[116px]' : 'h-[76px]'}`}></div>
 
       {/* CORE ACTIVE VIEW CHANNEL RENDER */}
       {activeTab === 'browse' && (
@@ -368,10 +374,9 @@ export default function Homepage({
         </>
       )}
 
-      {/* RENDER PORTAL ZONE FOR USER UPLOADS & DYNAMIC SAVED ITEM GALLERIES */}
+      {/* RENDER PORTAL ZONE FOR USER UPLOADS & SAVED PRODUCTS */}
       {(activeTab === 'uploads' || activeTab === 'saved-mobile') && (
         <section className="w-full max-w-[95%] mx-auto px-2 lg:px-4 py-10 flex-1 text-left pb-28 md:pb-16 animate-fadeIn relative min-h-[60vh]">
-          
           <div className="border-b border-gray-200/60 pb-4 mb-6 select-none relative z-10">
             <h2 className="text-xl md:text-2xl font-black tracking-tight text-[#111111]">
               {activeTab === 'saved-mobile' ? 'Your Saved Items' : 'Your Listings'}
@@ -392,11 +397,6 @@ export default function Homepage({
               <p className="text-xs text-gray-500 max-w-xs leading-relaxed font-medium mt-1">
                 {activeTab === 'saved-mobile' ? 'Tap the heart icon on cards while browsing to save products you want to keep track of here.' : "You haven't posted any items yet. Create your first marketplace entry to showcase products to campus shoppers instantly."}
               </p>
-              {activeTab !== 'saved-mobile' && (
-                <button onClick={() => isLoggedIn ? setShowCreateModal(true) : onNavigateToLogin()} className="mt-5 bg-marix-brown text-white text-xs font-bold px-5 py-3 rounded-xl shadow-md hover:opacity-95 active:scale-95 transition-all focus:outline-none flex items-center gap-2">
-                  <i className="ph ph-plus font-bold"></i><span>List your first product</span>
-                </button>
-              )}
             </div>
           ) : (
             <div className="relative z-10">
@@ -414,31 +414,17 @@ export default function Homepage({
                   );
                 })}
               </div>
-
-              {activeTab === 'uploads' && userUploads.length >= 1 && userUploads.length <= 4 && (
-                <div className="w-full mt-8 border border-dashed border-gray-200 bg-white/40 rounded-2xl p-5 flex flex-col items-center justify-center text-center select-none animate-fadeIn">
-                  <p className="text-xs font-bold text-[#111111]/70 mb-2.5">Expand your shop feed! Upload your next product to build momentum 🚀</p>
-                  <button onClick={() => setShowCreateModal(true)} className="bg-marix-teal text-white font-black text-[11px] px-4 py-2 rounded-xl shadow-sm active:scale-95 transition-transform focus:outline-none flex items-center gap-1.5"><i className="ph ph-plus font-bold"></i><span>Upload Product</span></button>
-                </div>
-              )}
-
-              {activeTab === 'saved-mobile' && savedProducts.length >= 1 && savedProducts.length <= 4 && (
-                <div className="w-full mt-8 border border-dashed border-marix-teal/20 bg-marix-cream/30 rounded-2xl p-5 flex flex-col items-center justify-center text-center select-none animate-fadeIn">
-                  <p className="text-xs font-bold text-marix-teal mb-2.5">Keep discovering! Find 10 more unique campus treasures to complete your look ✨</p>
-                  <button onClick={() => setActiveTab('browse')} className="bg-marix-brown text-white font-black text-[11px] px-4 py-2 rounded-xl shadow-sm active:scale-95 transition-transform focus:outline-none flex items-center gap-1.5"><i className="ph ph-magnifying-glass font-bold"></i><span>Explore Feed</span></button>
-                </div>
-              )}
             </div>
           )}
         </section>
       )}
 
-      {/* 🚀 Uniform System Copyright Row for all Viewports */}
+      {/* 🚀 GLOBAL SYSTEM COPYRIGHT ROW */}
       <div className="w-full text-center text-[11px] text-gray-400 font-bold tracking-tight py-6 border-t border-gray-100 bg-white z-30 relative">
         <span>&copy; {new Date().getFullYear()} <span className="text-marix-teal font-bold">Marix</span>. Built for Campus Commerce.</span>
       </div>
 
-      {/* 📱 Mobile Sticky Navigation Dock featuring iPhone 13 safe layout calculations */}
+      {/* 📱 Mobile Sticky Navigation Dock */}
       {isLoggedIn && (
         <div className={`md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 pt-1 z-50 flex items-center justify-around select-none shadow-[0_-4px_12px_rgba(0,0,0,0.05)] transition-transform duration-300 pb-[calc(env(safe-area-inset-bottom)+8px)] ${isVisibleMobileDock ? 'translate-y-0' : 'translate-y-full'}`}>
           <button onClick={() => setActiveTab('browse')} className={`flex flex-col items-center gap-0.5 py-1 focus:outline-none ${activeTab === 'browse' ? 'text-marix-teal' : 'text-gray-400'}`}>

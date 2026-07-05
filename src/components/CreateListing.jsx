@@ -21,7 +21,11 @@ export default function CreateListing({ onProductCreated, onCancel }) {
   const [availableSizes, setAvailableSizes] = useState(['M', 'L', 'XL']);
   const [sizeInput, setSizeInput] = useState('');
 
-  // 🚀 FIXED: Stripped out the prefilled "Black" text. Every color name initialization starts completely empty ("")!
+  // 🎯 DYNAMIC TAG RENDER ENGINE: Conditions list operates identically to sizing tags framework!
+  const [productConditions, setProductConditions] = useState(['New', 'Fairly Used']);
+  const [conditionInput, setConditionInput] = useState('');
+
+  // 🚀 FIXED: Every color name initialization starts completely empty ("")!
   const [colorVariants, setColorVariants] = useState([
     { colorName: '', fileName: '', fileBlob: null, imageUrl: '', isMain: true }
   ]);
@@ -138,6 +142,21 @@ export default function CreateListing({ onProductCreated, onCancel }) {
     setAvailableSizes(availableSizes.filter(s => s !== sizeToRemove));
   };
 
+  // 🎯 TAG CONTROLLER FOR CONDITION SYSTEM: Adds dynamic item chips cleanly
+  const handleAddCondition = () => {
+    if (conditionInput.trim()) {
+      const sanitized = conditionInput.trim();
+      if (!productConditions.includes(sanitized)) {
+        setProductConditions([...productConditions, sanitized]);
+        setConditionInput('');
+      }
+    }
+  };
+
+  const handleRemoveCondition = (conditionToRemove) => {
+    setProductConditions(productConditions.filter(c => c !== conditionToRemove));
+  };
+
   const handleColorChange = (index, value) => {
     const updated = [...colorVariants];
     updated[index].colorName = value;
@@ -182,7 +201,6 @@ export default function CreateListing({ onProductCreated, onCancel }) {
   };
 
   const handleAddColorVariant = () => {
-    // New fields initialize completely clean ("") to safely anchor placeholder triggers
     setColorVariants([...colorVariants, { colorName: '', fileName: '', fileBlob: null, imageUrl: '', isMain: false }]);
   };
 
@@ -221,6 +239,7 @@ export default function CreateListing({ onProductCreated, onCancel }) {
         campus: basicInfo.campus,
         description: basicInfo.productDescription.trim(),
         whatsappNumber: basicInfo.whatsappNumber.trim(),
+        conditions: productConditions.length > 0 ? productConditions : ['Standard Condition'],
         availableSizes: availableSizes.length > 0 ? availableSizes : ['Standard Spec'],
         colorVariants: colorVariants.map(variant => ({
           colorName: variant.colorName || 'Standard Variant',
@@ -240,6 +259,7 @@ export default function CreateListing({ onProductCreated, onCancel }) {
         productDescription: ''
       }));
       setAvailableSizes(['M', 'L', 'XL']);
+      setProductConditions(['New', 'Fairly Used']);
       setColorVariants([{ colorName: '', fileName: '', fileBlob: null, imageUrl: '', isMain: true }]);
       setActiveStep(1);
 
@@ -322,18 +342,18 @@ export default function CreateListing({ onProductCreated, onCancel }) {
 
           <div className="flex flex-col gap-1">
             <label className="text-xs font-bold text-[#111111]">Product Title <span className="text-red-500">*</span></label>
-            <input type="text" placeholder="e.g., Louis Vuitton Slim-Fit Shirt" maxLength={100} value={basicInfo.productTitle} onChange={(e) => setBasicInfo({ ...basicInfo, productTitle: e.target.value })} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-marix-teal text-[#111111]" />
+            <input type="text" placeholder="e.g., Louis Vuitton Slim-Fit Shirt" maxLength={100} value={basicInfo.productTitle} onChange={(e) => setBasicInfo({ ...basicInfo, productTitle: e.target.value })} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-base md:text-sm focus:outline-none focus:border-marix-teal text-[#111111]" />
           </div>
 
           <div className="flex flex-col gap-1">
             <label className="text-xs font-bold text-[#111111]">Shop Name <span className="text-red-500">*</span></label>
-            <input type="text" placeholder="e.g., ThriftByFaith or KicksPlug" value={basicInfo.shopName} onChange={(e) => setBasicInfo({ ...basicInfo, shopName: e.target.value })} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-marix-teal text-[#111111]" />
+            <input type="text" placeholder="e.g., ThriftByFaith or KicksPlug" value={basicInfo.shopName} onChange={(e) => setBasicInfo({ ...basicInfo, shopName: e.target.value })} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-base md:text-sm focus:outline-none focus:border-marix-teal text-[#111111]" />
           </div>
 
           <div className="flex flex-col gap-1">
             <label className="text-xs font-bold text-[#111111]">Category <span className="text-red-500">*</span></label>
             <div className="relative w-full">
-              <select value={basicInfo.category} onChange={(e) => setBasicInfo({ ...basicInfo, category: e.target.value })} className="w-full border border-gray-200 rounded-xl pl-9 pr-3 py-2.5 text-xs focus:outline-none focus:border-marix-teal font-medium appearance-none text-[#111111] bg-white cursor-pointer">
+              <select value={basicInfo.category} onChange={(e) => setBasicInfo({ ...basicInfo, category: e.target.value })} className="w-full border border-gray-200 rounded-xl pl-9 pr-3 py-2.5 text-base md:text-sm focus:outline-none focus:border-marix-teal font-medium appearance-none text-[#111111] bg-white cursor-pointer">
                 {campusCategories.map((c, i) => <option key={i} value={c}>{c}</option>)}
               </select>
               <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none flex items-center">
@@ -342,28 +362,46 @@ export default function CreateListing({ onProductCreated, onCancel }) {
             </div>
           </div>
 
+          {/* 🎯 INTEGRATION SUCCESS: Product Condition Tags System Mirroring Size UI Completely */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-bold text-[#111111]">Product Condition <span className="text-gray-400 font-medium">(Optional)</span></label>
+            <div className="flex flex-wrap gap-2 items-center">
+              {productConditions.map((cond, index) => (
+                <div key={index} className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-bold text-[#111111]">
+                  <span>{cond}</span>
+                  <button type="button" onClick={() => handleRemoveCondition(cond)} className="text-gray-400 hover:text-red-500 ml-1 font-normal text-xs focus:outline-none">✕</button>
+                </div>
+              ))}
+              
+              <div className="flex items-center gap-1 max-w-[220px]">
+                <input type="text" placeholder="Add status (e.g. Boxed, new)" value={conditionInput} onChange={(e) => setConditionInput(e.target.value)} className="w-full border border-gray-200 rounded-xl px-2.5 py-1.5 text-base md:text-xs focus:outline-none text-[#111111]" />
+                <button type="button" onClick={handleAddCondition} className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-xs font-bold rounded-xl border border-gray-200 focus:outline-none">+</button>
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1">
               <label className="text-xs font-bold text-[#111111]">Price (₦) <span className="text-red-500">*</span></label>
-              <input type="number" placeholder="e.g., 15000" value={basicInfo.price} onChange={(e) => setBasicInfo({ ...basicInfo, price: e.target.value })} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-marix-teal text-[#111111]" />
+              <input type="number" placeholder="e.g., 15000" value={basicInfo.price} onChange={(e) => setBasicInfo({ ...basicInfo, price: e.target.value })} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-base md:text-sm focus:outline-none focus:border-marix-teal text-[#111111]" />
             </div>
 
             <div className="flex flex-col gap-1">
               <label className="text-xs font-bold text-[#111111]">WhatsApp Number <span className="text-red-500">*</span></label>
-              <input type="tel" placeholder="e.g., 2348012345678" value={basicInfo.whatsappNumber} onChange={(e) => setBasicInfo({ ...basicInfo, whatsappNumber: e.target.value })} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-marix-teal text-[#111111]" />
+              <input type="tel" placeholder="e.g., 2348012345678" value={basicInfo.whatsappNumber} onChange={(e) => setBasicInfo({ ...basicInfo, whatsappNumber: e.target.value })} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-base md:text-sm focus:outline-none focus:border-marix-teal text-[#111111]" />
             </div>
           </div>
 
           <div className="flex flex-col gap-1">
             <label className="text-xs font-bold text-[#111111]">Campus Hub Location <span className="text-red-500">*</span></label>
-            <select value={basicInfo.campus} onChange={(e) => setBasicInfo({ ...basicInfo, campus: e.target.value })} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-marix-teal font-medium text-[#111111] bg-white cursor-pointer">
+            <select value={basicInfo.campus} onChange={(e) => setBasicInfo({ ...basicInfo, campus: e.target.value })} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-base md:text-sm focus:outline-none focus:border-marix-teal font-medium text-[#111111] bg-white cursor-pointer">
               {campuses.map((c, i) => <option key={i} value={c}>{c}</option>)}
             </select>
           </div>
 
           <div className="flex flex-col gap-1">
             <label className="text-xs font-bold text-[#111111]">Product Description <span className="text-red-500">*</span></label>
-            <textarea placeholder="e.g., Vintage print, high-quality material. Delivery at ABSU." maxLength={500} rows={3} value={basicInfo.productDescription} onChange={(e) => setBasicInfo({ ...basicInfo, productDescription: e.target.value })} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-marix-teal resize-none text-[#111111]" />
+            <textarea placeholder="e.g., Vintage print, high-quality material. Delivery at ABSU." maxLength={500} rows={3} value={basicInfo.productDescription} onChange={(e) => setBasicInfo({ ...basicInfo, productDescription: e.target.value })} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-base md:text-sm focus:outline-none focus:border-marix-teal resize-none text-[#111111]" />
           </div>
 
           <button type="button" onClick={() => setActiveStep(2)} className="w-full mt-2 bg-marix-brown text-white font-bold py-2.5 rounded-xl text-xs shadow-sm hover:opacity-95 transition-opacity cursor-pointer text-center focus:outline-none">
@@ -401,7 +439,7 @@ export default function CreateListing({ onProductCreated, onCancel }) {
                 ))}
                 
                 <div className="flex items-center gap-1 max-w-[220px]">
-                  <input type="text" placeholder={labels.specPlaceholder} value={sizeInput} onChange={(e) => setSizeInput(e.target.value)} className="w-full border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs focus:outline-none text-[#111111]" />
+                  <input type="text" placeholder={labels.specPlaceholder} value={sizeInput} onChange={(e) => setSizeInput(e.target.value)} className="w-full border border-gray-200 rounded-xl px-2.5 py-1.5 text-base md:text-xs focus:outline-none text-[#111111]" />
                   <button type="button" onClick={handleAddSize} className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-xs font-bold rounded-xl border border-gray-200 focus:outline-none">+</button>
                 </div>
               </div>
@@ -426,8 +464,7 @@ export default function CreateListing({ onProductCreated, onCancel }) {
 
                     <div className="flex flex-col gap-1 max-w-sm">
                       <label className="text-[10px] font-bold text-gray-500">{labels.colorLabel}</label>
-                      {/* 🚀 FIXED: Pure dynamic placeholder used here cleanly. No values prefilled! */}
-                      <input type="text" placeholder={labels.colorPlaceholder} value={variant.colorName} onChange={(e) => handleColorChange(index, e.target.value)} className="w-full bg-white border border-gray-200 rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:border-marix-teal text-[#111111]" />
+                      <input type="text" placeholder={labels.colorPlaceholder} value={variant.colorName} onChange={(e) => handleColorChange(index, e.target.value)} className="w-full bg-white border border-gray-200 rounded-xl px-3 py-1.5 text-base md:text-xs focus:outline-none focus:border-marix-teal text-[#111111]" />
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
@@ -481,6 +518,10 @@ export default function CreateListing({ onProductCreated, onCancel }) {
             </div>
 
           </div>
+          
+          <button type="button" onClick={() => setActiveStep(1)} className="text-xs font-bold text-gray-400 hover:text-marix-brown self-start transition-colors select-none focus:outline-none">
+            ← Back to Basic Info
+          </button>
         </div>
       )}
 
