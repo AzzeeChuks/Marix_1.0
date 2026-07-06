@@ -27,10 +27,10 @@ export const initialProducts = [
   {
     id: 2,
     productTitle: "Nike Air Force 1 '07",
-    shopName: "KicksPlug_Imsu",
-    price: "₦28,000",
+    shopName: "KicksPlug_Hub",
+    price: "₦21,000",
     category: "Footwears",
-    campus: "Imsu, Owerri",
+    campus: "UniUyo, Uyo",
     description: "Classic triple white crisp Air Force 1. Original box included, deadstock condition.",
     whatsappNumber: "2348123456789",
     availableSizes: ["42", "43", "44"],
@@ -87,7 +87,7 @@ export const initialProducts = [
     id: 5,
     productTitle: "Matte Liquid Lipstick Set",
     shopName: "AzzaGlow_Beauty",
-    price: "₦7,500",
+    price: "₦3,000",
     category: "Beauty",
     campus: "UniAbj, Gwagwalada",
     description: "Long-lasting waterproof liquid matte lipstick bundle. Pack of 4 seasonal shades.",
@@ -108,9 +108,9 @@ export const initialProducts = [
   },
   {
     id: 6,
-    productTitle: "Unisex Camo Cargo Pants",
+    productTitle: "Unisex Joggers",
     shopName: "StreetDrip_Absu",
-    price: "₦12,500",
+    price: "₦8,500",
     category: "Fashion",
     campus: "Absu, Uturu",
     description: "Heavyweight utility cotton cargo pants with 6 reinforced tactical pockets. Adjustable waist bands.",
@@ -119,13 +119,14 @@ export const initialProducts = [
     colorVariants: [
       {
         colorName: "Green Camo",
-        imageUrl: "https://images.unsplash.com/photo-1517423568366-8b83523034fd?w=500&q=80",
-        isMain: true
+        /* 🚀 FIXED IMAGES: High-end production utility cargo pants layout swap */
+        imageUrl: "https://images.pexels.com/photos/157675/fashion-men-s-individuality-black-157675.jpeg?auto=compress&cs=tinysrgb&w=500",
+        isMain: false
       },
       {
         colorName: "Desert Camo",
         imageUrl: "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=500&q=80",
-        isMain: false
+        isMain: true
       }
     ]
   },
@@ -143,29 +144,29 @@ export const initialProducts = [
       {
         colorName: "Silver",
         imageUrl: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=500&q=80",
-        isMain: true
+        isMain: false
       },
       {
         colorName: "Gold",
         imageUrl: "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=500&q=80",
-        isMain: false
+        isMain: true
       }
     ]
   },
   {
     id: 8,
-    productTitle: "Smart Fitness Watch V2",
-    shopName: "TechCampus_UniAbuja",
-    price: "₦19,000",
+    productTitle: "Acoustic Guitar",
+    shopName: "TechCampus_Hub",
+    price: "₦35,000",
     category: "Gadgets",
-    campus: "UniAbj, Gwagwalada",
+    campus: "UniUyo, Uyo",
     description: "Full touchscreen fitness smartwatch featuring heart rate tracker, step monitor, and custom dials.",
     whatsappNumber: "2349022223333",
     availableSizes: ["Neutral"],
     colorVariants: [
       {
         colorName: "Black",
-        imageUrl: "https://images.unsplash.com/photo-1542496658-e33a6d0d50f6?w=500&q=80",
+        imageUrl: 'https://images.unsplash.com/photo-1588449668365-d15e397f6787?w=300&q=80',
         isMain: true
       },
       {
@@ -188,7 +189,8 @@ export const initialProducts = [
     colorVariants: [
       {
         colorName: "Standard",
-        imageUrl: "https://images.unsplash.com/photo-1626700051175-6518c4793f4f?w=500&q=80",
+        /* 🚀 FIXED IMAGES: Fast rendering high-converting wrap target source */
+        imageUrl: "https://images.pexels.com/photos/461198/pexels-photo-461198.jpeg?auto=compress&cs=tinysrgb&w=500",
         isMain: true
       }
     ]
@@ -197,7 +199,7 @@ export const initialProducts = [
     id: 10,
     productTitle: "Minimalist Leather Watch",
     shopName: "Timekeepers_Futo",
-    price: "₦14,000",
+    price: "₦12,500",
     category: "Accessories",
     campus: "Futo, Owerri",
     description: "Classic elegant look. Ultra-thin casing matched with a genuine premium stitched brown leather strap.",
@@ -214,24 +216,25 @@ export const initialProducts = [
   {
     id: 11,
     productTitle: "Hydrating Vitamin C Serum",
-    shopName: "AzzaGlow_Beauty",
-    price: "₦9,000",
+    shopName: "GlowEssence_Hub",
+    price: "5,500",
     category: "Beauty",
-    campus: "UniAbj, Gwagwalada",
+    campus: "UniUyo, Uyo",
     description: "Brightening antioxidant facial serum. Formulated for all skin types, non-greasy finish.",
     whatsappNumber: "2348098765432",
     availableSizes: ["30ml", "50ml"],
     colorVariants: [
       {
         colorName: "Standard Glow",
-        imageUrl: "https://images.unsplash.com/photo-1608248597481-496100c8c836?w=500&q=80",
+        /* 🚀 FIXED IMAGES: Reliable aesthetic skincare glass dropper link execution */
+        imageUrl: "https://images.pexels.com/photos/4041391/pexels-photo-4041391.jpeg?auto=compress&cs=tinysrgb&w=500",
         isMain: true
       }
     ]
   },
   {
     id: 12,
-    productTitle: "Yeezy Slide Onyx",
+    productTitle: "Puma RS-X3 Sneakers",
     shopName: "KicksPlug_Imsu",
     price: "₦16,500",
     category: "Footwears",

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import marixLogoM from '../images/marix-logo-m.png';
 
 export default function Homepage({ 
@@ -22,47 +22,89 @@ export default function Homepage({
   const [unreadNotifications, setUnreadNotifications] = useState(3);
   const savedCount = savedProducts.length;
   
-  // 🚀 PREMIUM INTENT SCROLLING PHYSICS ENGINE: Unified cushions for cross-device viewports
-  const [isVisibleMobileDock, setIsVisibleMobileDock] = useState(true);
-  const [isVisibleTopNavbar, setIsVisibleTopNavbar] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
+  // 🚀 HARD-BOUNDED MOBILE INTERFACE ACCUMULATORS
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const [isAtAbsoluteBottom, setIsAtAbsoluteBottom] = useState(false); 
+  const observerTargetRef = useRef(null);
 
+  // 🧠 SPOTIFY TAB SCROLL MEMORY CACHE
+  const scrollPositionCache = useRef({
+    browse: 0,
+    uploads: 0,
+    'saved-mobile': 0
+  });
+
+  // 🔄 Intercept tab switches to save and restore scroll positions seamlessly
+  const handleTabChange = (newTab) => {
+    scrollPositionCache.current[activeTab] = window.scrollY;
+    setActiveTab(newTab);
+    requestAnimationFrame(() => {
+      const targetScrollY = scrollPositionCache.current[newTab] || 0;
+      window.scrollTo(0, targetScrollY);
+    });
+  };
+
+  // 🚀 TRACK SCROLL TO SLIDE BOTTOM NAV OUT OF THE WAY AT THE ABSOLUTE FOOTER
   useEffect(() => {
-    const handleScrollNavigationPhysics = () => {
+    const handleScrollPhysics = () => {
       const currentScrollY = window.scrollY;
-      const navbarHeight = 76; // Cushion zone matches desktop header block
-      const tolerance = 15;    // Core pixel intent threshold buffer
+      const windowHeight = window.innerHeight;
+      const totalDocumentHeight = document.documentElement.scrollHeight;
 
-      // 1. Absolute Top Anchor Cushion Zone: Locks navbar flat when close to header boundary
-      if (currentScrollY <= navbarHeight) {
-        setIsVisibleTopNavbar(true);
-        setIsVisibleMobileDock(true);
-        setLastScrollY(currentScrollY);
-        return;
-      }
-
-      // Compute displacement vector
-      const scrollDifference = currentScrollY - lastScrollY;
-
-      // 2. Intent Analysis Framework: Triggers only when the user clears the tolerance gap
-      if (Math.abs(scrollDifference) >= tolerance) {
-        if (scrollDifference > 0) {
-          // Intentional Scroll Down: Slide upper nav up out of bounding grid securely
-          setIsVisibleTopNavbar(false);
-          setIsVisibleMobileDock(true);
-        } else {
-          // Intentional Scroll Up: Instant sliding dropdown reveal anywhere on screen
-          setIsVisibleTopNavbar(true);
-          setIsVisibleMobileDock(false);
-        }
-        // Sync reference history anchors only once threshold is broken
-        setLastScrollY(currentScrollY);
+      if (windowHeight + currentScrollY >= totalDocumentHeight - 25) {
+        setIsAtAbsoluteBottom(true);
+      } else {
+        setIsAtAbsoluteBottom(false);
       }
     };
 
-    window.addEventListener('scroll', handleScrollNavigationPhysics, { passive: true });
-    return () => window.removeEventListener('scroll', handleScrollNavigationPhysics);
-  }, [lastScrollY]);
+    window.addEventListener('scroll', handleScrollPhysics, { passive: true });
+    return () => window.removeEventListener('scroll', handleScrollPhysics);
+  }, []);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (window.innerWidth < 768) {
+          setShowBackToTop(!entry.isIntersecting);
+        } else {
+          setShowBackToTop(false);
+        }
+      },
+      { threshold: 0, rootMargin: "0px" }
+    );
+
+    if (observerTargetRef.current) {
+      observer.observe(observerTargetRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [activeTab]);
+
+  // ⚡ HYPER-FAST REWIND SYSTEM (Blazing Fast 150ms Bullet Train)
+  const handleFastScrollToTop = () => {
+    const startScrollY = window.scrollY;
+    const startTime = performance.now();
+    const duration = 150; 
+
+    function easeOutCubic(t) {
+      return 1 - Math.pow(1 - t, 3);
+    }
+
+    function frameTrack(currentTime) {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const nextScrollY = startScrollY * (1 - easeOutCubic(progress));
+      
+      if (nextScrollY <= 15 || progress >= 1) {
+        window.scrollTo(0, 0);
+      } else {
+        window.scrollTo(0, nextScrollY);
+        window.requestAnimationFrame(frameTrack);
+      }
+    }
+    window.requestAnimationFrame(frameTrack);
+  };
 
   const categories = [
     { name: 'Fashion', iconClass: 'ph-t-shirt' },
@@ -76,19 +118,39 @@ export default function Homepage({
   ];
 
   const showcaseItems = [
-    { name: 'AirPods Pro', price: '₦35,000', img: 'https://images.unsplash.com/photo-1588449668365-d15e397f6787?w=300&q=80' },
+    { name: 'Acoustic Guitar', price: '₦35,000', img: 'https://images.unsplash.com/photo-1588449668365-d15e397f6787?w=300&q=80' },
     { name: 'Nike Air Force 1', price: '₦28,500', img: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300&q=80' },
     { name: "Victoria's Secret", price: '₦12,000', img: 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=300&q=80' },
-    { name: 'Shawarma Deluxe', price: '₦2,000', img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=300&q=80' },
-    { name: 'Oversized Hoodie', price: '₦8,000', img: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=300&q=80' },
-    { name: 'Minimal Chain/Watch', price: '₦6,500', img: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=300&q=80' }
+    { name: 'Shawarma Deluxe', price: '₦3,200', img: 'https://images.pexels.com/photos/461198/pexels-photo-461198.jpeg?auto=compress&cs=tinysrgb&w=500' },
+    { name: 'Ring Chain', price: '₦2,500', img: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=500&q=80' },
+    { name: 'Minimal Chain/Watch', price: '₦6,500', img: 'https://images.pexels.com/photos/190819/pexels-photo-190819.jpeg?auto=compress&cs=tinysrgb&w=500' }
   ];
 
-  const featuredDeck = products.slice(0, 6);
-  const trendingDeck = products.slice(0, 6);
+  // 🚀 DYNAMIC COMPACT LISTINGS SEPARATED ENGINE (12 Completely Unique Mock Datasets)
+  const defaultFeaturedProducts = [
+    { id: 'f-1', productTitle: 'Shawarma Deluxe Combo', price: '₦2,000', shopName: 'Melts & Bites', campus: 'ABSU, Uturu', colorVariants: [{ isMain: true, imageUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&q=80' }] },
+    { id: 'f-2', productTitle: 'Vintage Denim Jacket', price: '₦12,500', shopName: 'ThriftByFaith', campus: 'ABSU, Uturu', colorVariants: [{ isMain: true, imageUrl: 'https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=500&q=80' }] },
+    { id: 'f-3', productTitle: 'Acoustic Guitar (Natural)', price: '₦45,000', shopName: 'Strings Plug', campus: 'IMSU, Owerri', colorVariants: [{ isMain: true, imageUrl: 'https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=500&q=80' }] },
+    { id: 'f-4', productTitle: 'Anker PowerBank 20k', price: '₦18,000', shopName: 'Gadget Vault', campus: 'FUTO, Owerri', colorVariants: [{ isMain: true, imageUrl: 'https://images.unsplash.com/photo-1609592424109-dd9892f1b177?w=500&q=80' }] },
+    { id: 'f-5', productTitle: 'Silver Cuban Link Chain', price: '₦4,500', shopName: 'Ice Palace', campus: 'ABSU, Uturu', colorVariants: [{ isMain: true, imageUrl: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=500&q=80' }] },
+    { id: 'f-6', productTitle: 'Mattress Protector Pack', price: '₦7,500', shopName: 'Bedding Depot', campus: 'UniAbuja', colorVariants: [{ isMain: true, imageUrl: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=500&q=80' }] }
+  ];
+
+  const defaultTrendingProducts = [
+    { id: 't-1', productTitle: 'Nike Air Force 1 Retro', price: '₦28,500', shopName: 'KicksPlug', campus: 'FUTO, Owerri', colorVariants: [{ isMain: true, imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&q=80' }] },
+    { id: 't-2', productTitle: 'AirPods Pro 2nd Gen', price: '₦35,000', shopName: 'Apple Hub', campus: 'ABSU, Uturu', colorVariants: [{ isMain: true, imageUrl: 'https://images.unsplash.com/photo-1588449668365-d15e397f6787?w=500&q=80' }] },
+    { id: 't-3', productTitle: 'Minimalist Leather Watch', price: '₦14,000', shopName: 'Chrono Studio', campus: 'IMSU, Owerri', colorVariants: [{ isMain: true, imageUrl: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=500&q=80' }] },
+    { id: 't-4', productTitle: 'Victoria Secret Scented', price: '₦12,000', shopName: 'Glow Essence', campus: 'UniAbuja', colorVariants: [{ isMain: true, imageUrl: 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=500&q=80' }] },
+    { id: 't-5', productTitle: 'Mechanical Keyboard RGB', price: '₦22,500', shopName: 'Tech Central', campus: 'FUTO, Owerri', colorVariants: [{ isMain: true, imageUrl: 'https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?w=500&q=80' }] },
+    { id: 't-6', productTitle: 'Oversized Cotton Hoodie', price: '₦8,000', shopName: 'StreetWear Co', campus: 'ABSU, Uturu', colorVariants: [{ isMain: true, imageUrl: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=500&q=80' }] }
+  ];
+
+  // If live products array has items, use them; otherwise, fall back to the un-cloned pristine sets
+  const featuredDeck = products.length > 0 ? products.slice(0, 6) : defaultFeaturedProducts;
+  const trendingDeck = products.length > 0 ? products.slice(6, 12) : defaultTrendingProducts;
 
   const handleTopHeartClick = () => {
-    setActiveTab('saved-mobile'); 
+    handleTabChange('saved-mobile'); 
   };
 
   const handleToggleSaveProduct = (productObj) => {
@@ -101,25 +163,23 @@ export default function Homepage({
   };
 
   return (
-    <div className="min-h-screen bg-marix-cream text-[#111111] flex flex-col justify-between w-full relative overflow-x-hidden pt-[116px] md:pt-[76px]">
+    <div className="min-h-screen bg-marix-cream text-[#111111] flex flex-col justify-between w-full relative overflow-x-hidden md:pt-[76px]">
       
       <style>{`
         .scrollbar-none::-webkit-scrollbar { display: none; }
         .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
       
-      {/* 🏡 Fixed Unified Navbar: Cross-device viewport layout alignment tracks */}
-      <nav className={`w-full border-b border-[#452b1f]/10 px-2 lg:px-4 py-3 md:py-4 fixed top-0 left-0 right-0 z-40 select-none bg-marix-cream/80 backdrop-blur-[6px] transition-transform duration-300 ${isVisibleTopNavbar ? 'translate-y-0' : '-translate-y-full'}`}>
-        <div className="max-w-[95%] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-2.5 md:gap-4">
+      {/* 🧭 NAVIGATION TRACK INTERFACE LAYER */}
+      <nav className="w-full border-b border-[#452b1f]/10 px-3 lg:px-4 pt-3 pb-3 md:py-4 bg-marix-cream/80 backdrop-blur-[6px] select-none relative md:fixed md:top-0 md:left-0 md:right-0 z-40 shadow-none md:shadow-sm">
+        <div className="max-w-[95%] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3.5 md:gap-4">
           
-          {/* Top Brand Block */}
           <div className="flex items-center justify-between w-full md:w-auto shrink-0">
-            <div className="flex items-center cursor-pointer" onClick={() => setActiveTab('browse')}>
+            <div className="flex items-center cursor-pointer" onClick={() => handleTabChange('browse')}>
               <img src={marixLogoM} alt="M" style={{ width: '52px', height: '52px', margin: '0 -8px', objectFit: 'contain' }} />
               <span style={{ fontSize: '1.05rem', color: '#452b1f', fontWeight: '700', letterSpacing: '2px', textTransform: 'uppercase' }} className="tracking-tight pt-1">ARIX</span>
             </div>
 
-            {/* Mobile Utility Icons Row */}
             <div className="flex items-center gap-3 md:hidden">
               {isLoggedIn ? (
                 <>
@@ -138,19 +198,17 @@ export default function Homepage({
             </div>
           </div>
 
-          {/* 🎯 FIXED: Search bar now stays fully active on Uploads and Saved view states for unified global scanning */}
-          <div className="w-full md:flex-1 max-w-md mx-auto relative flex animate-fadeIn">
+          <div className="w-full md:flex-1 max-w-md mx-auto relative flex animate-fadeIn pb-2 md:pb-0 mb-1 md:mb-0">
             <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
               <i className="ph ph-magnifying-glass text-xs sm:text-sm font-bold"></i>
             </div>
             <input type="text" placeholder="Search campus discoveries..." className="w-full bg-white/50 border border-gray-200/80 rounded-xl pl-8 pr-3 py-1.5 text-base md:text-xs focus:outline-none focus:border-marix-teal text-[#111111] font-medium placeholder-gray-400 shadow-sm md:shadow-none" />
           </div>
 
-          {/* Desktop Navigation Track Actions Block */}
           <div className="hidden md:flex items-center gap-4 shrink-0">
             {isLoggedIn && (
               <div className="flex items-center gap-5 mr-2">
-                <button onClick={() => setActiveTab('uploads')} className={`text-xs font-bold transition-colors focus:outline-none ${activeTab === 'uploads' ? 'text-marix-teal' : 'text-gray-600 hover:text-marix-teal'}`}>My Uploads</button>
+                <button onClick={() => handleTabChange('uploads')} className={`text-xs font-bold transition-colors focus:outline-none ${activeTab === 'uploads' ? 'text-marix-teal' : 'text-gray-600 hover:text-marix-teal'}`}>My Uploads</button>
               </div>
             )}
 
@@ -161,7 +219,7 @@ export default function Homepage({
               </div>
             ) : (
               <div className="flex items-center gap-3 sm:gap-5">
-                <button onClick={handleTopHeartClick} className={`relative p-1 transition-colors focus:outline-none ${activeTab === 'saved-mobile' ? 'text-marix-teal' : 'text-gray-500 min-[1025px]:hover:text-marix-teal'}`}>
+                <button onClick={handleTopHeartClick} className={`relative p-1 transition-colors focus:outline-none ${activeTab === 'saved-mobile' ? 'text-marix-teal' : 'text-gray-400 min-[1025px]:hover:text-marix-teal'}`}>
                   <i className="ph ph-heart text-xl"></i>
                   {savedCount > 0 && <span className="absolute top-0 right-0 bg-marix-teal text-white font-bold text-[8px] w-3.5 h-3.5 rounded-full flex items-center justify-center border border-white shadow-sm">{savedCount}</span>}
                 </button>
@@ -182,6 +240,12 @@ export default function Homepage({
           </div>
         </div>
       </nav>
+
+      {/* 👑 OBSERVER ANCHOR LINE */}
+      <div ref={observerTargetRef} className="w-full h-px pointer-events-none absolute top-[110px]"></div>
+
+      {/* 🚀 MOBILE CLEARANCE SPACER CONTAINER */}
+      <div className="w-full h-3 block md:hidden shrink-0"></div>
 
       {/* CORE ACTIVE VIEW CHANNEL RENDER */}
       {activeTab === 'browse' && (
@@ -279,7 +343,12 @@ export default function Homepage({
 
           {/* Featured Products */}
           <section className="w-full max-w-[95%] mx-auto px-2 lg:px-4 py-6 text-left">
-            <h3 className="text-base md:text-lg font-black tracking-tight text-[#111111] mb-5 select-none">Featured Products</h3>
+            {/* 🚀 FIXED FEATURED HEADER WITH SEE ALL FLUID ROW EXECUTION */}
+            <div className="flex justify-between items-center w-full mb-5 select-none">
+              <h3 className="text-base md:text-lg font-black tracking-tight text-[#111111]">Featured Products</h3>
+              <span className="text-[11px] font-bold text-gray-400 hover:text-marix-teal transition-colors cursor-pointer">See All</span>
+            </div>
+            
             <div className="flex overflow-x-auto min-[1025px]:grid min-[1025px]:grid-cols-6 gap-3.5 md:gap-5 pb-3 scrollbar-none snap-x snap-mandatory">
               {featuredDeck.map((product) => {
                 const primaryImgObj = product.colorVariants?.find(v => v.isMain) || product.colorVariants?.[0];
@@ -309,7 +378,12 @@ export default function Homepage({
 
           {/* Trending This Week */}
           <section className="w-full max-w-[95%] mx-auto px-2 lg:px-4 py-6 text-left pb-24 md:pb-12">
-            <h3 className="text-base md:text-lg font-black tracking-tight text-[#111111] mb-5 select-none">Trending This Week 🔥</h3>
+            {/* 🚀 FIXED TRENDING HEADER WITH SEE ALL FLUID ROW EXECUTION */}
+            <div className="flex justify-between items-center w-full mb-5 select-none">
+              <h3 className="text-base md:text-lg font-black tracking-tight text-[#111111]">Trending This Week 🔥</h3>
+              <span className="text-[11px] font-bold text-gray-400 hover:text-marix-teal transition-colors cursor-pointer">See All</span>
+            </div>
+
             <div className="flex overflow-x-auto min-[1025px]:grid min-[1025px]:grid-cols-6 gap-3.5 md:gap-5 pb-3 scrollbar-none snap-x snap-mandatory">
               {trendingDeck.map((product) => {
                 const primaryImgObj = product.colorVariants?.find(v => v.isMain) || product.colorVariants?.[0];
@@ -328,7 +402,7 @@ export default function Homepage({
               <div className="grid grid-cols-2 md:grid-cols-12 gap-8 md:gap-6">
                 
                 <div className="col-span-2 md:col-span-4 flex flex-col gap-2.5">
-                  <div className="flex items-center cursor-pointer w-fit" onClick={() => setActiveTab('browse')}>
+                  <div className="flex items-center cursor-pointer w-fit" onClick={() => handleTabChange('browse')}>
                     <span style={{ fontSize: '1.2rem', color: '#452b1f', fontWeight: '800', letterSpacing: '2px' }} className="tracking-tight"><span className="text-marix-teal">MARIX</span></span>
                   </div>
                   <p className="text-xs text-gray-500 font-medium max-w-xs leading-relaxed">Campus Marketplace built for students.</p>
@@ -337,7 +411,7 @@ export default function Homepage({
                 <div className="col-span-1 md:col-span-2 flex flex-col gap-3">
                   <h4 className="text-xs font-black tracking-wider text-gray-400 uppercase">Explore</h4>
                   <ul className="flex flex-col gap-2 text-xs font-bold text-gray-600">
-                    <li className="hover:text-marix-teal cursor-pointer transition-colors" onClick={() => setActiveTab('browse')}>Products</li>
+                    <li className="hover:text-marix-teal cursor-pointer transition-colors" onClick={() => handleTabChange('browse')}>Products</li>
                     <li className="hover:text-marix-teal cursor-pointer transition-colors">Categories</li>
                     <li className="hover:text-marix-teal cursor-pointer transition-colors" onClick={() => onNavigateToView('about')}>How it Works</li>
                   </ul>
@@ -376,7 +450,7 @@ export default function Homepage({
 
       {/* RENDER PORTAL ZONE FOR USER UPLOADS & SAVED PRODUCTS */}
       {(activeTab === 'uploads' || activeTab === 'saved-mobile') && (
-        <section className="w-full max-w-[95%] mx-auto px-2 lg:px-4 py-10 flex-1 text-left pb-28 md:pb-16 animate-fadeIn relative min-h-[60vh]">
+        <section className="w-full max-w-[95%] mx-auto px-2 lg:px-4 pt-6 pb-10 flex-1 text-left pb-28 md:pb-16 animate-fadeIn relative min-h-[60vh]">
           <div className="border-b border-gray-200/60 pb-4 mb-6 select-none relative z-10">
             <h2 className="text-xl md:text-2xl font-black tracking-tight text-[#111111]">
               {activeTab === 'saved-mobile' ? 'Your Saved Items' : 'Your Listings'}
@@ -394,9 +468,16 @@ export default function Homepage({
               <h4 className="text-base font-black text-[#111111] tracking-tight">
                 {activeTab === 'saved-mobile' ? 'Your saved shelf is empty' : 'No active uploads found'}
               </h4>
-              <p className="text-xs text-gray-500 max-w-xs leading-relaxed font-medium mt-1">
+              <p className="text-xs text-gray-500 max-w-xs leading-relaxed font-medium mt-1 mb-5">
                 {activeTab === 'saved-mobile' ? 'Tap the heart icon on cards while browsing to save products you want to keep track of here.' : "You haven't posted any items yet. Create your first marketplace entry to showcase products to campus shoppers instantly."}
               </p>
+              
+              <button 
+                onClick={() => activeTab === 'saved-mobile' ? handleTabChange('browse') : setShowCreateModal(true)} 
+                className="bg-marix-brown hover:bg-marix-brown/95 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all active:scale-95 focus:outline-none"
+              >
+                {activeTab === 'saved-mobile' ? 'Explore Products' : 'List your products'}
+              </button>
             </div>
           ) : (
             <div className="relative z-10">
@@ -419,24 +500,19 @@ export default function Homepage({
         </section>
       )}
 
-      {/* 🚀 GLOBAL SYSTEM COPYRIGHT ROW */}
-      <div className="w-full text-center text-[11px] text-gray-400 font-bold tracking-tight py-6 border-t border-gray-100 bg-white z-30 relative">
-        <span>&copy; {new Date().getFullYear()} <span className="text-marix-teal font-bold">Marix</span>. Built for Campus Commerce.</span>
-      </div>
-
       {/* 📱 Mobile Sticky Navigation Dock */}
       {isLoggedIn && (
-        <div className={`md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 pt-1 z-50 flex items-center justify-around select-none shadow-[0_-4px_12px_rgba(0,0,0,0.05)] transition-transform duration-300 pb-[calc(env(safe-area-inset-bottom)+8px)] ${isVisibleMobileDock ? 'translate-y-0' : 'translate-y-full'}`}>
-          <button onClick={() => setActiveTab('browse')} className={`flex flex-col items-center gap-0.5 py-1 focus:outline-none ${activeTab === 'browse' ? 'text-marix-teal' : 'text-gray-400'}`}>
+        <div className={`md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 pt-1 z-50 flex items-center justify-around select-none shadow-[0_-4px_12px_rgba(0,0,0,0.05)] pb-[calc(env(safe-area-inset-bottom)+8px)] transition-transform duration-300 ${isAtAbsoluteBottom ? 'translate-y-full' : 'translate-y-0'}`}>
+          <button onClick={() => handleTabChange('browse')} className={`flex flex-col items-center gap-0.5 py-1 focus:outline-none ${activeTab === 'browse' ? 'text-marix-teal' : 'text-gray-400'}`}>
             <i className="ph ph-squares-four text-xl"></i><span className="text-[10px] font-bold">Browse</span>
           </button>
-          <button onClick={() => setActiveTab('uploads')} className={`flex flex-col items-center gap-0.5 py-1 focus:outline-none ${activeTab === 'uploads' ? 'text-marix-teal' : 'text-gray-400'}`}>
+          <button onClick={() => handleTabChange('uploads')} className={`flex flex-col items-center gap-0.5 py-1 focus:outline-none ${activeTab === 'uploads' ? 'text-marix-teal' : 'text-gray-400'}`}>
             <i className="ph ph-tray text-xl"></i><span className="text-[10px] font-bold">Uploads</span>
           </button>
-          <button onClick={() => setShowCreateModal(!showCreateModal)} className="w-11 h-11 rounded-full bg-marix-teal text-white flex items-center justify-center shadow-md active:scale-90 transition-transform duration-300 -translate-y-2.5 border-4 border-marix-cream focus:outline-none z-50">
+          <button onClick={() => setShowCreateModal(!showCreateModal)} className="w-11 h-11 rounded-full bg-marix-brown text-white flex items-center justify-center shadow-md active:scale-90 transition-transform duration-300 -translate-y-2.5 border-4 border-marix-cream focus:outline-none z-50">
             <div className={`transition-transform duration-300 transform flex items-center justify-center ${showCreateModal ? 'rotate-90 scale-110' : 'rotate-0'}`}><i className="ph font-black text-xl ph-plus"></i></div>
           </button>
-          <button onClick={() => setActiveTab('saved-mobile')} className={`flex flex-col items-center gap-0.5 py-1 focus:outline-none ${activeTab === 'saved-mobile' ? 'text-marix-teal' : 'text-gray-400'}`}>
+          <button onClick={() => handleTabChange('saved-mobile')} className={`flex flex-col items-center gap-0.5 py-1 focus:outline-none ${activeTab === 'saved-mobile' ? 'text-marix-teal' : 'text-gray-400'}`}>
             <i className="ph ph-heart text-xl"></i><span className="text-[10px] font-bold">Saved</span>
           </button>
           <button className="flex flex-col items-center gap-0.5 py-1 text-gray-400 focus:outline-none">
@@ -444,6 +520,23 @@ export default function Homepage({
           </button>
         </div>
       )}
+
+      {/* 🚀 MASTER LEVEL FLOATING ARROW TRIGGER BLOCK */}
+      {showBackToTop && !showCreateModal && (
+        <button
+          onClick={handleFastScrollToTop}
+          className="fixed bottom-24 right-5 w-12 h-12 bg-marix-brown text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all z-[100] focus:outline-none animate-fadeIn"
+          style={{ display: window.innerWidth >= 768 ? 'none' : 'flex' }}
+          aria-label="Scroll back to top fast"
+        >
+          <i className="ph ph-arrow-up font-black text-lg"></i>
+        </button>
+      )}
+
+      {/* 🎯 SINGLE PATCHED COPYRIGHT ROW */}
+      <div className="w-full text-center text-[11px] text-gray-400 font-bold tracking-tight py-6 border-t border-gray-100 bg-white z-30 relative">
+        <span>&copy; {new Date().getFullYear()} <span className="text-marix-teal font-bold">Marix</span>. Built for Campus Commerce.</span>
+      </div>
 
     </div>
   );
@@ -454,14 +547,14 @@ function VolcanoCard({ product, targetImageSrc, savedProducts, onToggleSave }) {
   const cleanCampusName = product.campus ? product.campus.split(',')[0].trim() : 'Campus';
 
   return (
-    <div className="w-full flex flex-col gap-y-1.5 select-none group bg-white p-1.5 rounded-[18px] border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-all duration-300 ease-out text-left">
+    <div className="w-full flex flex-col gap-y-1 select-none group bg-white p-1.5 rounded-[18px] border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-all duration-300 ease-out text-left">
       <div className="w-full aspect-square rounded-[12px] overflow-hidden bg-marix-cream/40 relative shrink-0">
         <img src={targetImageSrc} alt={product.productTitle} className="w-full h-full object-cover transform scale-100 min-[1025px]:group-hover:scale-[1.04] transition-transform duration-500 ease-out" loading="lazy" />
       </div>
       <div className="flex flex-col gap-y-0.5 px-1 pb-1 flex-1 justify-between min-w-0">
         <div className="flex flex-col min-w-0">
-          <h4 className="text-xs md:text-sm font-medium text-[#111111] truncate tracking-tight">{product.productTitle}</h4>
-          <div className="flex items-center gap-x-1 text-[10px] md:text-[11px] text-[#111111]/45 font-semibold min-w-0 mt-[3px]">
+          <h4 className="text-[11px] sm:text-xs md:text-sm font-semibold text-[#111111] truncate tracking-tight mt-1">{product.productTitle}</h4>
+          <div className="flex items-center gap-x-1 text-[9px] sm:text-[10px] md:text-[11px] text-[#111111]/45 font-bold min-w-0 mt-[2px]">
             <span className="flex items-center gap-x-0.5 min-w-0 max-w-[50%]">
               <i className="ph ph-storefront text-xs text-[#111111]/35 shrink-0"></i>
               <span className="truncate">{product.shopName}</span>
@@ -473,10 +566,10 @@ function VolcanoCard({ product, targetImageSrc, savedProducts, onToggleSave }) {
             </span>
           </div>
         </div>
-        <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-gray-50 shrink-0">
-          <span className="text-xs md:text-sm font-black text-marix-teal tracking-tight">{product.price}</span>
-          <button type="button" onClick={(e) => { e.stopPropagation(); onToggleSave(product); }} className={`w-7 h-7 rounded-full border flex items-center justify-center bg-white active:scale-90 focus:outline-none ${isLiked ? 'border-marix-teal text-marix-teal' : 'border-gray-200 text-[#111111]/40'}`}>
-            <svg className="w-[14px] h-[14px]" viewBox="0 0 24 24" fill={isLiked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.5"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" /></svg>
+        <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-gray-100/50 shrink-0">
+          <span className="text-[11px] sm:text-xs md:text-sm font-black text-marix-teal tracking-tight">{product.price}</span>
+          <button type="button" onClick={(e) => { e.stopPropagation(); onToggleSave(product); }} className={`w-[26px] h-[26px] sm:w-7 sm:h-7 rounded-full border flex items-center justify-center bg-white active:scale-90 focus:outline-none transition-colors ${isLiked ? 'border-marix-teal text-marix-teal' : 'border-gray-200 text-[#111111]/40'}`}>
+            <svg className="w-[11px] h-[11px] sm:w-[13px] sm:h-[13px]" viewBox="0 0 24 24" fill={isLiked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.5"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" /></svg>
           </button>
         </div>
       </div>

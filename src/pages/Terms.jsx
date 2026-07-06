@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import marixLogoM from '../images/marix-logo-m.png';
 
 export default function Terms({ 
@@ -12,63 +12,79 @@ export default function Terms({
   onNavigateToSaved,
   onNavigateToUploads, 
   onSignOut,
-  setShowCreateModal
+  showCreateModal,
+  setShowCreateModal,
+  activeTab,
+  setActiveTab
 }) {
-  // 🚀 ACTIVE NAVBAR SCROLL TRACKING ENGINE: Cushion Buffer & Strict Thresholds
-  const [isVisibleTopNavbar, setIsVisibleTopNavbar] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const observerTargetRef = useRef(null);
 
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, []);
 
+  // 🚀 EXACT PRIVACY.JSX OBSERVER MATCH
   useEffect(() => {
-    const handleSubScrollPhysics = () => {
-      const currentScrollY = window.scrollY;
-      const navbarHeight = 76; 
-      const tolerance = 15;    
-
-      // 1. Lock absolute top anchor position flat
-      if (currentScrollY <= navbarHeight) {
-        setIsVisibleTopNavbar(true);
-        setLastScrollY(currentScrollY);
-        return;
-      }
-
-      const scrollDifference = currentScrollY - lastScrollY;
-
-      // 2. Intent analysis loop check
-      if (Math.abs(scrollDifference) >= tolerance) {
-        if (scrollDifference > 0) {
-          setIsVisibleTopNavbar(false);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (window.innerWidth < 768) {
+          setShowBackToTop(!entry.isIntersecting);
         } else {
-          setIsVisibleTopNavbar(true);
+          setShowBackToTop(false);
         }
-        setLastScrollY(currentScrollY);
-      }
-    };
+      },
+      { threshold: 0, rootMargin: "0px" }
+    );
 
-    window.addEventListener('scroll', handleSubScrollPhysics, { passive: true });
-    return () => window.removeEventListener('scroll', handleSubScrollPhysics);
-  }, [lastScrollY]);
+    if (observerTargetRef.current) {
+      observer.observe(observerTargetRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  // ⚡ EXACT HOMEPAGE/PRIVACY BULLET TRAIN SCROLL (150ms)
+  const handleFastScrollToTop = () => {
+    const startScrollY = window.scrollY;
+    const startTime = performance.now();
+    const duration = 150; 
+
+    function easeOutCubic(t) {
+      return 1 - Math.pow(1 - t, 3);
+    }
+
+    function frameTrack(currentTime) {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const nextScrollY = startScrollY * (1 - easeOutCubic(progress));
+      
+      if (nextScrollY <= 15 || progress >= 1) {
+        window.scrollTo(0, 0);
+      } else {
+        window.scrollTo(0, nextScrollY);
+        window.requestAnimationFrame(frameTrack);
+      }
+    }
+    window.requestAnimationFrame(frameTrack);
+  };
 
   const userInitial = userName ? userName.trim().charAt(0).toUpperCase() : 'M';
 
   return (
-    <div className="min-h-screen bg-marix-cream text-[#111111] flex flex-col justify-between w-full select-none text-left animate-fadeIn pt-[116px] md:pt-[76px]">
+    /* 🎯 REMOVED pb-28: Swapped to pb-0 since the mobile bottom dock doesn't render here anymore */
+    <div className="min-h-screen bg-marix-cream text-[#111111] flex flex-col justify-between w-full relative overflow-x-hidden md:pt-[76px] pb-0">
       
-      {/* 🏡 Global Sliding Navbar: Strict fixed layout matrix execution */}
-      <nav className={`w-full border-b border-[#452b1f]/10 px-2 lg:px-4 py-3 md:py-4 fixed top-0 left-0 right-0 z-40 select-none bg-marix-cream/80 backdrop-blur-[6px] transition-transform duration-300 ${isVisibleTopNavbar ? 'translate-y-0' : '-translate-y-full'}`}>
-        <div className="max-w-[95%] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-2.5 md:gap-4">
+      {/* 🧭 NAV BLOCK: Exactly like Homepage/Privacy (Relative/Scrollable on mobile, Fixed on desktop) */}
+      <nav className="w-full border-b border-[#452b1f]/10 px-3 lg:px-4 pt-3 pb-3 md:py-4 bg-marix-cream/80 backdrop-blur-[6px] select-none relative md:fixed md:top-0 md:left-0 md:right-0 z-40 shadow-none md:shadow-sm">
+        <div className="max-w-[95%] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3.5 md:gap-4">
           
-          {/* 📱 TOP ROW: Logo + Mobile Triggers */}
           <div className="flex items-center justify-between w-full md:w-auto shrink-0">
             <div className="flex items-center cursor-pointer" onClick={onNavigateHome}>
               <img src={marixLogoM} alt="M" style={{ width: '52px', height: '52px', margin: '0 -8px', objectFit: 'contain' }} />
               <span style={{ fontSize: '1.05rem', color: '#452b1f', fontWeight: '700', letterSpacing: '2px', textTransform: 'uppercase' }} className="tracking-tight pt-1">ARIX</span>
             </div>
 
-            {/* Mobile-Only Action Utilities Slot */}
             <div className="flex items-center gap-3 md:hidden">
               {isLoggedIn ? (
                 <>
@@ -87,15 +103,13 @@ export default function Terms({
             </div>
           </div>
 
-          {/* 🎯 UNIVERSAL EMBEDDED SEARCH BAR: Text-base standard bypasses iOS Safari auto-zoom penalty */}
-          <div className="w-full md:flex-1 max-w-md mx-auto relative flex animate-fadeIn">
+          <div className="w-full md:flex-1 max-w-md mx-auto relative flex animate-fadeIn pb-2 md:pb-0 mb-1 md:mb-0">
             <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
               <i className="ph ph-magnifying-glass text-xs sm:text-sm font-bold"></i>
             </div>
             <input type="text" placeholder="Search for anything..." className="w-full bg-white/50 border border-gray-200/80 rounded-xl pl-8 pr-3 py-1.5 text-base md:text-xs focus:outline-none focus:border-marix-teal text-[#111111] font-medium placeholder-gray-400 shadow-sm md:shadow-none" />
           </div>
 
-          {/* 💻 DESKTOP ACTIONS DOCK */}
           <div className="hidden md:flex items-center gap-4 shrink-0">
             {isLoggedIn && (
               <div className="flex items-center gap-5 mr-2">
@@ -131,7 +145,13 @@ export default function Terms({
         </div>
       </nav>
 
-      {/* ⬅️ DESKTOP NAVIGATION */}
+      {/* 👑 ANCHOR OBSERVER TRACKER */}
+      <div ref={observerTargetRef} className="w-full h-px pointer-events-none absolute top-[110px]"></div>
+
+      {/* 🚀 Precise h-3 clearance spacer right beneath the nav block flow on mobile */}
+      <div className="w-full h-3 block md:hidden shrink-0"></div>
+
+      {/* DESKTOP BACK BUTTON VIEW */}
       <div className="hidden md:block w-full max-w-[95%] mx-auto px-2 lg:px-4 pt-6 select-none">
         <button onClick={onNavigateHome} className="w-9 h-9 bg-white border border-gray-200/70 rounded-xl flex items-center justify-center text-gray-600 hover:text-marix-teal hover:border-marix-teal/40 focus:outline-none transition-all shadow-sm">
           <i className="ph ph-arrow-left font-bold text-base"></i>
@@ -139,14 +159,15 @@ export default function Terms({
       </div>
 
       <main className="w-full max-w-[90%] md:max-w-3xl mx-auto py-6 md:py-12 flex-1">
-        {/* ⬅️ MOBILE NAVIGATION */}
+        {/* 📱 MOBILE BACK BUTTON VIEW */}
         <div className="block md:hidden pb-4">
           <button onClick={onNavigateHome} className="w-9 h-9 bg-white border border-gray-200/70 rounded-xl flex items-center justify-center text-gray-600 focus:outline-none active:scale-95 transition-transform shadow-sm">
             <i className="ph ph-arrow-left text-base font-bold"></i>
           </button>
         </div>
 
-        <div className="pb-4 mb-8">
+        {/* 🎯 SPACED COMPACT HEADER: Using your validated mb-[34px] formatting and mt-6 spacing metrics */}
+        <div className="pb-4 mb-[34px]">
           <h1 className="text-3xl font-black text-[#111111] tracking-tight mb-1">Terms of Use</h1>
           <p className="text-xs font-black tracking-widest text-marix-teal uppercase">Last updated: August 2026</p>
         </div>
@@ -233,10 +254,23 @@ export default function Terms({
         </div>
       </main>
 
-      {/* 🚀 System Footprint Copyright Row */}
-      <div className="w-full text-center text-[11px] text-gray-400 font-bold py-6 border-t border-gray-100 bg-white">
-        &copy; {new Date().getFullYear()} <span className="text-marix-teal font-bold">Marix</span>. Built for Campus Commerce.
+      {/* 🚀 UNIFORM FLOATING ARROW SYSTEM: Fixed perfectly at bottom-24 for platform symmetry */}
+      {showBackToTop && !showCreateModal && (
+        <button
+          onClick={handleFastScrollToTop}
+          className="fixed bottom-24 right-5 w-12 h-12 bg-marix-brown text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all z-[100] focus:outline-none animate-fadeIn"
+          style={{ display: window.innerWidth >= 768 ? 'none' : 'flex' }}
+          aria-label="Scroll back to top fast"
+        >
+          <i className="ph ph-arrow-up font-black text-lg"></i>
+        </button>
+      )}
+
+      {/* 🎯 SINGLE PATCHED COPYRIGHT ROW */}
+      <div className="w-full text-center text-[11px] text-gray-400 font-bold tracking-tight py-6 border-t border-gray-100 bg-white z-30 relative">
+        <span>&copy; {new Date().getFullYear()} <span className="text-marix-teal font-bold">Marix</span>. Built for Campus Commerce.</span>
       </div>
+
     </div>
   );
 }

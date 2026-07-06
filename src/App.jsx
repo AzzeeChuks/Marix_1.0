@@ -33,6 +33,7 @@ export default function App() {
     setIsLoggedIn(true);
     setCurrentView('home');
     setActiveTab('browse');
+    window.scrollTo(0, 0); // 🎯 YOUR HOMEPAGE RESET: Forces page back to the top on successful login!
   };
 
   const handleSignOut = () => {
@@ -40,6 +41,7 @@ export default function App() {
     setIsLoggedIn(false);
     setCurrentView('home');
     setActiveTab('browse');
+    window.scrollTo(0, 0); // 🎯 YOUR HOMEPAGE RESET: Forces page back to the top when logging out!
   };
 
   const handleNewProduct = (newCard) => {
@@ -53,7 +55,7 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // 🚀 DIRECT ROUTING INJECTOR: Renders tab states cleanly without hitting homepage feed first
+  // 🚀 DIRECT ROUTING INJECTORS
   const routeToSavedTab = () => {
     setCurrentView('home');
     setActiveTab('saved-mobile');
@@ -72,6 +74,17 @@ export default function App() {
     window.scrollTo({ top: 0 });
   };
 
+  // ⚡ FIXED SCROLL INJECTORS FOR AUTH FORMS
+  const routeToLoginView = () => {
+    window.scrollTo(0, 0); // 🎯 Snaps mobile window to the top instantly before switching
+    setCurrentView('auth-login');
+  };
+
+  const routeToSignupView = () => {
+    window.scrollTo(0, 0); // 🎯 Snaps mobile window to the top instantly before switching
+    setCurrentView('auth-signup');
+  };
+
   return (
     <div className="min-h-screen bg-marix-cream text-[#111111] flex flex-col relative selection:bg-marix-teal/20">
       
@@ -82,7 +95,7 @@ export default function App() {
             isLoggedIn={isLoggedIn} 
             setIsLoggedIn={setIsLoggedIn}
             userName={userName}
-            onSignOut={handleSignOut}
+            onSignOut={handleSignOut} // 🎯 FIXED: Put back your signout prop!
             showCreateModal={showCreateModal}
             setShowCreateModal={setShowCreateModal}
             activeTab={activeTab}         
@@ -90,12 +103,13 @@ export default function App() {
             userUploads={userUploads}
             savedProducts={savedProducts}
             setSavedProducts={setSavedProducts}     
-            onNavigateToLogin={() => setCurrentView('auth-login')}
-            onNavigateToSignup={() => setCurrentView('auth-signup')}
+            onNavigateToLogin={routeToLoginView}   
+            onNavigateToSignup={routeToSignupView} 
             onNavigateToView={(targetView) => {
               if (targetView === 'home') {
                 routeToHomeFeed();
               } else {
+                window.scrollTo(0, 0); 
                 setCurrentView(targetView);
               }
             }}
@@ -106,7 +120,10 @@ export default function App() {
           <AuthForm 
             initialMode={currentView === 'auth-login' ? 'login' : 'signup'}
             onSuccessLogin={handleLoginSuccess}
-            onCancel={() => setCurrentView('home')}
+            onCancel={() => {
+              window.scrollTo(0, 0);
+              setCurrentView('home');
+            }}
           />
         )}
 
@@ -117,8 +134,8 @@ export default function App() {
             isLoggedIn={isLoggedIn} 
             setIsLoggedIn={setIsLoggedIn}
             userName={userName}
-            onNavigateToLogin={() => setCurrentView('auth-login')} 
-            onNavigateToSignup={() => setCurrentView('auth-signup')} 
+            onNavigateToLogin={routeToLoginView} 
+            onNavigateToSignup={routeToSignupView} 
             savedCount={savedProducts.length}
             onNavigateToSaved={routeToSavedTab}
             onNavigateToUploads={routeToUploadsTab}
@@ -132,8 +149,8 @@ export default function App() {
             isLoggedIn={isLoggedIn} 
             setIsLoggedIn={setIsLoggedIn}
             userName={userName}
-            onNavigateToLogin={() => setCurrentView('auth-login')} 
-            onNavigateToSignup={() => setCurrentView('auth-signup')} 
+            onNavigateToLogin={routeToLoginView} 
+            onNavigateToSignup={routeToSignupView} 
             savedCount={savedProducts.length}
             onNavigateToSaved={routeToSavedTab}
             onNavigateToUploads={routeToUploadsTab}
@@ -147,8 +164,8 @@ export default function App() {
             isLoggedIn={isLoggedIn} 
             setIsLoggedIn={setIsLoggedIn}
             userName={userName}
-            onNavigateToLogin={() => setCurrentView('auth-login')} 
-            onNavigateToSignup={() => setCurrentView('auth-signup')} 
+            onNavigateToLogin={routeToLoginView} 
+            onNavigateToSignup={routeToSignupView} 
             savedCount={savedProducts.length}
             onNavigateToSaved={routeToSavedTab}
             onNavigateToUploads={routeToUploadsTab}
@@ -162,8 +179,8 @@ export default function App() {
             isLoggedIn={isLoggedIn} 
             setIsLoggedIn={setIsLoggedIn}
             userName={userName}
-            onNavigateToLogin={() => setCurrentView('auth-login')} 
-            onNavigateToSignup={() => setCurrentView('auth-signup')} 
+            onNavigateToLogin={routeToLoginView} 
+            onNavigateToSignup={routeToSignupView} 
             savedCount={savedProducts.length}
             onNavigateToSaved={routeToSavedTab}
             onNavigateToUploads={routeToUploadsTab}
