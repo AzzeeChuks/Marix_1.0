@@ -346,7 +346,7 @@ export default function Homepage({
             {/* 🚀 FIXED FEATURED HEADER WITH SEE ALL FLUID ROW EXECUTION */}
             <div className="flex justify-between items-center w-full mb-5 select-none">
               <h3 className="text-base md:text-lg font-black tracking-tight text-[#111111]">Featured Products</h3>
-              <span className="text-[11px] font-bold text-gray-400 hover:text-marix-teal transition-colors cursor-pointer">See All</span>
+              <span className="text-[11px] font-bold text-gray-400 cursor-pointer">See All</span>
             </div>
             
             <div className="flex overflow-x-auto min-[1025px]:grid min-[1025px]:grid-cols-6 gap-3.5 md:gap-5 pb-3 scrollbar-none snap-x snap-mandatory">
@@ -381,7 +381,7 @@ export default function Homepage({
             {/* 🚀 FIXED TRENDING HEADER WITH SEE ALL FLUID ROW EXECUTION */}
             <div className="flex justify-between items-center w-full mb-5 select-none">
               <h3 className="text-base md:text-lg font-black tracking-tight text-[#111111]">Trending This Week 🔥</h3>
-              <span className="text-[11px] font-bold text-gray-400 hover:text-marix-teal transition-colors cursor-pointer">See All</span>
+              <span className="text-[11px] font-bold text-gray-400 cursor-pointer">See All</span>
             </div>
 
             <div className="flex overflow-x-auto min-[1025px]:grid min-[1025px]:grid-cols-6 gap-3.5 md:gap-5 pb-3 scrollbar-none snap-x snap-mandatory">

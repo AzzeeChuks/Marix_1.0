@@ -7,7 +7,7 @@ export default function CreateListing({ onProductCreated, onCancel }) {
   const [activeStep, setActiveStep] = useState(1);
   const [isCompressing, setIsCompressing] = useState(false);
 
-  // 核心 CORE INITIALIZATION
+  // CORE INITIALIZATION
   const [basicInfo, setBasicInfo] = useState({
     productTitle: '',
     category: '',
@@ -46,7 +46,7 @@ export default function CreateListing({ onProductCreated, onCancel }) {
     };
   }, []);
 
-  // 🚀 FIXED DYNAMIC PREFILL & TAG CLEANUP ENGINE
+  // FIXED DYNAMIC PREFILL & TAG CLEANUP ENGINE
   useEffect(() => {
     const cat = basicInfo.category;
     if (cat === 'Fashion') {
@@ -60,7 +60,6 @@ export default function CreateListing({ onProductCreated, onCancel }) {
     }
   }, [basicInfo.category]);
 
-  // 🧹 THE RESET ENGINE: Clears local storage and empties states to fully unlock inputs
   const handleClearCacheAndReset = () => {
     localStorage.removeItem('marix_shopName');
     localStorage.removeItem('marix_campus');
@@ -76,7 +75,6 @@ export default function CreateListing({ onProductCreated, onCancel }) {
     });
   };
 
-  // 🔒 LOCK DETERMINATION CHECKS
   const isShopNameLocked = !!localStorage.getItem('marix_shopName');
   const isCampusLocked = !!localStorage.getItem('marix_campus');
   const isWhatsappLocked = !!localStorage.getItem('marix_whatsappNumber');
@@ -195,7 +193,7 @@ export default function CreateListing({ onProductCreated, onCancel }) {
       
       setColorVariants(updated);
     } catch (err) {
-      console.error("Compression component track error:", err);
+      console.error("Compression error:", err);
     } finally {
       setIsCompressing(false);
     }
@@ -282,9 +280,8 @@ export default function CreateListing({ onProductCreated, onCancel }) {
     return '(Unopened & Unused)';
   };
 
-  // 🎯 BALANCED UNIFIED TYPOGRAPHY SCALING: Small sizing for beautiful mobile UI layouts
-  const inputStyles = "w-full border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-marix-teal text-[#111111] font-medium transition-colors placeholder:text-gray-400/70 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed";
-  const selectStyles = "w-full border border-gray-200 rounded-xl pl-8 pr-3 py-2 text-xs focus:outline-none focus:border-marix-teal font-medium appearance-none text-[#111111] bg-white cursor-pointer transition-colors";
+  const inputStyles = "w-full border border-gray-200 rounded-xl px-3 py-2 text-base md:text-sm focus:outline-none focus:border-marix-teal text-[#111111] font-medium transition-colors placeholder:text-gray-400/70 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed";
+  const selectStyles = "w-full border border-gray-200 rounded-xl pl-8 pr-3 py-2 text-base md:text-sm focus:outline-none focus:border-marix-teal font-medium appearance-none text-[#111111] bg-white cursor-pointer transition-colors";
 
   return (
     <div 
@@ -308,26 +305,15 @@ export default function CreateListing({ onProductCreated, onCancel }) {
         </div>
       )}
 
-      {/* Header Bar Area */}
+      {/* 🧭 NAVIGATION BAR */}
       <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-4 select-none">
-        <div className="flex items-center gap-3">
-          <button 
-            type="button" 
-            onClick={onCancel} 
-            className="w-7 h-7 rounded-full bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors active:scale-95 focus:outline-none"
-          >
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-          </button>
-          
-          {/* 🧼 PREMIUM GHOST RESET BUTTON */}
-          <button
-            type="button"
-            onClick={handleClearCacheAndReset}
-            className="text-[10px] font-bold text-marix-brown bg-white border border-gray-200 hover:border-marix-brown/30 hover:bg-marix-cream/20 px-2.5 py-1 rounded-xl active:scale-95 transition-all focus:outline-none shadow-sm"
-          >
-            Reset Form
-          </button>
-        </div>
+        <button 
+          type="button" 
+          onClick={onCancel} 
+          className="w-7 h-7 rounded-full bg-gray-50 flex items-center justify-center text-gray-500 focus:outline-none"
+        >
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
         
         <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400">Create a Listing</h2>
         
@@ -335,9 +321,9 @@ export default function CreateListing({ onProductCreated, onCancel }) {
           type="button"
           onClick={handlePublish}
           disabled={!isFormComplete || isCompressing}
-          className={`px-4 py-1.5 rounded-full text-xs font-bold tracking-tight transition-all duration-300 focus:outline-none ${
+          className={`px-4 py-1.5 rounded-full text-xs font-bold tracking-tight focus:outline-none ${
             isFormComplete && !isCompressing
-              ? 'bg-marix-brown text-white cursor-pointer hover:opacity-95 active:scale-95 shadow-sm' 
+              ? 'bg-marix-brown text-white cursor-pointer' 
               : 'bg-marix-brown/10 text-[#111111]/30 cursor-not-allowed'
           }`}
         >
@@ -375,11 +361,10 @@ export default function CreateListing({ onProductCreated, onCancel }) {
             <input type="text" placeholder="e.g., Louis Vuitton Slim-Fit Shirt" maxLength={100} value={basicInfo.productTitle} onChange={(e) => setBasicInfo({ ...basicInfo, productTitle: e.target.value })} className={inputStyles} />
           </div>
 
-          {/* 🔒 SHOP NAME INPUT: readOnly when cached */}
           <div className="flex flex-col gap-1">
             <div className="flex justify-between items-center">
               <label className="text-[11px] font-bold text-[#111111]">Shop Name <span className="text-red-500">*</span></label>
-              {isShopNameLocked && <span className="text-[9px] font-bold text-gray-400 italic">Locked (Reset to change)</span>}
+              {isShopNameLocked && <span className="text-[9px] font-bold text-gray-400 italic">Locked (Reset below)</span>}
             </div>
             <input 
               type="text" 
@@ -420,7 +405,7 @@ export default function CreateListing({ onProductCreated, onCancel }) {
               </div>
             </div>
             <div className="text-[10px] font-medium tracking-tight text-gray-400 flex flex-wrap items-center gap-x-1 select-none mt-0.5">
-              <span>Choose the option that best matches your item's current condition</span>
+              <span>Choose the option that best matches condition</span>
               {productCondition && <span className="text-marix-teal font-semibold italic text-[9px]">{getSubTextDefinition()}</span>}
             </div>
           </div>
@@ -431,12 +416,8 @@ export default function CreateListing({ onProductCreated, onCancel }) {
               <input type="number" placeholder="e.g., 15000" value={basicInfo.price} onChange={(e) => setBasicInfo({ ...basicInfo, price: e.target.value })} className={inputStyles} />
             </div>
 
-            {/* 🔒 WHATSAPP INPUT: readOnly when cached */}
             <div className="flex flex-col gap-1">
-              <div className="flex justify-between items-center">
-                <label className="text-[11px] font-bold text-[#111111]">WhatsApp Number <span className="text-red-500">*</span></label>
-                {isWhatsappLocked && <span className="text-[9px] font-bold text-gray-400 italic">Locked</span>}
-              </div>
+              <label className="text-[11px] font-bold text-[#111111]">WhatsApp Number <span className="text-red-500">*</span></label>
               <input 
                 type="tel" 
                 placeholder="e.g., 2348012345678" 
@@ -448,12 +429,8 @@ export default function CreateListing({ onProductCreated, onCancel }) {
             </div>
           </div>
 
-          {/* 🔒 CAMPUS HUB LOCATION INPUT: readOnly when cached */}
           <div className="flex flex-col gap-1">
-            <div className="flex justify-between items-center">
-              <label className="text-[11px] font-bold text-[#111111]">Campus Hub Location <span className="text-red-500">*</span></label>
-              {isCampusLocked && <span className="text-[9px] font-bold text-gray-400 italic">Locked</span>}
-            </div>
+            <label className="text-[11px] font-bold text-[#111111]">Campus Hub Location <span className="text-red-500">*</span></label>
             <div className="relative w-full">
               <input 
                 type="text" 
@@ -471,12 +448,22 @@ export default function CreateListing({ onProductCreated, onCancel }) {
 
           <div className="flex flex-col gap-1">
             <label className="text-[11px] font-bold text-[#111111]">Product Description <span className="text-red-500">*</span></label>
-            <textarea placeholder="e.g., Vintage print, high-quality material. Delivery at ABSU." maxLength={500} rows={3} value={basicInfo.productDescription} onChange={(e) => setBasicInfo({ ...basicInfo, productDescription: e.target.value })} className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:border-marix-teal resize-none text-[#111111] font-medium" />
+            <textarea placeholder="e.g., Vintage print, high-quality material. Delivery at ABSU." maxLength={500} rows={3} value={basicInfo.productDescription} onChange={(e) => setBasicInfo({ ...basicInfo, productDescription: e.target.value })} className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-base md:text-sm focus:outline-none focus:border-marix-teal resize-none text-[#111111] font-medium" />
           </div>
 
-          <button type="button" onClick={() => setActiveStep(2)} className="w-full mt-1 bg-marix-brown text-white font-bold py-2 rounded-xl text-xs shadow-sm hover:opacity-95 transition-opacity cursor-pointer text-center focus:outline-none">
-            Continue to Variants →
-          </button>
+          {/* 🚀 HYPER-CLEAN RESET EXECUTION (Zero hover rules, zero focus rings) */}
+          <div className="flex flex-col gap-2.5 mt-3 select-none">
+            <button type="button" onClick={() => setActiveStep(2)} className="w-full bg-marix-brown text-white font-bold py-3 rounded-xl text-xs shadow-sm focus:outline-none text-center">
+              Continue to Variants →
+            </button>
+            <button
+              type="button"
+              onClick={handleClearCacheAndReset}
+              className="text-[11px] font-bold text-gray-400 bg-gray-50 py-2.5 rounded-xl text-center border border-gray-100 outline-none focus:outline-none active:outline-none"
+            >
+              Reset Cached Shop Fields
+            </button>
+          </div>
         </div>
       )}
 
@@ -497,12 +484,12 @@ export default function CreateListing({ onProductCreated, onCancel }) {
                 {availableSizes.map((size, index) => (
                   <div key={index} className="flex items-center gap-1 bg-gray-50 border border-gray-100 rounded-lg px-2 py-1 text-[10px] font-bold text-[#111111]">
                     <span>{size}</span>
-                    <button type="button" onClick={() => handleRemoveSize(size)} className="text-gray-400 hover:text-red-500 ml-0.5 font-normal text-[10px] focus:outline-none">✕</button>
+                    <button type="button" onClick={() => handleRemoveSize(size)} className="text-gray-400 ml-0.5 font-normal text-[10px] focus:outline-none">✕</button>
                   </div>
                 ))}
                 <div className="flex items-center gap-1 max-w-[180px]">
-                  <input type="text" placeholder={labels.specPlaceholder} value={sizeInput} onChange={(e) => setSizeInput(e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none text-[#111111]" />
-                  <button type="button" onClick={handleAddSize} className="px-2 py-1 bg-gray-50 hover:bg-gray-100 text-[11px] font-bold rounded-lg border border-gray-200 focus:outline-none">+</button>
+                  <input type="text" placeholder={labels.specPlaceholder} value={sizeInput} onChange={(e) => setSizeInput(e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1 text-base md:text-sm focus:outline-none text-[#111111]" />
+                  <button type="button" onClick={handleAddSize} className="px-2 py-1 bg-gray-50 text-[11px] font-bold rounded-lg border border-gray-200 focus:outline-none">+</button>
                 </div>
               </div>
             </div>
@@ -517,19 +504,19 @@ export default function CreateListing({ onProductCreated, onCancel }) {
                 {colorVariants.map((variant, index) => (
                   <div key={index} className="border border-gray-100 p-2.5 rounded-xl bg-gray-50/30 flex flex-col gap-2.5 relative group">
                     {colorVariants.length > 1 && (
-                      <button type="button" onClick={() => handleRemoveColorVariant(index)} className="absolute top-2.5 right-2.5 text-gray-400 hover:text-red-500 transition-colors focus:outline-none flex items-center justify-center">
+                      <button type="button" onClick={() => handleRemoveColorVariant(index)} className="absolute top-2.5 right-2.5 text-gray-400 focus:outline-none flex items-center justify-center">
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                       </button>
                     )}
 
                     <div className="flex flex-col gap-1 max-w-xs">
                       <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">{labels.colorLabel}</label>
-                      <input type="text" placeholder={labels.colorPlaceholder} value={variant.colorName} onChange={(e) => handleColorChange(index, e.target.value)} className="w-full bg-white border border-gray-200 rounded-xl px-2.5 py-1 text-xs focus:outline-none focus:border-marix-teal text-[#111111]" />
+                      <input type="text" placeholder={labels.colorPlaceholder} value={variant.colorName} onChange={(e) => handleColorChange(index, e.target.value)} className="w-full bg-white border border-gray-200 rounded-xl px-2.5 py-1 text-base md:text-sm focus:outline-none text-[#111111]" />
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
                       <div className="sm:col-span-4">
-                        <label className="border border-dashed border-gray-200 bg-white hover:border-gray-300 rounded-xl p-2 flex flex-col items-center justify-center cursor-pointer transition-colors select-none text-center min-h-[64px]">
+                        <label className="border border-dashed border-gray-200 bg-white rounded-xl p-2 flex flex-col items-center justify-center cursor-pointer select-none text-center min-h-[64px]">
                           {variant.imageUrl ? (
                             <div className="w-full h-10 rounded-lg overflow-hidden relative">
                               <img src={variant.imageUrl} alt="Asset container variant" className="w-full h-full object-cover" />
@@ -550,13 +537,13 @@ export default function CreateListing({ onProductCreated, onCancel }) {
                             <svg className="w-3 h-3 text-green-600 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.5 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
                             <div>
                               <h5 className="text-[10px] font-bold text-green-800">Main product image</h5>
-                              <p className="text-[9px] text-green-700/70 font-medium">This will be used as your marketplace main card preview template.</p>
+                              <p className="text-[9px] text-green-700/70 font-medium">Marketplace card thumbnail banner.</p>
                             </div>
                           </div>
                         ) : (
                           <div 
                             onClick={() => handleSetMainImage(index)}
-                            className="border border-dashed border-gray-200 bg-white px-2.5 py-1.5 rounded-xl text-left flex items-center gap-1 cursor-pointer hover:border-gray-300 select-none transition-colors text-[10px] text-gray-400 font-bold"
+                            className="border border-dashed border-gray-200 bg-white px-2.5 py-1.5 rounded-xl text-left flex items-center gap-1 cursor-pointer select-none text-[10px] text-gray-400 font-bold"
                           >
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.364-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
                             <span>Set as main thumbnail</span>
@@ -567,7 +554,7 @@ export default function CreateListing({ onProductCreated, onCancel }) {
                   </div>
                 ))}
 
-                <button type="button" onClick={handleAddColorVariant} className="w-full border border-dashed border-marix-teal/30 text-marix-teal py-2 rounded-xl text-[11px] font-bold text-center bg-marix-cream/10 hover:bg-marix-cream/30 transition-all focus:outline-none flex items-center justify-center gap-1">
+                <button type="button" onClick={handleAddColorVariant} className="w-full border border-dashed border-marix-teal/30 text-marix-teal py-2 rounded-xl text-[11px] font-bold text-center bg-marix-cream/10 focus:outline-none flex items-center justify-center gap-1">
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
                   <span>Create New Option Variant Entry</span>
                 </button>
@@ -575,13 +562,23 @@ export default function CreateListing({ onProductCreated, onCancel }) {
             </div>
           </div>
           
-          <button 
-            type="button" 
-            onClick={() => setActiveStep(1)} 
-            className="text-[11px] font-bold text-gray-400 hover:text-marix-brown self-start transition-colors select-none focus:outline-none"
-          >
-            ← Back to Basic Details
-          </button>
+          {/* STEP 2 BOTTOM NAVIGATION */}
+          <div className="flex flex-col gap-2.5 mt-2 select-none">
+            <button 
+              type="button" 
+              onClick={() => setActiveStep(1)} 
+              className="text-[11px] font-bold text-gray-400 self-center py-1 focus:outline-none"
+            >
+              ← Back to Basic Details
+            </button>
+            <button
+              type="button"
+              onClick={handleClearCacheAndReset}
+              className="text-[11px] font-bold text-gray-400 bg-gray-50 py-2.5 rounded-xl text-center border border-gray-100 outline-none focus:outline-none active:outline-none"
+            >
+              Reset Cached Shop Fields
+            </button>
+          </div>
         </div>
       )}
 

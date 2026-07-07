@@ -285,7 +285,7 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
       </div>
 
       {/* Footer System Baseline */}
-      <footer className="w-full text-center text-[11px] text-gray-400 font-bold py-6 border-t border-gray-100 bg-white max-w-6xl mx-auto mt-auto shrink-0">
+      <footer className="w-full text-center text-[11px] text-gray-400 font-bold py-6 border-t border-gray-100 max-w-6xl mx-auto mt-auto shrink-0">
         &copy; {new Date().getFullYear()} <span className="text-marix-teal font-bold">Marix</span>. Built for Campus Commerce.
       </footer>
 
