@@ -292,7 +292,7 @@ export default function CreateListing({ onProductCreated, onCancel }) {
       {(isLoading || isCompressing) && (
         <div className="absolute inset-0 bg-white/80 backdrop-blur-[1px] z-50 flex flex-col items-center justify-center gap-3">
           <div className="w-8 h-8 border-3 border-marix-teal/20 border-t-marix-teal rounded-full animate-spin"></div>
-          <p className="text-[11px] font-bold tracking-wide text-gray-500">
+          <p className="text-xs font-bold tracking-wide text-gray-500">
             {isCompressing ? "Optimizing images..." : "Uploading listing..."}
           </p>
         </div>
@@ -315,7 +315,8 @@ export default function CreateListing({ onProductCreated, onCancel }) {
           <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
         
-        <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400">Create a Listing</h2>
+        {/* 🎨 Figma Header Scale Update */}
+        <h2 className="text-sm font-bold uppercase tracking-wide text-gray-400">Create a Listing</h2>
         
         <button 
           type="button"
@@ -332,21 +333,21 @@ export default function CreateListing({ onProductCreated, onCancel }) {
       </div>
 
       {/* Process Index Breadcrumbs Bar */}
-      <div className="flex items-center justify-center gap-3 text-[11px] font-bold text-gray-400 mb-5 select-none">
+      <div className="flex items-center justify-center gap-3 text-xs font-bold text-gray-400 mb-5 select-none">
         <div className={`flex items-center gap-1.5 cursor-pointer ${activeStep === 1 ? 'text-marix-teal' : 'text-gray-400'}`} onClick={() => setActiveStep(1)}>
-          <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] ${activeStep === 1 ? 'bg-marix-teal text-white' : 'bg-gray-100 text-gray-500'}`}>1</span>
+          <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${activeStep === 1 ? 'bg-marix-teal text-white' : 'bg-gray-100 text-gray-500'}`}>1</span>
           <span>Basic Details</span>
         </div>
         <span className="h-px w-6 bg-gray-100"></span>
         <div className={`flex items-center gap-1.5 cursor-pointer ${activeStep === 2 ? 'text-marix-teal' : 'text-gray-400'}`} onClick={() => setActiveStep(2)}>
-          <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] ${activeStep === 2 ? 'bg-marix-teal text-white' : 'bg-gray-100 text-gray-500'}`}>2</span>
+          <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${activeStep === 2 ? 'bg-marix-teal text-white' : 'bg-gray-100 text-gray-500'}`}>2</span>
           <span>Variants</span>
         </div>
       </div>
 
       {/* STEP 1 SECTION: BASIC INFORMATION */}
       {activeStep === 1 && (
-        <div className="flex flex-col gap-3.5 animate-fadeIn">
+        <div className="flex flex-col gap-4 animate-fadeIn">
           <div className="flex gap-2 items-center mb-0.5 select-none">
             <div className="p-1.5 bg-marix-cream/80 text-marix-teal rounded-lg flex items-center justify-center shrink-0">
               <svg className="w-4 h-4 text-marix-teal" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -356,15 +357,16 @@ export default function CreateListing({ onProductCreated, onCancel }) {
             </div>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-bold text-[#111111]">Product Title <span className="text-red-500">*</span></label>
+          {/* 🎨 Labels updated to text-xs */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-bold text-[#111111]">Product Title <span className="text-red-500">*</span></label>
             <input type="text" placeholder="e.g., Louis Vuitton Slim-Fit Shirt" maxLength={100} value={basicInfo.productTitle} onChange={(e) => setBasicInfo({ ...basicInfo, productTitle: e.target.value })} className={inputStyles} />
           </div>
 
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1.5">
             <div className="flex justify-between items-center">
-              <label className="text-[11px] font-bold text-[#111111]">Shop Name <span className="text-red-500">*</span></label>
-              {isShopNameLocked && <span className="text-[9px] font-bold text-gray-400 italic">Locked (Reset below)</span>}
+              <label className="text-xs font-bold text-[#111111]">Shop Name <span className="text-red-500">*</span></label>
+              {isShopNameLocked && <span className="text-[10px] font-bold text-gray-400 italic">Locked (Reset below)</span>}
             </div>
             <input 
               type="text" 
@@ -376,8 +378,8 @@ export default function CreateListing({ onProductCreated, onCancel }) {
             />
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-bold text-[#111111]">Category <span className="text-red-500">*</span></label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-bold text-[#111111]">Category <span className="text-red-500">*</span></label>
             <div className="relative w-full">
               <select value={basicInfo.category} onChange={(e) => setBasicInfo({ ...basicInfo, category: e.target.value })} className={selectStyles}>
                 <option value="" disabled hidden>Select Category</option>
@@ -389,8 +391,8 @@ export default function CreateListing({ onProductCreated, onCancel }) {
             </div>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-bold text-[#111111]">Product Condition <span className="text-gray-400 font-medium">(Optional)</span></label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-bold text-[#111111]">Product Condition <span className="text-gray-400 font-semibold">(Optional)</span></label>
             <div className="relative w-full">
               <select value={productCondition} onChange={(e) => setProductCondition(e.target.value)} className={selectStyles}>
                 <option value="">Select condition...</option>
@@ -404,20 +406,21 @@ export default function CreateListing({ onProductCreated, onCancel }) {
                 </svg>
               </div>
             </div>
-            <div className="text-[10px] font-medium tracking-tight text-gray-400 flex flex-wrap items-center gap-x-1 select-none mt-0.5">
+            {/* 🎨 Helper text updated to text-[11px] */}
+            <div className="text-[11px] font-medium tracking-tight text-gray-400 flex flex-wrap items-center gap-x-1 select-none mt-0.5">
               <span>Choose the option that best matches condition</span>
-              {productCondition && <span className="text-marix-teal font-semibold italic text-[9px]">{getSubTextDefinition()}</span>}
+              {productCondition && <span className="text-marix-teal font-semibold italic text-[10px]">{getSubTextDefinition()}</span>}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-bold text-[#111111]">Price (₦) <span className="text-red-500">*</span></label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-[#111111]">Price (₦) <span className="text-red-500">*</span></label>
               <input type="number" placeholder="e.g., 15000" value={basicInfo.price} onChange={(e) => setBasicInfo({ ...basicInfo, price: e.target.value })} className={inputStyles} />
             </div>
 
-            <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-bold text-[#111111]">WhatsApp Number <span className="text-red-500">*</span></label>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-[#111111]">WhatsApp Number <span className="text-red-500">*</span></label>
               <input 
                 type="tel" 
                 placeholder="e.g., 2348012345678" 
@@ -429,8 +432,8 @@ export default function CreateListing({ onProductCreated, onCancel }) {
             </div>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-bold text-[#111111]">Campus Hub Location <span className="text-red-500">*</span></label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-bold text-[#111111]">Campus Hub Location <span className="text-red-500">*</span></label>
             <div className="relative w-full">
               <input 
                 type="text" 
@@ -446,12 +449,12 @@ export default function CreateListing({ onProductCreated, onCancel }) {
             </div>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-bold text-[#111111]">Product Description <span className="text-red-500">*</span></label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-bold text-[#111111]">Product Description <span className="text-red-500">*</span></label>
             <textarea placeholder="e.g., Vintage print, high-quality material. Delivery at ABSU." maxLength={500} rows={3} value={basicInfo.productDescription} onChange={(e) => setBasicInfo({ ...basicInfo, productDescription: e.target.value })} className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-base md:text-sm focus:outline-none focus:border-marix-teal resize-none text-[#111111] font-medium" />
           </div>
 
-          {/* 🚀 HYPER-CLEAN RESET EXECUTION (Zero hover rules, zero focus rings) */}
+          {/* 🚀 FIXED RESET EXECUTION */}
           <div className="flex flex-col gap-2.5 mt-3 select-none">
             <button type="button" onClick={() => setActiveStep(2)} className="w-full bg-marix-brown text-white font-bold py-3 rounded-xl text-xs shadow-sm focus:outline-none text-center">
               Continue to Variants →
@@ -469,7 +472,7 @@ export default function CreateListing({ onProductCreated, onCancel }) {
 
       {/* STEP 2 SECTION: VARIANTS */}
       {activeStep === 2 && (
-        <div className="flex flex-col gap-3.5 animate-fadeIn">
+        <div className="flex flex-col gap-4 animate-fadeIn">
           <div className="bg-white border border-gray-100 rounded-xl p-3 md:p-4 shadow-sm">
             <div className="flex gap-2 items-center mb-4 select-none">
               <div className="p-1.5 bg-marix-cream/80 text-marix-teal rounded-lg flex items-center justify-center">
@@ -479,17 +482,17 @@ export default function CreateListing({ onProductCreated, onCancel }) {
             </div>
 
             <div className="mb-4">
-              <h4 className="text-[11px] font-bold text-gray-500 mb-1.5">A. {labels.specLabel} <span className="text-gray-400 font-medium">(Optional)</span></h4>
+              <h4 className="text-xs font-bold text-gray-500 mb-1.5">A. {labels.specLabel} <span className="text-gray-400 font-semibold">(Optional)</span></h4>
               <div className="flex flex-wrap gap-1.5 items-center">
                 {availableSizes.map((size, index) => (
-                  <div key={index} className="flex items-center gap-1 bg-gray-50 border border-gray-100 rounded-lg px-2 py-1 text-[10px] font-bold text-[#111111]">
+                  <div key={index} className="flex items-center gap-1 bg-gray-50 border border-gray-100 rounded-lg px-2 py-1 text-[11px] font-bold text-[#111111]">
                     <span>{size}</span>
-                    <button type="button" onClick={() => handleRemoveSize(size)} className="text-gray-400 ml-0.5 font-normal text-[10px] focus:outline-none">✕</button>
+                    <button type="button" onClick={() => handleRemoveSize(size)} className="text-gray-400 ml-0.5 font-normal text-[11px] focus:outline-none">✕</button>
                   </div>
                 ))}
                 <div className="flex items-center gap-1 max-w-[180px]">
                   <input type="text" placeholder={labels.specPlaceholder} value={sizeInput} onChange={(e) => setSizeInput(e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1 text-base md:text-sm focus:outline-none text-[#111111]" />
-                  <button type="button" onClick={handleAddSize} className="px-2 py-1 bg-gray-50 text-[11px] font-bold rounded-lg border border-gray-200 focus:outline-none">+</button>
+                  <button type="button" onClick={handleAddSize} className="px-2 py-1 bg-gray-50 text-xs font-bold rounded-lg border border-gray-200 focus:outline-none">+</button>
                 </div>
               </div>
             </div>
@@ -497,8 +500,8 @@ export default function CreateListing({ onProductCreated, onCancel }) {
             <hr className="border-gray-50 my-3" />
 
             <div>
-              <h4 className="text-[11px] font-bold text-gray-500 mb-0.5">B. {labels.colorLabel} <span className="text-red-500">*</span></h4>
-              <p className="text-[9px] text-gray-400 font-medium mb-2.5">Add options and their corresponding presentation images below.</p>
+              <h4 className="text-xs font-bold text-gray-500 mb-0.5">B. {labels.colorLabel} <span className="text-red-500">*</span></h4>
+              <p className="text-[11px] text-gray-400 font-medium mb-2.5">Add options and their corresponding presentation images below.</p>
 
               <div className="flex flex-col gap-3">
                 {colorVariants.map((variant, index) => (
@@ -510,7 +513,7 @@ export default function CreateListing({ onProductCreated, onCancel }) {
                     )}
 
                     <div className="flex flex-col gap-1 max-w-xs">
-                      <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">{labels.colorLabel}</label>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{labels.colorLabel}</label>
                       <input type="text" placeholder={labels.colorPlaceholder} value={variant.colorName} onChange={(e) => handleColorChange(index, e.target.value)} className="w-full bg-white border border-gray-200 rounded-xl px-2.5 py-1 text-base md:text-sm focus:outline-none text-[#111111]" />
                     </div>
 
@@ -524,7 +527,7 @@ export default function CreateListing({ onProductCreated, onCancel }) {
                           ) : (
                             <>
                               <svg className="w-4 h-4 text-gray-400 mb-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                              <span className="text-[10px] font-bold text-gray-400">Upload Image</span>
+                              <span className="text-[11px] font-bold text-gray-400">Upload Image</span>
                             </>
                           )}
                           <input type="file" accept="image/*" onChange={(e) => handleRealImageCompressionUpload(index, e)} className="hidden" />
@@ -536,14 +539,14 @@ export default function CreateListing({ onProductCreated, onCancel }) {
                           <div className="bg-green-50/60 border border-green-100 p-2 rounded-xl text-left flex items-start gap-1.5 select-none animate-fadeIn">
                             <svg className="w-3 h-3 text-green-600 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.5 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
                             <div>
-                              <h5 className="text-[10px] font-bold text-green-800">Main product image</h5>
-                              <p className="text-[9px] text-green-700/70 font-medium">Marketplace card thumbnail banner.</p>
+                              <h5 className="text-[11px] font-bold text-green-800">Main product image</h5>
+                              <p className="text-[10px] text-green-700/70 font-medium">Marketplace card thumbnail banner.</p>
                             </div>
                           </div>
                         ) : (
                           <div 
                             onClick={() => handleSetMainImage(index)}
-                            className="border border-dashed border-gray-200 bg-white px-2.5 py-1.5 rounded-xl text-left flex items-center gap-1 cursor-pointer select-none text-[10px] text-gray-400 font-bold"
+                            className="border border-dashed border-gray-200 bg-white px-2.5 py-1.5 rounded-xl text-left flex items-center gap-1 cursor-pointer select-none text-[11px] text-gray-400 font-bold"
                           >
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.364-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
                             <span>Set as main thumbnail</span>
@@ -554,7 +557,7 @@ export default function CreateListing({ onProductCreated, onCancel }) {
                   </div>
                 ))}
 
-                <button type="button" onClick={handleAddColorVariant} className="w-full border border-dashed border-marix-teal/30 text-marix-teal py-2 rounded-xl text-[11px] font-bold text-center bg-marix-cream/10 focus:outline-none flex items-center justify-center gap-1">
+                <button type="button" onClick={handleAddColorVariant} className="w-full border border-dashed border-marix-teal/30 text-marix-teal py-2 rounded-xl text-xs font-bold text-center bg-marix-cream/10 focus:outline-none flex items-center justify-center gap-1">
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
                   <span>Create New Option Variant Entry</span>
                 </button>
@@ -567,7 +570,7 @@ export default function CreateListing({ onProductCreated, onCancel }) {
             <button 
               type="button" 
               onClick={() => setActiveStep(1)} 
-              className="text-[11px] font-bold text-gray-400 self-center py-1 focus:outline-none"
+              className="text-xs font-bold text-gray-400 self-center py-1 focus:outline-none"
             >
               ← Back to Basic Details
             </button>

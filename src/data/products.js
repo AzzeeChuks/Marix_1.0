@@ -5,7 +5,7 @@ export const initialProducts = [
     id: 1,
     productTitle: "Vintage Leather Jacket",
     shopName: "ThriftByFaith",
-    price: "₦18,500",
+    price: "₦11,500",
     category: "Fashion",
     campus: "Absu, Uturu",
     description: "Premium grade-A vintage leather jacket. Perfect condition with zero tears or blemishes. Soft inner lining.",
@@ -156,7 +156,7 @@ export const initialProducts = [
   {
     id: 8,
     productTitle: "Acoustic Guitar",
-    shopName: "TechCampus_Hub",
+    shopName: "K-dot",
     price: "₦35,000",
     category: "Gadgets",
     campus: "UniUyo, Uyo",
