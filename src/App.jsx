@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AuthForm from './components/RegisterForm';
 import CreateListing from './components/CreateListing';
 import Homepage from './pages/Homepage';
+import ProductListings from './pages/ProductListings'; 
 import About from './pages/About';
 import Faq from './pages/Faq';
 import Privacy from './pages/Privacy';
@@ -17,8 +18,8 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('browse');
   const [userUploads, setUserUploads] = useState([]);
   const [userName, setUserName] = useState('');
+  const [activeSearchTerm, setActiveSearchTerm] = useState('');
 
-  // 🚀 PERSISTENT CLIENT STORAGE ENGINE
   const [savedProducts, setSavedProducts] = useState(() => {
     const saved = localStorage.getItem('marix_saved_items');
     return saved ? JSON.parse(saved) : [];
@@ -28,12 +29,23 @@ export default function App() {
     localStorage.setItem('marix_saved_items', JSON.stringify(savedProducts));
   }, [savedProducts]);
 
+  const handleToggleSaveProduct = (product) => {
+    setSavedProducts((prevSaved) => {
+      const isAlreadySaved = prevSaved.some((p) => p.id === product.id);
+      if (isAlreadySaved) {
+        return prevSaved.filter((p) => p.id !== product.id);
+      } else {
+        return [product, ...prevSaved];
+      }
+    });
+  };
+
   const handleLoginSuccess = (firstName) => {
     setUserName(firstName || 'Student');
     setIsLoggedIn(true);
     setCurrentView('home');
     setActiveTab('browse');
-    window.scrollTo(0, 0); // 🎯 YOUR HOMEPAGE RESET: Forces page back to the top on successful login!
+    setActiveSearchTerm('');
   };
 
   const handleSignOut = () => {
@@ -41,154 +53,153 @@ export default function App() {
     setIsLoggedIn(false);
     setCurrentView('home');
     setActiveTab('browse');
-    window.scrollTo(0, 0); // 🎯 YOUR HOMEPAGE RESET: Forces page back to the top when logging out!
+    setActiveSearchTerm('');
   };
 
   const handleNewProduct = (newCard) => {
     setProducts([newCard, ...products]);
     setUserUploads(prev => [newCard, ...prev]);
     setShowCreateModal(false); 
-    
-    // Smooth transition straight to the user uploads view
     setCurrentView('home');
     setActiveTab('uploads');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setActiveSearchTerm('');
   };
 
-  // 🚀 DIRECT ROUTING INJECTORS
+  const routeToExploreView = () => {
+    setCurrentView('explore');
+  };
+
   const routeToSavedTab = () => {
     setCurrentView('home');
     setActiveTab('saved-mobile');
-    window.scrollTo({ top: 0 });
   };
 
   const routeToUploadsTab = () => {
     setCurrentView('home');
     setActiveTab('uploads');
-    window.scrollTo({ top: 0 });
   };
 
   const routeToHomeFeed = () => {
     setCurrentView('home');
     setActiveTab('browse');
-    window.scrollTo({ top: 0 });
   };
 
-  // ⚡ FIXED SCROLL INJECTORS FOR AUTH FORMS
   const routeToLoginView = () => {
-    window.scrollTo(0, 0); // 🎯 Snaps mobile window to the top instantly before switching
     setCurrentView('auth-login');
   };
 
   const routeToSignupView = () => {
-    window.scrollTo(0, 0); // 🎯 Snaps mobile window to the top instantly before switching
     setCurrentView('auth-signup');
   };
 
+  const handleStaticViewSwitch = (targetView) => {
+    setCurrentView(targetView);
+  };
+
   return (
-    <div className="min-h-screen bg-marix-cream text-[#111111] flex flex-col relative selection:bg-marix-teal/20">
+    <div className="fixed inset-0 bg-marix-cream text-[#111111] flex flex-col overflow-hidden selection:bg-marix-teal/20">
       
-      <main className="w-full flex-1 flex flex-col">
-        {currentView === 'home' && (
+      <div className="w-full flex-1 flex flex-col relative overflow-hidden">
+        
+        {/* HOMEPAGE VIEW FRAME */}
+        <div className={`absolute inset-0 flex flex-col ${currentView === 'home' ? 'visible pointer-events-auto' : 'invisible pointer-events-none'}`}>
           <Homepage 
             products={products} 
             isLoggedIn={isLoggedIn} 
             setIsLoggedIn={setIsLoggedIn}
             userName={userName}
-            onSignOut={handleSignOut} // 🎯 FIXED: Put back your signout prop!
+            onSignOut={handleSignOut} 
             showCreateModal={showCreateModal}
             setShowCreateModal={setShowCreateModal}
-            activeTab={activeTab}         
-            setActiveTab={setActiveTab}   
+            activeTab={activeTab}        
+            setActiveTab={(targetTab) => {
+              setActiveTab(targetTab);
+            }}  
             userUploads={userUploads}
             savedProducts={savedProducts}
-            setSavedProducts={setSavedProducts}     
+            setSavedProducts={handleToggleSaveProduct}     
             onNavigateToLogin={routeToLoginView}   
             onNavigateToSignup={routeToSignupView} 
-            onNavigateToView={(targetView) => {
-              if (targetView === 'home') {
-                routeToHomeFeed();
-              } else {
-                window.scrollTo(0, 0); 
-                setCurrentView(targetView);
-              }
-            }}
+            onNavigateToExplore={routeToExploreView}
+            activeSearchTerm={activeSearchTerm}
+            setActiveSearchTerm={setActiveSearchTerm}
+            onNavigateToView={handleStaticViewSwitch}
           />
-        )}
+        </div>
         
-        {(currentView === 'auth-login' || currentView === 'auth-signup') && (
-          <AuthForm 
-            initialMode={currentView === 'auth-login' ? 'login' : 'signup'}
-            onSuccessLogin={handleLoginSuccess}
-            onCancel={() => {
-              window.scrollTo(0, 0);
-              setCurrentView('home');
-            }}
+        {/* EXPLORE VIEW FRAME */}
+        <div className={`absolute inset-0 flex flex-col ${currentView === 'explore' ? 'visible pointer-events-auto' : 'invisible pointer-events-none'}`}>
+          <ProductListings 
+            isLoggedIn={isLoggedIn}
+            setIsLoggedIn={setIsLoggedIn}
+            userName={userName}
+            onNavigateHome={routeToHomeFeed}
+            savedProducts={savedProducts}
+            setSavedProducts={handleToggleSaveProduct}
+            showCreateModal={showCreateModal}
+            setShowCreateModal={setShowCreateModal}
+            onNavigateToLogin={routeToLoginView}
+            onNavigateToSignup={routeToSignupView}
+            onNavigateToUploadsTab={routeToUploadsTab}
+            onNavigateToSavedTab={routeToSavedTab}
+            activeSearchTerm={activeSearchTerm}
+            setActiveSearchTerm={setActiveSearchTerm}
           />
+        </div>
+        
+        {/* AUTH FRAME */}
+        {(currentView === 'auth-login' || currentView === 'auth-signup') && (
+          <div className="absolute inset-0 overflow-y-auto bg-marix-cream z-50">
+            <AuthForm 
+              initialMode={currentView === 'auth-login' ? 'login' : 'signup'}
+              onSuccessLogin={handleLoginSuccess}
+              onCancel={routeToHomeFeed}
+            />
+          </div>
         )}
 
-        {/* 🚀 SHARED SYNCHRONIZED APP PORTALS */}
-        {currentView === 'about' && (
-          <About 
-            onNavigateHome={routeToHomeFeed} 
-            isLoggedIn={isLoggedIn} 
-            setIsLoggedIn={setIsLoggedIn}
-            userName={userName}
-            onNavigateToLogin={routeToLoginView} 
-            onNavigateToSignup={routeToSignupView} 
-            savedCount={savedProducts.length}
-            onNavigateToSaved={routeToSavedTab}
-            onNavigateToUploads={routeToUploadsTab}
-            onSignOut={handleSignOut}
-            setShowCreateModal={setShowCreateModal}
-          />
+        {/* STATIC PORTAL VIEWS WITH INDEPENDENT OVERFLOW WRAPPERS */}
+        {['about', 'faq', 'privacy', 'terms'].includes(currentView) && (
+          <div className="absolute inset-0 overflow-y-auto bg-marix-cream z-40 text-left">
+            {currentView === 'about' && (
+              <About 
+                onNavigateHome={routeToHomeFeed} isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} userName={userName}
+                onNavigateToLogin={routeToLoginView} onNavigateToSignup={routeToSignupView} savedCount={savedProducts.length}
+                onNavigateToSaved={routeToSavedTab} onNavigateToUploads={routeToUploadsTab} onSignOut={handleSignOut}
+                setShowCreateModal={setShowCreateModal} onNavigateToExplore={routeToExploreView} activeSearchTerm={activeSearchTerm}
+                setActiveSearchTerm={setActiveSearchTerm} onNavigateToView={handleStaticViewSwitch}
+              />
+            )}
+            {currentView === 'faq' && (
+              <Faq 
+                onNavigateHome={routeToHomeFeed} isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} userName={userName}
+                onNavigateToLogin={routeToLoginView} onNavigateToSignup={routeToSignupView} savedCount={savedProducts.length}
+                onNavigateToSaved={routeToSavedTab} onNavigateToUploads={routeToUploadsTab} onSignOut={handleSignOut}
+                setShowCreateModal={setShowCreateModal} onNavigateToExplore={routeToExploreView} activeSearchTerm={activeSearchTerm}
+                setActiveSearchTerm={setActiveSearchTerm} onNavigateToView={handleStaticViewSwitch}
+              />
+            )}
+            {currentView === 'privacy' && (
+              <Privacy 
+                onNavigateHome={routeToHomeFeed} isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} userName={userName}
+                onNavigateToLogin={routeToLoginView} onNavigateToSignup={routeToSignupView} savedCount={savedProducts.length}
+                onNavigateToSaved={routeToSavedTab} onNavigateToUploads={routeToUploadsTab} onSignOut={handleSignOut}
+                setShowCreateModal={setShowCreateModal} onNavigateToExplore={routeToExploreView} activeSearchTerm={activeSearchTerm}
+                setActiveSearchTerm={setActiveSearchTerm} onNavigateToView={handleStaticViewSwitch}
+              />
+            )}
+            {currentView === 'terms' && (
+              <Terms 
+                onNavigateHome={routeToHomeFeed} isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} userName={userName}
+                onNavigateToLogin={routeToLoginView} onNavigateToSignup={routeToSignupView} savedCount={savedProducts.length}
+                onNavigateToSaved={routeToSavedTab} onNavigateToUploads={routeToUploadsTab} onSignOut={handleSignOut}
+                setShowCreateModal={setShowCreateModal} onNavigateToExplore={routeToExploreView} activeSearchTerm={activeSearchTerm}
+                setActiveSearchTerm={setActiveSearchTerm} onNavigateToView={handleStaticViewSwitch}
+              />
+            )}
+          </div>
         )}
-        {currentView === 'faq' && (
-          <Faq 
-            onNavigateHome={routeToHomeFeed} 
-            isLoggedIn={isLoggedIn} 
-            setIsLoggedIn={setIsLoggedIn}
-            userName={userName}
-            onNavigateToLogin={routeToLoginView} 
-            onNavigateToSignup={routeToSignupView} 
-            savedCount={savedProducts.length}
-            onNavigateToSaved={routeToSavedTab}
-            onNavigateToUploads={routeToUploadsTab}
-            onSignOut={handleSignOut}
-            setShowCreateModal={setShowCreateModal}
-          />
-        )}
-        {currentView === 'privacy' && (
-          <Privacy 
-            onNavigateHome={routeToHomeFeed} 
-            isLoggedIn={isLoggedIn} 
-            setIsLoggedIn={setIsLoggedIn}
-            userName={userName}
-            onNavigateToLogin={routeToLoginView} 
-            onNavigateToSignup={routeToSignupView} 
-            savedCount={savedProducts.length}
-            onNavigateToSaved={routeToSavedTab}
-            onNavigateToUploads={routeToUploadsTab}
-            onSignOut={handleSignOut}
-            setShowCreateModal={setShowCreateModal}
-          />
-        )}
-        {currentView === 'terms' && (
-          <Terms 
-            onNavigateHome={routeToHomeFeed} 
-            isLoggedIn={isLoggedIn} 
-            setIsLoggedIn={setIsLoggedIn}
-            userName={userName}
-            onNavigateToLogin={routeToLoginView} 
-            onNavigateToSignup={routeToSignupView} 
-            savedCount={savedProducts.length}
-            onNavigateToSaved={routeToSavedTab}
-            onNavigateToUploads={routeToUploadsTab}
-            onSignOut={handleSignOut}
-            setShowCreateModal={setShowCreateModal}
-          />
-        )}
-      </main>
+      </div>
 
       {showCreateModal && (
         <div className="fixed inset-0 z-50 bg-[#111111]/40 backdrop-blur-[4px] flex items-center justify-center p-4 md:p-6 select-none animate-fadeIn">
