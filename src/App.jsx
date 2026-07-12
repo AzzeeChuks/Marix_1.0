@@ -20,6 +20,10 @@ export default function App() {
   const [userName, setUserName] = useState('');
   const [activeSearchTerm, setActiveSearchTerm] = useState('');
 
+  // 🚀 HOME-TO-EXPLORE NAVIGATION ROUTING STATES
+  const [exploreViewMode, setExploreViewMode] = useState('All');
+  const [exploreCategoryFilter, setExploreCategoryFilter] = useState('All Categories');
+
   const [savedProducts, setSavedProducts] = useState(() => {
     const saved = localStorage.getItem('marix_saved_items');
     return saved ? JSON.parse(saved) : [];
@@ -65,7 +69,10 @@ export default function App() {
     setActiveSearchTerm('');
   };
 
-  const routeToExploreView = () => {
+  // 🚀 CONTEXTUAL NAVIGATION ROUTER HANDOFF ENGINE
+  const routeToExploreWithContext = (viewMode = 'All', category = 'All Categories') => {
+    setExploreViewMode(viewMode);
+    setExploreCategoryFilter(category);
     setCurrentView('explore');
   };
 
@@ -120,7 +127,7 @@ export default function App() {
             setSavedProducts={handleToggleSaveProduct}     
             onNavigateToLogin={routeToLoginView}   
             onNavigateToSignup={routeToSignupView} 
-            onNavigateToExplore={routeToExploreView}
+            onNavigateToExplore={routeToExploreWithContext} // 🚀 Updated to pass down parameters
             activeSearchTerm={activeSearchTerm}
             setActiveSearchTerm={setActiveSearchTerm}
             onNavigateToView={handleStaticViewSwitch}
@@ -144,6 +151,9 @@ export default function App() {
             onNavigateToSavedTab={routeToSavedTab}
             activeSearchTerm={activeSearchTerm}
             setActiveSearchTerm={setActiveSearchTerm}
+            viewMode={exploreViewMode} // 🚀 Track Mode prop
+            setViewMode={setExploreViewMode}
+            initialCategory={exploreCategoryFilter} // 🚀 Route Category prop
           />
         </div>
         
@@ -166,7 +176,7 @@ export default function App() {
                 onNavigateHome={routeToHomeFeed} isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} userName={userName}
                 onNavigateToLogin={routeToLoginView} onNavigateToSignup={routeToSignupView} savedCount={savedProducts.length}
                 onNavigateToSaved={routeToSavedTab} onNavigateToUploads={routeToUploadsTab} onSignOut={handleSignOut}
-                setShowCreateModal={setShowCreateModal} onNavigateToExplore={routeToExploreView} activeSearchTerm={activeSearchTerm}
+                setShowCreateModal={setShowCreateModal} onNavigateToExplore={() => routeToExploreWithContext('All', 'All Categories')} activeSearchTerm={activeSearchTerm}
                 setActiveSearchTerm={setActiveSearchTerm} onNavigateToView={handleStaticViewSwitch}
               />
             )}
@@ -175,7 +185,7 @@ export default function App() {
                 onNavigateHome={routeToHomeFeed} isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} userName={userName}
                 onNavigateToLogin={routeToLoginView} onNavigateToSignup={routeToSignupView} savedCount={savedProducts.length}
                 onNavigateToSaved={routeToSavedTab} onNavigateToUploads={routeToUploadsTab} onSignOut={handleSignOut}
-                setShowCreateModal={setShowCreateModal} onNavigateToExplore={routeToExploreView} activeSearchTerm={activeSearchTerm}
+                setShowCreateModal={setShowCreateModal} onNavigateToExplore={() => routeToExploreWithContext('All', 'All Categories')} activeSearchTerm={activeSearchTerm}
                 setActiveSearchTerm={setActiveSearchTerm} onNavigateToView={handleStaticViewSwitch}
               />
             )}
@@ -184,7 +194,7 @@ export default function App() {
                 onNavigateHome={routeToHomeFeed} isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} userName={userName}
                 onNavigateToLogin={routeToLoginView} onNavigateToSignup={routeToSignupView} savedCount={savedProducts.length}
                 onNavigateToSaved={routeToSavedTab} onNavigateToUploads={routeToUploadsTab} onSignOut={handleSignOut}
-                setShowCreateModal={setShowCreateModal} onNavigateToExplore={routeToExploreView} activeSearchTerm={activeSearchTerm}
+                setShowCreateModal={setShowCreateModal} onNavigateToExplore={() => routeToExploreWithContext('All', 'All Categories')} activeSearchTerm={activeSearchTerm}
                 setActiveSearchTerm={setActiveSearchTerm} onNavigateToView={handleStaticViewSwitch}
               />
             )}
@@ -193,7 +203,7 @@ export default function App() {
                 onNavigateHome={routeToHomeFeed} isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} userName={userName}
                 onNavigateToLogin={routeToLoginView} onNavigateToSignup={routeToSignupView} savedCount={savedProducts.length}
                 onNavigateToSaved={routeToSavedTab} onNavigateToUploads={routeToUploadsTab} onSignOut={handleSignOut}
-                setShowCreateModal={setShowCreateModal} onNavigateToExplore={routeToExploreView} activeSearchTerm={activeSearchTerm}
+                setShowCreateModal={setShowCreateModal} onNavigateToExplore={() => routeToExploreWithContext('All', 'All Categories')} activeSearchTerm={activeSearchTerm}
                 setActiveSearchTerm={setActiveSearchTerm} onNavigateToView={handleStaticViewSwitch}
               />
             )}

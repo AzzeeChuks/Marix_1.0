@@ -17,7 +17,7 @@ export default function Homepage({
   setSavedProducts,
   onNavigateToLogin, 
   onNavigateToSignup,
-  onNavigateToExplore,
+  onNavigateToExplore, 
   onNavigateToView,
   activeSearchTerm,
   setActiveSearchTerm
@@ -34,7 +34,7 @@ export default function Homepage({
     }
 
     if (newTab === 'explore') {
-      if (onNavigateToExplore) onNavigateToExplore();
+      if (onNavigateToExplore) onNavigateToExplore('All', 'All Categories');
       return;
     }
     
@@ -126,7 +126,7 @@ export default function Homepage({
 
   const defaultTrendingProducts = [
     { id: 't-1', productTitle: 'Nike Air Force 1 Retro', price: '₦28,500', shopName: 'KicksPlug', campus: 'FUTO, Owerri', colorVariants: [{ isMain: true, imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&q=80' }] },
-    { id: 't-2', productTitle: 'AirPods Pro 2nd Gen', price: '₦35,000', shopName: 'Apple Hub', campus: 'ABSU, Uturu', colorVariants: [{ isMain: true, imageUrl: 'https://images.unsplash.com/photo-1588449668365-d15e397f6787?w=500&q=80' }] },
+    { id: 't-2', productTitle: 'AirPods Pro 2nd Gen', price: '₦35,000', shopName: 'Apple Hub', campus: 'ABSU, Uturu', colorVariants: [{ isMain: true, imageUrl: 'https://images.unsplash.com/photo-1588449668365-d15e397f6787?w=300&q=80' }] },
     { id: 't-3', productTitle: 'Minimalist Leather Watch', price: '₦14,000', shopName: 'Chrono Studio', campus: 'IMSU, Owerri', colorVariants: [{ isMain: true, imageUrl: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=500&q=80' }] },
     { id: 't-4', productTitle: 'Victoria Secret Scented', price: '₦12,000', shopName: 'Glow Essence', campus: 'UniAbuja', colorVariants: [{ isMain: true, imageUrl: 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=500&q=80' }] },
     { id: 't-5', productTitle: 'Mechanical Keyboard RGB', price: '₦22,500', shopName: 'Tech Central', campus: 'FUTO, Owerri', colorVariants: [{ isMain: true, imageUrl: 'https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?w=500&q=80' }] },
@@ -166,7 +166,7 @@ export default function Homepage({
             onNavigateToSignup={onNavigateToSignup}
             activeSearchTerm={activeSearchTerm}
             setActiveSearchTerm={setActiveSearchTerm}
-            onNavigateToExplore={onNavigateToExplore}
+            onNavigateToExplore={() => onNavigateToExplore('All', 'All Categories')}
           />
 
           <div className="w-full pt-[4px] md:pt-[84px] flex-1 flex flex-col">
@@ -182,11 +182,11 @@ export default function Homepage({
                     <h1 className="text-4xl md:text-5xl font-black tracking-tight text-[#111111] w-full flex flex-wrap gap-x-2 gap-y-1 leading-[1.15] mb-1">
                       Discover. Connect. Trade with <span className="text-marix-teal">Students.</span>
                     </h1>
-                    <p className="text-xs md:text-sm text-gray-600 max-w-md leading-relaxed font-medium">
+                    <div className="text-xs md:text-sm text-gray-600 max-w-md leading-relaxed font-medium">
                       Find amazing products from trusted campus sellers. Chat directly on WhatsApp. It's that easy.
-                    </p>
+                    </div>
                     <div className="flex items-center gap-3 mt-1.5">
-                      <button onClick={onNavigateToExplore} className="bg-marix-brown text-white font-bold text-xs md:text-sm px-5 py-3 rounded-xl shadow-md hover:opacity-95 transition-opacity flex items-center gap-2 focus:outline-none">
+                      <button onClick={() => onNavigateToExplore('All', 'All Categories')} className="bg-marix-brown text-white font-bold text-xs md:text-sm px-5 py-3 rounded-xl shadow-md hover:opacity-95 transition-opacity flex items-center gap-2 focus:outline-none">
                         Explore Products <span>→</span>
                       </button>
                       <button onClick={() => isLoggedIn ? setShowCreateModal(true) : onNavigateToLogin()} className="bg-white border border-gray-200 text-[#111111] font-bold text-xs md:text-sm px-5 py-3 rounded-xl shadow-sm hover:bg-gray-50 transition-colors focus:outline-none">
@@ -276,7 +276,8 @@ export default function Homepage({
                 <section className="w-full max-w-[95%] mx-auto px-2 lg:px-4 py-6 text-left">
                   <div className="flex justify-between items-center w-full mb-5 select-none">
                     <h3 className="text-base md:text-lg font-black tracking-tight text-[#111111]">Featured Products</h3>
-                    <span className="text-[11px] font-bold text-gray-400 cursor-pointer" onClick={onNavigateToExplore}>See All</span>
+                    {/* 🚀 FIXED: Mobile hover state removed securely */}
+                    <span className="text-[11px] font-bold text-gray-400 cursor-pointer md:hover:text-marix-teal transition-colors" onClick={() => onNavigateToExplore('Featured', 'All Categories')}>See All</span>
                   </div>
                   <div className="flex overflow-x-auto min-[1025px]:grid min-[1025px]:grid-cols-6 gap-3.5 md:gap-5 pb-3 scrollbar-none snap-x snap-mandatory">
                     {featuredDeck.map((product) => {
@@ -295,7 +296,12 @@ export default function Homepage({
                   <h3 className="text-base md:text-lg font-black tracking-tight text-[#111111] mb-4 select-none">Explore by Category</h3>
                   <div className="grid grid-cols-4 min-[1025px]:grid-cols-8 gap-2.5 md:gap-3 select-none">
                     {categories.map((cat, i) => (
-                      <div key={i} onClick={onNavigateToExplore} className="bg-white p-3 rounded-xl border border-gray-200/60 text-center flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors shadow-sm active:scale-98 group">
+                      <div 
+                        key={i} 
+                        onClick={() => onNavigateToExplore('All', cat.name)} 
+                        className="bg-white p-3 rounded-xl border border-gray-200/60 text-center flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors shadow-sm active:scale-98 group md:hover:border-marix-teal/50"
+                      >
+                        {/* 🚀 FIXED: Background color and text stay perfectly constant on hover now */}
                         <div className="w-10 h-10 rounded-xl bg-marix-teal/10 text-marix-teal flex items-center justify-center text-xl">
                           <i className={`ph ${cat.iconClass} font-bold`}></i>
                         </div>
@@ -309,7 +315,8 @@ export default function Homepage({
                 <section className="w-full max-w-[95%] mx-auto px-2 lg:px-4 py-6 text-left pb-24 md:pb-12">
                   <div className="flex justify-between items-center w-full mb-5 select-none">
                     <h3 className="text-base md:text-lg font-black tracking-tight text-[#111111]">Trending This Week 🔥</h3>
-                    <span className="text-[11px] font-bold text-gray-400 cursor-pointer" onClick={onNavigateToExplore}>See All</span>
+                    {/* 🚀 FIXED: Mobile hover state removed safely */}
+                    <span className="text-[11px] font-bold text-gray-400 cursor-pointer md:hover:text-marix-teal transition-colors" onClick={() => onNavigateToExplore('Trending', 'All Categories')}>See All</span>
                   </div>
                   <div className="flex overflow-x-auto min-[1025px]:grid min-[1025px]:grid-cols-6 gap-3.5 md:gap-5 pb-3 scrollbar-none snap-x snap-mandatory">
                     {trendingDeck.map((product) => {
@@ -389,7 +396,7 @@ export default function Homepage({
                   <h4 className="text-xs font-black tracking-wider text-gray-400 uppercase">Explore</h4>
                   <ul className="flex flex-col gap-2 text-xs font-bold text-gray-600">
                     <li className="hover:text-marix-teal cursor-pointer transition-colors" onClick={() => handleTabChange('browse')}>Products</li>
-                    <li className="hover:text-marix-teal cursor-pointer transition-colors" onClick={onNavigateToExplore}>Categories</li>
+                    <li className="hover:text-marix-teal cursor-pointer transition-colors" onClick={() => onNavigateToExplore('All', 'All Categories')}>Categories</li>
                     <li className="hover:text-marix-teal cursor-pointer transition-colors" onClick={() => onNavigateToView('about')}>How it Works</li>
                   </ul>
                 </div>
@@ -436,7 +443,7 @@ export default function Homepage({
           <button onClick={() => handleTabChange('browse')} className={`flex flex-col items-center gap-0.5 py-1 focus:outline-none ${activeTab === 'browse' ? 'text-marix-teal' : 'text-gray-400'}`}>
             <i className="ph ph-house text-xl"></i><span className="text-[10px] font-bold">Home</span>
           </button>
-          <button onClick={onNavigateToExplore} className="flex flex-col items-center gap-0.5 py-1 text-gray-400 focus:outline-none">
+          <button onClick={() => onNavigateToExplore('All', 'All Categories')} className="flex flex-col items-center gap-0.5 py-1 text-gray-400 focus:outline-none">
             <i className="ph ph-squares-four text-xl"></i><span className="text-[10px] font-bold">Browse</span>
           </button>
           <button onClick={() => setShowCreateModal(!showCreateModal)} className="w-11 h-11 rounded-full bg-marix-brown text-white flex items-center justify-center shadow-md active:scale-90 transition-transform duration-300 -translate-y-2.5 border-4 border-marix-cream focus:outline-none z-50">
@@ -451,7 +458,6 @@ export default function Homepage({
         </div>
       )}
 
-      {/* FIXED UP-ARROW ACTION */}
       {showBackToTop && !showCreateModal && (
         <button
           onClick={handleFastScrollToTop}
@@ -473,7 +479,7 @@ function VolcanoCard({ product, targetImageSrc, savedProducts, onToggleSave }) {
   const cleanCampusName = product.campus ? product.campus.split(',')[0].trim() : 'Campus';
 
   return (
-    <div className="w-full flex flex-col gap-y-1 select-none group bg-white p-1.5 rounded-[18px] border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-all duration-300 ease-out text-left">
+    <div className="w-full flex flex-col gap-y-1 select-none group bg-white p-1.5 rounded-[18px] border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] text-left">
       <div className="w-full aspect-square rounded-[12px] overflow-hidden bg-marix-cream/40 relative shrink-0">
         <img src={targetImageSrc} alt={product.productTitle} className="w-full h-full object-cover" loading="lazy" />
       </div>

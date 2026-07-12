@@ -28,7 +28,10 @@ export default function ProductListings({
   activeSearchTerm = "",
   setActiveSearchTerm,
   recentSearches = [],
-  setRecentSearches
+  setRecentSearches,
+  viewMode = "All",       // 🚀 Recieved navigation track mode
+  setViewMode,
+  initialCategory = "All Categories" // 🚀 Recieved navigation category trigger
 }) {
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -50,6 +53,18 @@ export default function ProductListings({
   const [sortBy, setSortBy] = useState('Newest');
   const [visibleCount, setVisibleCount] = useState(20);
 
+  // 🚀 INTERCEPT LISTENERS FOR HOMEPAGE CLICK COMMANDS
+  useEffect(() => {
+    setActiveCategory(initialCategory);
+    setStagedCategory(initialCategory);
+    
+    // Reset general pagination state whenever configuration contexts pivot
+    setVisibleCount(20);
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
+  }, [initialCategory, viewMode]);
+
   const handleContainerScrollPhysics = (e) => {
     const target = e.currentTarget;
     const currentScrollY = target.scrollTop;
@@ -68,11 +83,14 @@ export default function ProductListings({
   };
 
   useEffect(() => {
-    const savedScrollPos = sessionStorage.getItem('marix_explore_scroll_pos');
-    if (savedScrollPos && scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = parseInt(savedScrollPos, 10);
+    // Only apply scroll memory restoration on standard "All" mode navigation loops
+    if (viewMode === 'All' && initialCategory === 'All Categories') {
+      const savedScrollPos = sessionStorage.getItem('marix_explore_scroll_pos');
+      if (savedScrollPos && scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = parseInt(savedScrollPos, 10);
+      }
     }
-  }, []);
+  }, [viewMode, initialCategory]);
 
   useEffect(() => {
     if (activeSearchTerm) {
@@ -96,7 +114,15 @@ export default function ProductListings({
   }, [activeCategory, activeCondition, activeCampuses, activePriceMax]);
 
   const filteredProducts = useMemo(() => {
-    let result = [...staticShuffledProducts];
+    // 🚀 INVENTORY SPLITTING MATRIX ENGINE BASED ON CHOSEN ROUTE VIEW MODE
+    let result = [];
+    if (viewMode === "Featured") {
+      result = [...staticShuffledProducts.slice(0, 35)];
+    } else if (viewMode === "Trending") {
+      result = [...staticShuffledProducts.slice(35, 70)];
+    } else {
+      result = [...staticShuffledProducts];
+    }
 
     if (activeSearchTerm && activeSearchTerm.trim()) {
       const query = activeSearchTerm.toLowerCase().trim();
@@ -131,13 +157,12 @@ export default function ProductListings({
     else if (sortBy === 'Price: High to Low') result.sort((a, b) => parseInt(b.price.replace(/[^\d]/g, ''), 10) - parseInt(a.price.replace(/[^\d]/g, ''), 10));
 
     return result;
-  }, [activeSearchTerm, activeCategory, activeCondition, activeCampuses, activePriceMax, sortBy]);
+  }, [activeSearchTerm, activeCategory, activeCondition, activeCampuses, activePriceMax, sortBy, viewMode]);
 
   const paginatedProducts = useMemo(() => {
     return filteredProducts.slice(0, visibleCount);
   }, [filteredProducts, visibleCount]);
 
-  // 🚀 DYNAMIC RECOMMENDATION LOGIC: Filter recommendations based on active search categories
   const recommendedProducts = useMemo(() => {
     if (activeSearchTerm.trim() && filteredProducts.length > 0) {
       const detectedCategory = filteredProducts[0].category;
@@ -203,6 +228,35 @@ export default function ProductListings({
     window.requestAnimationFrame(animateStep);
   };
 
+  // 🚀 CONFIGURE DYNAMIC HEADING INTERFACE LABELS
+  const renderHeaderTitle = () => {
+    if (activeSearchTerm.trim()) {
+      return (
+        <h1 className="text-xl md:text-2xl font-bold text-gray-500 tracking-tight">
+          Results for <span className="text-marix-teal font-black">"{activeSearchTerm}"</span>
+        </h1>
+      );
+    }
+    
+    let title = "All Products";
+    let desc = "Discover great deals from trusted sellers around you.";
+    
+    if (viewMode === "Featured") {
+      title = "Featured Products";
+      desc = "Premium verified student listings highlighted by campus reps.";
+    } else if (viewMode === "Trending") {
+      title = "Trending Products";
+      desc = "The hottest high-demand student lifestyle plugs on campus right now.";
+    }
+
+    return (
+      <div className="flex flex-col gap-1">
+        <h1 className="text-3xl md:text-4xl font-black tracking-tight text-[#111111]">{title}</h1>
+        <p className="text-xs md:text-sm font-medium text-gray-500 tracking-tight">{desc}</p>
+      </div>
+    );
+  };
+
   return (
     <div className="w-full h-full flex flex-col relative overflow-hidden bg-marix-cream">
       
@@ -227,7 +281,10 @@ export default function ProductListings({
             userName={userName} 
             activeTab="explore"
             handleTabChange={(tab) => {
-              if (tab === 'browse' || tab === 'home') onNavigateHome?.();
+              if (tab === 'browse' || tab === 'home') {
+                setViewMode?.("All");
+                onNavigateHome?.();
+              }
               else if (tab === 'uploads') onNavigateToUploadsTab?.();
               else if (tab === 'saved-mobile') onNavigateToSavedTab?.();
             }}
@@ -240,28 +297,13 @@ export default function ProductListings({
             setActiveSearchTerm={setActiveSearchTerm}
             recentSearches={recentSearches}
             setRecentSearches={setRecentSearches}
-            onNavigateToExplore={() => {}} 
+            onNavigateToExplore={() => setViewMode?.("All")} 
           />
 
           <main className="w-full max-w-[95%] mx-auto px-2 lg:px-4 flex flex-col pt-4 md:pt-24 animate-fadeIn flex-1">
             
             <div className="flex flex-col gap-1.5 mt-2 mb-6 select-none w-full">
-              {activeSearchTerm.trim() ? (
-                <div className="w-full flex items-baseline justify-between">
-                  <h1 className="text-xl md:text-2xl font-bold text-gray-500 tracking-tight">
-                    Results for <span className="text-marix-teal font-black">"{activeSearchTerm}"</span>
-                  </h1>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-1">
-                  <h1 className="text-3xl md:text-4xl font-black tracking-tight text-[#111111]">
-                    All Products
-                  </h1>
-                  <p className="text-xs md:text-sm font-medium text-gray-500 tracking-tight">
-                    Discover great deals from trusted sellers around you.
-                  </p>
-                </div>
-              )}
+              {renderHeaderTitle()}
             </div>
 
             <div className="w-full flex items-center justify-between border-b border-gray-200/40 pb-4 mb-6 select-none">
@@ -298,6 +340,7 @@ export default function ProductListings({
               )}
             </div>
 
+            {/* Main Product Feed Grid Layout */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5">
               {paginatedProducts.map((product) => {
                 const primaryImgObj = product.colorVariants?.find(v => v.isMain) || product.colorVariants?.[0];
@@ -340,51 +383,45 @@ export default function ProductListings({
               ) : null}
             </div>
 
-{/* 🚀 DYNAMIC RECOMMENDATION ENGINE WITH ADAPTIVE LAYOUT MATRIX */}
-{activeSearchTerm.trim() !== "" && recommendedProducts.length > 0 && (
-  <div className="mt-14 mb-14 select-none w-full overflow-hidden">
-    <h3 className="text-base md:text-lg font-black text-[#111111] tracking-tight mb-5">Recommended for You</h3>
-    
-    {/* 🚀 FIXED: Explicit Tailwind lookups so static compilation catches the classes perfectly */}
-    <div className={`
-      w-full pb-4 scrollbar-none snap-x snap-mandatory 
-      ${recommendedProducts.length < 5 
-        ? `grid gap-3.5 md:gap-5 max-[599px]:grid-cols-2 min-[600px]:max-[829px]:grid-cols-3 min-[830px]:max-[1024px]:grid-cols-4 ${
-            {
-              1: 'min-[1025px]:grid-cols-1 max-w-[320px] mx-auto',
-              2: 'min-[1025px]:grid-cols-2',
-              3: 'min-[1025px]:grid-cols-3',
-              4: 'min-[1025px]:grid-cols-4'
-            }[recommendedProducts.length] || 'min-[1025px]:grid-cols-4'
-          }`
-        : 'flex md:grid md:grid-cols-6 gap-3.5 md:gap-5 overflow-x-auto'
-      }
-    `}>
-      {recommendedProducts.map((product) => {
-        const primaryImgObj = product.colorVariants?.find(v => v.isMain) || product.colorVariants?.[0];
-        return (
-          <div 
-            key={`rec-${product.id}`} 
-            className={`
-              shrink-0 snap-start 
-              ${recommendedProducts.length < 5 
-                ? 'w-full' 
-                : 'max-[599px]:w-[46%] min-[600px]:max-[829px]:w-[31%] min-[830px]:max-[1024px]:w-[23%] min-[1025px]:w-full'
-              }
-            `}
-          >
-            <VolcanoCard 
-              product={product} 
-              targetImageSrc={primaryImgObj ? primaryImgObj.imageUrl : "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=500&q=80"} 
-              savedProducts={savedProducts} 
-              onToggleSave={setSavedProducts} 
-            />
-          </div>
-        );
-      })}
-    </div>
-  </div>
-)}
+            {/* 🚀 DYNAMIC RECOMMENDATION ENGINE MATCHED PERFECTLY TO MAIN GRID SIZES */}
+            {activeSearchTerm.trim() !== "" && recommendedProducts.length > 0 && (
+              <div className="mt-14 mb-14 select-none w-full overflow-hidden">
+                <h3 className="text-base md:text-lg font-black text-[#111111] tracking-tight mb-5">Recommended for You</h3>
+                
+                {/* 🚀 FIXED: Cards match the exact grid architecture proportions across screen sizes */}
+                <div className={`
+                  w-full pb-4 scrollbar-none snap-x snap-mandatory overflow-x-auto
+                  flex max-[1024px]:flex-row gap-4
+                  min-[1025px]:grid min-[1025px]:gap-5 ${
+                    recommendedProducts.length < 5 
+                      ? {
+                          1: 'min-[1025px]:grid-cols-1 max-w-[320px] mx-auto',
+                          2: 'min-[1025px]:grid-cols-2',
+                          3: 'min-[1025px]:grid-cols-3',
+                          4: 'min-[1025px]:grid-cols-4'
+                        }[recommendedProducts.length] || 'min-[1025px]:grid-cols-4'
+                      : 'min-[1025px]:grid-cols-6'
+                  }
+                `}>
+                  {recommendedProducts.map((product) => {
+                    const primaryImgObj = product.colorVariants?.find(v => v.isMain) || product.colorVariants?.[0];
+                    return (
+                      <div 
+                        key={`rec-${product.id}`} 
+                        className="shrink-0 snap-start max-[1024px]:w-[calc(50%-8px)] min-[1025px]:w-full"
+                      >
+                        <VolcanoCard 
+                          product={product} 
+                          targetImageSrc={primaryImgObj ? primaryImgObj.imageUrl : "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=500&q=80"} 
+                          savedProducts={savedProducts} 
+                          onToggleSave={setSavedProducts} 
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </main>
         </div>
 
@@ -451,7 +488,7 @@ export default function ProductListings({
               />
             </div>
 
-            {/* Campus Selection Stacks */}
+            {/* Campus Location Selection */}
             <div className="flex flex-col gap-2">
               <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Campus Location</label>
               <div className="flex flex-col gap-2 bg-gray-50/50 rounded-2xl p-3 border border-gray-100/50 max-h-[160px] overflow-y-auto scrollbar-none">
@@ -496,8 +533,8 @@ export default function ProductListings({
 
       {isLoggedIn && (
         <div className={`md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 pt-1 z-40 flex items-center justify-around select-none shadow-[0_-4px_12px_rgba(0,0,0,0.05)] pb-[calc(env(safe-area-inset-bottom)+8px)] transition-transform duration-300 ${isAtAbsoluteBottom ? 'translate-y-full' : 'translate-y-0'}`}>
-          <button onClick={onNavigateHome} className="flex flex-col items-center gap-0.5 py-1 text-gray-400 focus:outline-none"><i className="ph ph-house text-xl"></i><span className="text-[10px] font-bold">Home</span></button>
-          <button className="flex flex-col items-center gap-0.5 py-1 text-marix-teal focus:outline-none"><i className="ph ph-squares-four text-xl"></i><span className="text-[10px] font-bold">Browse</span></button>
+          <button onClick={() => { setViewMode?.("All"); onNavigateHome(); }} className="flex flex-col items-center gap-0.5 py-1 text-gray-400 focus:outline-none"><i className="ph ph-house text-xl"></i><span className="text-[10px] font-bold">Home</span></button>
+          <button onClick={() => { setViewMode?.("All"); }} className="flex flex-col items-center gap-0.5 py-1 text-marix-teal focus:outline-none"><i className="ph ph-squares-four text-xl"></i><span className="text-[10px] font-bold">Browse</span></button>
           <button onClick={() => setShowCreateModal(!showCreateModal)} className="w-11 h-11 rounded-full bg-marix-brown text-white flex items-center justify-center shadow-md -translate-y-2.5 border-4 border-marix-cream focus:outline-none z-50"><i className="ph font-black text-xl ph-plus"></i></button>
           <button onClick={onNavigateToUploadsTab} className="flex flex-col items-center gap-0.5 py-1 text-gray-400 focus:outline-none"><i className="ph ph-tray text-xl"></i><span className="text-[10px] font-bold">Uploads</span></button>
           <button onClick={onNavigateToSavedTab} className="flex flex-col items-center gap-0.5 py-1 text-gray-400 focus:outline-none"><i className="ph ph-user text-xl"></i><span className="text-[10px] font-bold">Profile</span></button>
@@ -508,6 +545,7 @@ export default function ProductListings({
   );
 }
 
+// 🚀 FIXED: Stripped desktop hover states from mobile viewports to align clean card performance boundaries
 function VolcanoCard({ product, targetImageSrc, savedProducts, onToggleSave }) {
   const isLiked = savedProducts.some(p => p.id === product.id);
   const cleanCampusName = product.campus ? product.campus.split(',')[0].trim() : 'Campus';

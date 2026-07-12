@@ -166,7 +166,7 @@ export const initialProducts = [
     whatsappNumber: "2347055554444",
     availableSizes: ["18 inch", "20 inch", "22 inch"],
     colorVariants: [
-      { colorName: "Gold", imageUrl: "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=500&q=80", isMain: true }
+      { colorName: "Silver", imageUrl: "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=500&q=80", isMain: true }
     ]
   },
   {
@@ -758,6 +758,308 @@ export const initialProducts = [
     availableSizes: ["Full Set"],
     colorVariants: [
       { colorName: "Gold Edition", imageUrl: "https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=500&q=80", isMain: true }
+    ]
+  },
+
+  // ==================== NEW EXPANDED INVENTORY (51-70) ====================
+  {
+    id: 51,
+    productTitle: "Vintage Polaroid Camera 600",
+    shopName: "RetroLens_Absu",
+    price: "₦45,000",
+    category: "Gadgets",
+    campus: "Absu, Uturu",
+    condition: "Fair",
+    description: "Classic retro instant film camera block. Tested and working perfectly for aesthetic photography shoots.",
+    whatsappNumber: "2348111222333",
+    availableSizes: ["Standard"],
+    colorVariants: [
+      { colorName: "Classic Grey", imageUrl: "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=500&q=80", isMain: true }
+    ]
+  },
+  {
+    id: 52,
+    productTitle: "Korean Spicy Ramen Bundle",
+    shopName: "K-Mart_Snacks",
+    price: "₦5,500",
+    category: "Food & Snacks",
+    campus: "UniUyo, Uyo",
+    condition: "Brand New",
+    description: "Pack of 5 authentic super spicy Samyang fire noodles for intense midnight cravings.",
+    whatsappNumber: "2349055443322",
+    availableSizes: ["5-Pack Bundle"],
+    colorVariants: [
+      { colorName: "Fire Red", imageUrl: "https://images.unsplash.com/photo-1612929633738-8fe01f728091?w=500&q=80", isMain: true }
+    ]
+  },
+  {
+    id: 53,
+    productTitle: "Knitted Throw Blanket Throw",
+    shopName: "HomeHub_Store",
+    price: "₦15,000",
+    category: "Home & Kitchen",
+    campus: "Futo, Owerri",
+    condition: "Brand New",
+    description: "Soft chunky knit blanket wrap. Enhances your bed space aesthetic perfectly during chilly nights.",
+    whatsappNumber: "2348088776655",
+    availableSizes: ["Large 50x60"],
+    colorVariants: [
+      { colorName: "Dusty Rose", imageUrl: "https://images.unsplash.com/photo-1580828369651-69e6b4d3d92f?w=500&q=80", isMain: true }
+    ]
+  },
+  {
+    id: 54,
+    productTitle: "Gourmet Vanilla Cupcakes Box",
+    shopName: "SweetTooth_Imsu",
+    price: "₦4,000",
+    category: "Food & Snacks",
+    campus: "Imsu, Owerri",
+    condition: "Brand New",
+    description: "Freshly baked moist vanilla bean cupcakes topped with rich buttercream frosting lines.",
+    whatsappNumber: "2347011223344",
+    availableSizes: ["Pack of 6"],
+    colorVariants: [
+      { colorName: "Sprinkle Mix", imageUrl: "https://images.unsplash.com/photo-1486427944299-d1955d23e34d?w=500&q=80", isMain: true }
+    ]
+  },
+  {
+    id: 55,
+    productTitle: "Matte Black Tumbler Flask",
+    shopName: "Urban_Essentials",
+    price: "₦7,500",
+    category: "Accessories",
+    campus: "UniPort, Harcourt",
+    condition: "Brand New",
+    description: "Double-wall vacuum insulated stainless steel water bottle. Keeps drinks cold for 24 hours.",
+    whatsappNumber: "2348199887766",
+    availableSizes: ["750ml"],
+    colorVariants: [
+      { colorName: "Stealth Black", imageUrl: "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=500&q=80", isMain: true }
+    ]
+  },
+  {
+    id: 56,
+    productTitle: "Rose Gold Makeup Brush Set",
+    shopName: "GlowEssence_Hub",
+    price: "₦10,500",
+    category: "Beauty",
+    campus: "Absu, Uturu",
+    condition: "Brand New",
+    description: "Professional 12-piece synthetic bristle brush set wrapped in a sleek portable leather pouch container.",
+    whatsappNumber: "2349077665544",
+    availableSizes: ["12 Piece Kit"],
+    colorVariants: [
+      { colorName: "Rose Gold", imageUrl: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=500&q=80", isMain: true }
+    ]
+  },
+  {
+    id: 57,
+    productTitle: "AirPods Pro Gen 2 Replica",
+    shopName: "GadgetHub_Futo",
+    price: "₦22,000",
+    category: "Gadgets",
+    campus: "Futo, Owerri",
+    condition: "Brand New",
+    description: "High-grade 1:1 master copy TWS earbuds featuring spatial audio layout and deep active noise cancellation.",
+    whatsappNumber: "2348044556677",
+    availableSizes: ["Standard"],
+    colorVariants: [
+      { colorName: "Gloss White", imageUrl: "https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=500&q=80", isMain: true }
+    ]
+  },
+  {
+    id: 58,
+    productTitle: "Electric Protein Shaker Bottle",
+    shopName: "FitGear_Port",
+    price: "₦11,000",
+    category: "Accessories",
+    campus: "UniPort, Harcourt",
+    condition: "Brand New",
+    description: "Motorized vortex mixing cup block. Perfect for smooth lump-free protein supplement shakes.",
+    whatsappNumber: "2347033445566",
+    availableSizes: ["600ml"],
+    colorVariants: [
+      { colorName: "Neon Blue", imageUrl: "https://images.unsplash.com/photo-1546483875-ad9014c88eba?w=500&q=80", isMain: true }
+    ]
+  },
+  {
+    id: 59,
+    productTitle: "Biker Distressed Leather Pants",
+    shopName: "DripStore_Imsu",
+    price: "₦18,000",
+    category: "Fashion",
+    campus: "Imsu, Owerri",
+    condition: "Like New",
+    description: "Edgy slim-fit faux leather motorcycle trousers designed with ribbed knee panel blocks.",
+    whatsappNumber: "2348122334455",
+    availableSizes: ["32", "34"],
+    colorVariants: [
+      { colorName: "Matte Black", imageUrl: "https://images.unsplash.com/photo-1549439602-43ebca2327af?w=500&q=80", isMain: true }
+    ]
+  },
+  {
+    id: 60,
+    productTitle: "Ceramic Coffee Mug Set",
+    shopName: "HomeHub_Store",
+    price: "₦6,000",
+    category: "Home & Kitchen",
+    campus: "UniUyo, Uyo",
+    condition: "Brand New",
+    description: "Pair of aesthetic speckled ceramic mugs. Microwave safe, perfect for morning lecture brews.",
+    whatsappNumber: "2349066778899",
+    availableSizes: ["2 Piece Set"],
+    colorVariants: [
+      { colorName: "Speckled White", imageUrl: "https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=500&q=80", isMain: true }
+    ]
+  },
+  {
+    id: 61,
+    productTitle: "High-Top Canvas Sneakers",
+    shopName: "SneakerVault_Imsu",
+    price: "₦13,500",
+    category: "Footwears",
+    campus: "Imsu, Owerri",
+    condition: "Brand New",
+    description: "Classic black and white canvas lace-up ankle boots. Timeless campus wardrobe staple.",
+    whatsappNumber: "2348055443322",
+    availableSizes: ["41", "42", "43", "44"],
+    colorVariants: [
+      { colorName: "Classic Black", imageUrl: "https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?w=500&q=80", isMain: true }
+    ]
+  },
+  {
+    id: 62,
+    productTitle: "Hydrating Aloe Vera Gel",
+    shopName: "MiraScent & Glow",
+    price: "₦3,500",
+    category: "Beauty",
+    campus: "UniPort, Harcourt",
+    condition: "Brand New",
+    description: "99% pure organic soothing aloe vera moisturizer pack. Perfect for after-sun skin recovery.",
+    whatsappNumber: "2347088990011",
+    availableSizes: ["300ml"],
+    colorVariants: [
+      { colorName: "Clear Gel", imageUrl: "https://images.unsplash.com/photo-1598440947619-2ce2169c14bb?w=500&q=80", isMain: true }
+    ]
+  },
+  {
+    id: 63,
+    productTitle: "Mini Ring Light Tripod",
+    shopName: "GadgetVault",
+    price: "₦9,500",
+    category: "Gadgets",
+    campus: "Absu, Uturu",
+    condition: "Brand New",
+    description: "Compact 10-inch LED selfie ring light paired with an adjustable desk tripod stand block.",
+    whatsappNumber: "2348133445566",
+    availableSizes: ["10 Inch Ring"],
+    colorVariants: [
+      { colorName: "Black Stand", imageUrl: "https://images.unsplash.com/photo-1616423641402-867140e1189c?w=500&q=80", isMain: true }
+    ]
+  },
+  {
+    id: 64,
+    productTitle: "Loaded Pepperoni Pizza Box",
+    shopName: "ChuksCampusEats",
+    price: "₦7,500",
+    category: "Food & Snacks",
+    campus: "Futo, Owerri",
+    condition: "Brand New",
+    description: "Large 14-inch thin crust pizza loaded with extra mozzarella cheese and spicy pepperoni slices.",
+    whatsappNumber: "2349011223344",
+    availableSizes: ["Large 14 Inch"],
+    colorVariants: [
+      { colorName: "Hot & Fresh", imageUrl: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=500&q=80", isMain: true }
+    ]
+  },
+  {
+    id: 65,
+    productTitle: "Velvet Throw Pillows Set",
+    shopName: "BeddingDepot",
+    price: "₦8,000",
+    category: "Home & Kitchen",
+    campus: "UniUyo, Uyo",
+    condition: "Brand New",
+    description: "Pair of plush velvet cushion covers featuring premium hidden zipper inserts lines.",
+    whatsappNumber: "2348077665544",
+    availableSizes: ["18x18 Inch"],
+    colorVariants: [
+      { colorName: "Mustard Yellow", imageUrl: "https://images.unsplash.com/photo-1584286595398-a59f21d313f5?w=500&q=80", isMain: true }
+    ]
+  },
+  {
+    id: 66,
+    productTitle: "Silk Durag & Wave Brush Kit",
+    shopName: "Urban_Essentials",
+    price: "₦4,500",
+    category: "Accessories",
+    campus: "Imsu, Owerri",
+    condition: "Brand New",
+    description: "Premium breathable silky durag wrap paired with a curved medium-hard bristle wave maintenance brush.",
+    whatsappNumber: "2347044556677",
+    availableSizes: ["Universal"],
+    colorVariants: [
+      { colorName: "Royal Blue", imageUrl: "https://images.unsplash.com/photo-1616056345690-3430ee8e60f7?w=500&q=80", isMain: true }
+    ]
+  },
+  {
+    id: 67,
+    productTitle: "Scientific Calculator FX-991",
+    shopName: "BookHaven_Absu",
+    price: "₦12,500",
+    category: "Other",
+    campus: "Absu, Uturu",
+    condition: "Like New",
+    description: "Advanced non-programmable engineering calculator. Crucial tool for complex math modules.",
+    whatsappNumber: "2348155667788",
+    availableSizes: ["Standard"],
+    colorVariants: [
+      { colorName: "Silver Face", imageUrl: "https://images.unsplash.com/photo-1574607383476-f517f260d30b?w=500&q=80", isMain: true }
+    ]
+  },
+  {
+    id: 68,
+    productTitle: "Ribbed Knit Crop Top",
+    shopName: "ThriftByFaith",
+    price: "₦4,000",
+    category: "Fashion",
+    campus: "UniPort, Harcourt",
+    condition: "Like New",
+    description: "Stretchy form-fitting sleeveless ribbed top block. Perfect casual summer wear essential.",
+    whatsappNumber: "2349022334455",
+    availableSizes: ["S", "M"],
+    colorVariants: [
+      { colorName: "Olive Green", imageUrl: "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=500&q=80", isMain: true }
+    ]
+  },
+  {
+    id: 69,
+    productTitle: "Suede Block Heel Sandals",
+    shopName: "KicksPlug_Hub",
+    price: "₦15,000",
+    category: "Footwears",
+    campus: "UniUyo, Uyo",
+    condition: "Brand New",
+    description: "Elegant strappy suede sandals with a comfortable 3-inch chunky block heel lift.",
+    whatsappNumber: "2348088990011",
+    availableSizes: ["38", "39", "40"],
+    colorVariants: [
+      { colorName: "Blush Pink", imageUrl: "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=500&q=80", isMain: true }
+    ]
+  },
+  {
+    id: 70,
+    productTitle: "Glowing LED Gaming Mouse",
+    shopName: "TechCentral_Futo",
+    price: "₦7,500",
+    category: "Gadgets",
+    campus: "Futo, Owerri",
+    condition: "Brand New",
+    description: "Ergonomic wired optical mouse built with dynamic breathing RGB light sequences and programmable macro buttons.",
+    whatsappNumber: "2347011335577",
+    availableSizes: ["Standard"],
+    colorVariants: [
+      { colorName: "Cyber Black", imageUrl: "https://images.unsplash.com/photo-1592840496694-26d035b52b48?w=500&q=80", isMain: true }
     ]
   }
 ];
