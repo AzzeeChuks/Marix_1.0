@@ -4,8 +4,6 @@ import Navbar from './Navbar';
 export default function ProductOverview({ 
   product, 
   allProducts = [], 
-  
-  // Dynamic Tab Routing Props
   isLoggedIn,
   setIsLoggedIn,
   userName,
@@ -19,7 +17,6 @@ export default function ProductOverview({
   onNavigateToUploadsTab,
   onNavigateToSavedTab,
   onNavigateHome,
-
   savedProducts = [], 
   onToggleSave, 
   onBack, 
@@ -44,6 +41,7 @@ export default function ProductOverview({
 
   const isEarlySeller = userRegistrationIndex !== null && userRegistrationIndex <= 50;
 
+  // Sync state cleanly with product changes
   const hasExtendedGallery = product.images && product.images.length > 0;
   const defaultVariant = product.variants && product.variants.length > 0 
     ? product.variants[0] 
@@ -52,9 +50,17 @@ export default function ProductOverview({
   const [selectedVariant, setSelectedVariant] = useState(defaultVariant);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [selectedSize, setSelectedSize] = useState(product.availableSizes?.[0] || null);
-  
-  // --- READ MORE STATE FOR DESCRIPTION ---
   const [isDescExpanded, setIsDescExpanded] = useState(false);
+
+  // --- SCROLL PRESERVATION ENGINE ---
+  // Store the scroll position of whatever viewport brought us here before we mount
+  useEffect(() => {
+    // Capture background view scroll before focusing on the overview
+    const mainFeed = document.querySelector('.homepage-feed-viewport') || document.querySelector('.explore-feed-viewport');
+    if (mainFeed) {
+      sessionStorage.setItem('marix_pre_overview_scroll_pos', mainFeed.scrollTop);
+    }
+  }, [product]);
 
   useEffect(() => {
     const newDefault = product.variants && product.variants.length > 0 
@@ -63,13 +69,30 @@ export default function ProductOverview({
     setSelectedVariant(newDefault);
     setActiveImageIndex(0);
     setSelectedSize(product.availableSizes?.[0] || null);
-    setIsDescExpanded(false); // Reset read more state on product change
+    setIsDescExpanded(false);
     
     if (wrapperRef.current) {
       wrapperRef.current.scrollTop = 0;
     }
   }, [product]);
 
+  const handleBackWithScrollPreservation = () => {
+    // Execute the parent's back navigation first
+    onBack();
+
+    // Give the DOM a tiny frame to paint the returning view, then restore the exact scroll position
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        const mainFeed = document.querySelector('.homepage-feed-viewport') || document.querySelector('.explore-feed-viewport');
+        const savedPos = sessionStorage.getItem('marix_pre_overview_scroll_pos');
+        if (mainFeed && savedPos) {
+          mainFeed.scrollTop = parseInt(savedPos, 10);
+        }
+      }, 50);
+    });
+  };
+
+  // Handle display images based on variant selections or fallbacks
   let displayImages = [];
   if (hasExtendedGallery) {
     displayImages = product.images.filter(img => img.variantName === selectedVariant);
@@ -77,7 +100,7 @@ export default function ProductOverview({
   } else if (product.colorVariants && product.colorVariants.length > 0) {
     displayImages = product.colorVariants.map((v, idx) => ({ id: `fallback-${idx}`, imageUrl: v.imageUrl, variantName: v.colorName }));
   } else {
-    displayImages = [{ id: 'fallback-absolute', imageUrl: "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=500&q=80", variantName: "Standard" }];
+    displayImages = [{ id: 'fallback-absolute', imageUrl: "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800&q=80", variantName: "Standard" }];
   }
 
   const activeImage = displayImages[activeImageIndex] || displayImages[0] || {};
@@ -91,19 +114,16 @@ export default function ProductOverview({
     return { name: vName, img: vImg };
   });
 
-  // --- DYNAMIC WHATSAPP MESSAGING (VARIANT & OPTION SPECIFIC) ---
   const handleWhatsAppChat = () => {
     const cleanNumber = product.whatsappNumber ? product.whatsappNumber.replace(/\D/g, '') : "2348012345678";
-    
     const variantDetail = selectedVariant ? `\n- Variant: ${selectedVariant}` : "";
     const sizeDetail = selectedSize ? `\n- Option/Size: ${selectedSize}` : "";
-    
     const message = `Hello, I saw your listing for "${product.productTitle}" (${product.price}) on Marix.${variantDetail}${sizeDetail}\n\nIs this item still available?`;
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/${cleanNumber}?text=${encodedMessage}`, '_blank');
   };
 
-  // --- 4 CATEGORY + 2 RANDOM SAME CAMPUS HYBRID RECOMMENDATION ENGINE ---
+  // --- CASE-INSENSITIVE CAMPUS RECOMMENDATION SYSTEM ---
   const recommendations = useMemo(() => {
     const shuffleArray = (arr) => {
       const copy = [...arr];
@@ -114,29 +134,26 @@ export default function ProductOverview({
       return copy;
     };
 
-    // Filter to only items on the EXACT same campus (excluding current item)
-    const sameCampusPool = allProducts.filter(item => item.id !== product.id && item.campus === product.campus);
+    // Strip out excess whitespaces and handle case-insensitivity cleanly
+    const currentCampusClean = (product.campus || '').trim().toLowerCase();
 
-    // Pool A: Same Campus AND Same Category
+    const sameCampusPool = allProducts.filter(item => {
+      const itemCampusClean = (item.campus || '').trim().toLowerCase();
+      return item.id !== product.id && itemCampusClean === currentCampusClean;
+    });
+
     const sameCategoryAndCampus = shuffleArray(sameCampusPool.filter(item => item.category === product.category));
-
-    // Pool B: Same Campus AND DIFFERENT Category
     const differentCategoryAndCampus = shuffleArray(sameCampusPool.filter(item => item.category !== product.category));
 
-    // Slice required amounts
     const selectedCategoryItems = sameCategoryAndCampus.slice(0, 4);
     const selectedDiffItems = differentCategoryAndCampus.slice(0, 2);
-
-    // Merge selections
     let combined = [...selectedCategoryItems, ...selectedDiffItems];
 
-    // Fallback if combined pool is under 6 listings (e.g. fresh environment)
     if (combined.length < 6) {
       const currentCombinedIds = new Set(combined.map(item => item.id));
       const fallbackCampusListings = shuffleArray(sameCampusPool.filter(item => !currentCombinedIds.has(item.id)));
       combined = [...combined, ...fallbackCampusListings].slice(0, 6);
     }
-
     return combined;
   }, [product, allProducts]);
 
@@ -144,7 +161,6 @@ export default function ProductOverview({
   const rawCampus = product.campus || 'Campus';
   const cleanCampusName = rawCampus.split(',')[0].trim().toUpperCase();
 
-  // --- DESCRIPTION READ MORE LOGIC ---
   const descriptionText = product.description || '';
   const descriptionWords = descriptionText.split(/\s+/);
   const isLongDescription = descriptionWords.length > 20;
@@ -154,7 +170,6 @@ export default function ProductOverview({
     return descriptionWords.slice(0, 20).join(' ') + '...';
   }, [descriptionText, descriptionWords, isLongDescription, isDescExpanded]);
 
-  // 🚀 LINK HANDLING BRIDGE
   const handleNavbarNavigation = (targetTab) => {
     if (targetTab === 'uploads') {
       onNavigateToUploadsTab?.();
@@ -199,7 +214,7 @@ export default function ProductOverview({
         {/* ACTION CONTROL BAR */}
         <div className="w-full max-w-[95%] mx-auto px-2 lg:px-4 py-4 flex items-center justify-between select-none">
           <button 
-            onClick={onBack} 
+            onClick={handleBackWithScrollPreservation} 
             className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center text-gray-600 hover:text-marix-teal hover:border-marix-teal transition-all focus:outline-none cursor-pointer"
           >
             <i className="ph ph-arrow-left text-lg font-bold"></i>
@@ -223,13 +238,15 @@ export default function ProductOverview({
                   className="w-full h-full object-cover transition-transform duration-500 ease-out md:group-hover:scale-[1.03]" 
                 />
                 
-                <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md text-white text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
-                  {product.condition}
-                </div>
+                {product.category !== 'Food & Snacks' && product.condition && (
+                  <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md text-white text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider whitespace-nowrap flex-shrink-0 z-10">
+                    {product.condition}
+                  </div>
+                )}
 
                 <button 
                   onClick={() => onToggleSave(product)}
-                  className={`absolute top-4 right-4 w-10 h-10 rounded-full border shadow-md flex items-center justify-center bg-white active:scale-90 transition-all cursor-pointer ${isLiked ? 'border-marix-teal text-marix-teal' : 'border-gray-200 text-gray-400 hover:text-gray-600'}`}
+                  className={`absolute top-4 right-4 w-10 h-10 rounded-full border shadow-md flex items-center justify-center bg-white active:scale-90 transition-all cursor-pointer z-10 ${isLiked ? 'border-marix-teal text-marix-teal' : 'border-gray-200 text-gray-400 hover:text-gray-600'}`}
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill={isLiked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.5">
                     <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
@@ -309,7 +326,7 @@ export default function ProductOverview({
                 </div>
               )}
 
-              {/* DYNAMIC WIDTH SIZE CHIPS */}
+              {/* DYNAMIC SIZE CHIPS */}
               {product.availableSizes && product.availableSizes.length > 0 && (
                 <div className="flex flex-col gap-2.5 select-none mt-2">
                   <span className="text-xs font-black tracking-wider uppercase text-gray-400">
@@ -336,7 +353,7 @@ export default function ProductOverview({
                 </div>
               )}
 
-              {/* WHATSAPP CTA - INLINE SVG */}
+              {/* WHATSAPP CTA */}
               <button
                 onClick={handleWhatsAppChat}
                 className="w-full bg-marix-brown text-white font-black text-sm py-4 rounded-2xl shadow-md hover:opacity-95 transition-opacity flex items-center justify-center gap-2.5 focus:outline-none mt-2 cursor-pointer"
@@ -365,32 +382,34 @@ export default function ProductOverview({
                 </p>
               </div>
 
-              {/* SELLER CARD */}
+              {/* SELLER CARD WITH DYNAMIC TRUNCATION & SQUASH SAFEGUARDS */}
               <div className="mt-4 pt-6 border-t border-gray-200/60 select-none">
                 <span className="text-xs font-black tracking-wider uppercase text-gray-400 mb-4 block">
                   Seller Information
                 </span>
-                <div className="bg-white border border-gray-150 shadow-[0_4px_16px_rgba(0,0,0,0.02)] rounded-2xl p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                <div className="bg-white border border-gray-150 shadow-[0_4px_16px_rgba(0,0,0,0.02)] rounded-2xl p-4 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
                     <div className="w-12 h-12 rounded-full bg-marix-brown text-white flex items-center justify-center text-base font-black shrink-0">
-                      {product.shopName.charAt(0).toUpperCase()}
+                      {product.shopName?.charAt(0).toUpperCase() || 'S'}
                     </div>
-                    <div className="flex flex-col min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <h4 className="text-sm font-black text-[#111111] truncate">{product.shopName}</h4>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <h4 className="text-sm font-black text-[#111111] truncate max-w-[110px] sm:max-w-[170px] md:max-w-none">
+                          {product.shopName}
+                        </h4>
                         {isEarlySeller && (
-                          <span className="text-[8px] bg-marix-teal/10 border border-marix-teal/20 text-marix-teal font-black px-1.5 py-0.5 rounded-full uppercase tracking-wide scale-90">
+                          <span className="text-[8px] bg-marix-teal/10 border border-marix-teal/20 text-marix-teal font-black px-1.5 py-0.5 rounded-full uppercase tracking-wide flex-shrink-0">
                             Early Seller
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-1 text-[10px] text-gray-500 font-bold mt-0.5">
-                        <i className="ph ph-circle-dashed text-gray-400 text-xs"></i>
-                        <span>Active Campus Merchant</span>
+                      <div className="flex items-center gap-1 text-[10px] text-gray-500 font-bold mt-0.5 min-w-0">
+                        <i className="ph ph-circle-dashed text-gray-400 text-xs shrink-0"></i>
+                        <span className="truncate">Active Campus Merchant</span>
                       </div>
                     </div>
                   </div>
-                  <button className="bg-marix-cream text-[#111111] text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-gray-100 transition-colors focus:outline-none shrink-0 border border-gray-200/50 cursor-pointer">
+                  <button className="bg-marix-cream text-[#111111] text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-gray-100 transition-colors focus:outline-none shrink-0 border border-gray-200/50 cursor-pointer flex-shrink-0">
                     View Shop
                   </button>
                 </div>
@@ -410,7 +429,7 @@ export default function ProductOverview({
                 {recommendations.map((rec) => {
                   const primaryImg = rec.colorVariants?.find(v => v.isMain) || rec.colorVariants?.[0];
                   const fallbackImg = rec.images?.find(img => img.isCover) || rec.images?.[0];
-                  const finalTargetSrc = primaryImg ? primaryImg.imageUrl : (fallbackImg ? fallbackImg.imageUrl : "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=500&q=80");
+                  const finalTargetSrc = primaryImg ? primaryImg.imageUrl : (fallbackImg ? fallbackImg.imageUrl : "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800&q=80");
                   const recCampus = rec.campus ? rec.campus.split(',')[0].trim() : 'Campus';
                   const isRecLiked = savedProducts.some(p => p.id === rec.id);
 
@@ -453,7 +472,7 @@ export default function ProductOverview({
             </section>
           )}
 
-          {/* 🚀 FLAWLESS PAGES COPYRIGHT LAYER AT THE VERY BOTTOM */}
+          {/* FOOTER */}
           <div className="w-full text-center text-[11px] text-gray-400 font-bold tracking-tight py-6 border-t border-gray-100 bg-white z-30 relative shrink-0">
             <span>&copy; {new Date().getFullYear()} <span className="text-marix-teal font-bold">Marix</span>. Built for Campus Commerce.</span>
           </div>

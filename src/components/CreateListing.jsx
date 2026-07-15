@@ -7,7 +7,6 @@ export default function CreateListing({ onProductCreated, onCancel }) {
   const [activeStep, setActiveStep] = useState(1);
   const [isCompressing, setIsCompressing] = useState(false);
 
-  // CORE INITIALIZATION
   const [basicInfo, setBasicInfo] = useState({
     productTitle: '',
     category: '',
@@ -22,9 +21,8 @@ export default function CreateListing({ onProductCreated, onCancel }) {
   const [sizeInput, setSizeInput] = useState('');
   const [productCondition, setProductCondition] = useState('');
 
-  // 🚀 REDESIGNED STATE STRUCTURE: Decoupled text variants and global image pool
   const [variantsList, setVariantsList] = useState([{ name: '' }]);
-  const [uploadedImages, setUploadedImages] = useState([]); // array of { id, fileName, fileBlob, imageUrl, variantName, isCover }
+  const [uploadedImages, setUploadedImages] = useState([]); 
   
   const campusCategories = [
     "Fashion",
@@ -37,7 +35,6 @@ export default function CreateListing({ onProductCreated, onCancel }) {
     "Other"
   ];
 
-  // 🔒 SCROLL TRACK FREEZER
   useEffect(() => {
     const originalStyle = window.getComputedStyle(document.body).overflow;
     document.body.style.overflow = 'hidden';
@@ -46,7 +43,6 @@ export default function CreateListing({ onProductCreated, onCancel }) {
     };
   }, []);
 
-  // FIXED DYNAMIC PREFILL & TAG CLEANUP ENGINE
   useEffect(() => {
     const cat = basicInfo.category;
     if (cat === 'Fashion') {
@@ -60,7 +56,7 @@ export default function CreateListing({ onProductCreated, onCancel }) {
     }
   }, [basicInfo.category]);
 
-  // 🚀 AUTOMATIC CLEAN SWEEP: If category changes to "Food & Snacks", wipe the condition field instantly
+  // Clean condition dynamically on selection of Food & Snacks category
   useEffect(() => {
     if (basicInfo.category === 'Food & Snacks') {
       setProductCondition('');
@@ -146,7 +142,7 @@ export default function CreateListing({ onProductCreated, onCancel }) {
 
   const labels = getDynamicLabels();
 
-  // 🚀 UPDATED VALIDATION LOGIC: condition is required unless category is 'Food & Snacks'
+  // Validate and permit food item uploads without needing the Condition dropdown value
   const isFormComplete = 
     basicInfo.productTitle.trim() !== '' &&
     basicInfo.category !== '' &&
@@ -155,7 +151,7 @@ export default function CreateListing({ onProductCreated, onCancel }) {
     basicInfo.shopName.trim() !== '' &&
     basicInfo.campus.trim() !== '' &&
     basicInfo.whatsappNumber.trim() !== '' &&
-    (basicInfo.category === 'Food & Snacks' || productCondition !== '') && // Mandatory logic check
+    (basicInfo.category === 'Food & Snacks' || productCondition !== '') && 
     variantsList.length > 0 &&
     variantsList.every(v => v.name.trim() !== '') &&
     uploadedImages.length > 0 &&
@@ -177,14 +173,12 @@ export default function CreateListing({ onProductCreated, onCancel }) {
     setAvailableSizes(availableSizes.filter(s => s !== sizeToRemove));
   };
 
-  // 🚀 REDESIGNED VARIANT AND TEXT OPTIONS LOGIC
   const handleVariantNameChange = (index, value) => {
     const updated = [...variantsList];
     const oldName = updated[index].name;
     updated[index].name = value;
     setVariantsList(updated);
 
-    // Automatically keep mapped images updated if the variant name is changed
     setUploadedImages(prev => prev.map(img => {
       if (img.variantName === oldName) {
         return { ...img, variantName: value };
@@ -201,7 +195,6 @@ export default function CreateListing({ onProductCreated, onCancel }) {
     if (variantsList.length > 1) {
       const variantToRemove = variantsList[index].name;
       setVariantsList(variantsList.filter((_, idx) => idx !== index));
-      // Reset image assignments belonging to deleted variants to the first active variant option
       setUploadedImages(prev => prev.map(img => {
         if (img.variantName === variantToRemove) {
           return { ...img, variantName: variantsList[0]?.name || '' };
@@ -211,12 +204,10 @@ export default function CreateListing({ onProductCreated, onCancel }) {
     }
   };
 
-  // 🚀 REDESIGNED MULTI-IMAGE COMPRESSION UPLOAD
   const handleImagePoolUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
-    // Strict 5-image total check
     if (uploadedImages.length + files.length > 5) {
       alert("A listing can have a maximum of 5 image uploads total.");
       return;
@@ -225,7 +216,7 @@ export default function CreateListing({ onProductCreated, onCancel }) {
     setIsCompressing(true);
     const options = {
       maxSizeMB: 0.15,
-      maxWidthOrHeight: 1000,
+      maxWidthOrHeight: 1200, // Slightly higher resolution on native mobile
       useWebWorker: true,
       fileType: 'image/webp'
     };
@@ -242,18 +233,15 @@ export default function CreateListing({ onProductCreated, onCancel }) {
           fileName: file.name,
           fileBlob: compressedBlob,
           imageUrl: displayUrl,
-          variantName: variantsList[0]?.name || '', // Default to first defined variant
+          variantName: variantsList[0]?.name || '', 
           isCover: false
         });
       }
 
       const updatedImages = [...uploadedImages, ...compressedList];
-      
-      // Auto-assign cover if no cover is currently selected
       if (!updatedImages.some(img => img.isCover) && updatedImages.length > 0) {
         updatedImages[0].isCover = true;
       }
-
       setUploadedImages(updatedImages);
     } catch (err) {
       console.error("Compression engine exception:", err);
@@ -264,7 +252,6 @@ export default function CreateListing({ onProductCreated, onCancel }) {
 
   const handleRemoveUploadedImage = (id) => {
     const updated = uploadedImages.filter(img => img.id !== id);
-    // Auto-promote first remaining image as cover if deleted image was the cover
     if (updated.length > 0 && !updated.some(img => img.isCover)) {
       updated[0].isCover = true;
     }
@@ -301,15 +288,11 @@ export default function CreateListing({ onProductCreated, onCancel }) {
       setIsLoading(false);
       setSuccess(true);
 
-      const fallbackPlaceholderUrl = "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=500&q=80";
-
-      // 🚀 EXTRACT OVERALL COVER IMAGE
+      const fallbackPlaceholderUrl = "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800&q=80";
       const coverImageObj = uploadedImages.find(img => img.isCover) || uploadedImages[0];
       const coverUrl = coverImageObj ? coverImageObj.imageUrl : fallbackPlaceholderUrl;
 
-      // 🚀 MAP RETROACTIVE COMPATIBILITY ARRAY:
       const compatibleColorVariants = variantsList.map(variantOption => {
-        // Find the designated cover image or first assigned image for this specific variant option
         const variantImages = uploadedImages.filter(img => img.variantName === variantOption.name);
         const hasCoverImage = variantImages.find(img => img.isCover);
         const selectedImgUrl = hasCoverImage 
@@ -323,7 +306,6 @@ export default function CreateListing({ onProductCreated, onCancel }) {
         };
       });
 
-      // Secure a strict callback representation of 'isMain' to have exactly one default main element
       if (!compatibleColorVariants.some(v => v.isMain) && compatibleColorVariants.length > 0) {
         compatibleColorVariants[0].isMain = true;
       }
@@ -339,8 +321,6 @@ export default function CreateListing({ onProductCreated, onCancel }) {
         whatsappNumber: basicInfo.whatsappNumber.trim(),
         condition: basicInfo.category === 'Food & Snacks' ? 'Freshly Made' : (productCondition || 'Unspecified'),
         availableSizes: availableSizes.length > 0 ? availableSizes : ['Standard Spec'],
-        
-        // 🚀 THE NEW MULTI-IMAGE ENGINE DATA SCHEMAS
         images: uploadedImages.map(img => ({
           id: img.id,
           imageUrl: img.imageUrl,
@@ -348,8 +328,6 @@ export default function CreateListing({ onProductCreated, onCancel }) {
           isCover: img.isCover
         })),
         variants: variantsList.map(v => v.name),
-
-        // Mapped compatible schema for existing marketplace layouts
         colorVariants: compatibleColorVariants
       };
 
@@ -357,7 +335,6 @@ export default function CreateListing({ onProductCreated, onCancel }) {
         onProductCreated(finalProductObj);
       }
 
-      // Reset Form State
       setBasicInfo(prev => ({
         ...prev,
         productTitle: '',
@@ -388,7 +365,6 @@ export default function CreateListing({ onProductCreated, onCancel }) {
       className="w-full max-w-2xl mx-auto bg-white border border-gray-200/90 shadow-xl rounded-2xl p-4 md:p-6 text-left relative text-[#111111]"
       style={{ fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", touchAction: 'manipulation', zIndex: 99999 }}
     >
-      {/* Loading Overlay */}
       {(isLoading || isCompressing) && (
         <div className="absolute inset-0 bg-white/80 backdrop-blur-[1px] z-50 flex flex-col items-center justify-center gap-3">
           <div className="w-8 h-8 border-3 border-marix-teal/20 border-t-marix-teal rounded-full animate-spin"></div>
@@ -398,14 +374,13 @@ export default function CreateListing({ onProductCreated, onCancel }) {
         </div>
       )}
 
-      {/* Success Banner */}
       {success && (
         <div className="mb-4 w-full bg-marix-teal text-white px-3 py-2.5 rounded-xl shadow-sm text-xs font-semibold flex items-center gap-2 animate-fadeIn">
           <span>✨</span> Listing published successfully! Card generated.
         </div>
       )}
 
-      {/* 🧭 NAVIGATION BAR */}
+      {/* NAVIGATION BAR */}
       <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-4 select-none">
         <button 
           type="button" 
@@ -431,7 +406,6 @@ export default function CreateListing({ onProductCreated, onCancel }) {
         </button>
       </div>
 
-      {/* Process Index Breadcrumbs Bar */}
       <div className="flex items-center justify-center gap-3 text-xs font-bold text-gray-400 mb-5 select-none">
         <div className={`flex items-center gap-1.5 cursor-pointer ${activeStep === 1 ? 'text-marix-teal' : 'text-gray-400'}`} onClick={() => setActiveStep(1)}>
           <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${activeStep === 1 ? 'bg-marix-teal text-white' : 'bg-gray-100 text-gray-500'}`}>1</span>
@@ -444,7 +418,6 @@ export default function CreateListing({ onProductCreated, onCancel }) {
         </div>
       </div>
 
-      {/* STEP 1 SECTION: BASIC INFORMATION */}
       {activeStep === 1 && (
         <div className="flex flex-col gap-4 animate-fadeIn">
           <div className="flex gap-2 items-center mb-0.5 select-none">
@@ -489,7 +462,6 @@ export default function CreateListing({ onProductCreated, onCancel }) {
             </div>
           </div>
 
-          {/* 🚀 DYNAMIC CONDITION FIELD: Hidden if "Food & Snacks" category is chosen */}
           {basicInfo.category !== 'Food & Snacks' && (
             <div className="flex flex-col gap-1.5 animate-fadeIn">
               <label className="text-xs font-bold text-[#111111]">
@@ -571,7 +543,6 @@ export default function CreateListing({ onProductCreated, onCancel }) {
         </div>
       )}
 
-      {/* STEP 2 SECTION: VARIANTS & GLOBAL IMAGES REDESIGN */}
       {activeStep === 2 && (
         <div className="flex flex-col gap-4 animate-fadeIn">
           <div className="bg-white border border-gray-100 rounded-xl p-3 md:p-4 shadow-sm">
@@ -582,7 +553,6 @@ export default function CreateListing({ onProductCreated, onCancel }) {
               <h3 className="text-xs font-bold text-[#111111]">2. Product Variants</h3>
             </div>
 
-            {/* A. Dynamic Sizes Block */}
             <div className="mb-4">
               <h4 className="text-xs font-bold text-gray-500 mb-1.5">A. {labels.specLabel} <span className="text-gray-400 font-semibold">(Optional)</span></h4>
               <div className="flex flex-wrap gap-1.5 items-center">
@@ -601,7 +571,6 @@ export default function CreateListing({ onProductCreated, onCancel }) {
 
             <hr className="border-gray-50 my-4" />
 
-            {/* B1. Defining the Text Variants List */}
             <div className="mb-6">
               <h4 className="text-xs font-bold text-gray-500 mb-0.5">B. Create Variant Options <span className="text-red-500">*</span></h4>
               <p className="text-[11px] text-gray-400 font-medium mb-3">Define the specific {labels.colorLabel.toLowerCase()} options for your product first.</p>
@@ -641,7 +610,6 @@ export default function CreateListing({ onProductCreated, onCancel }) {
 
             <hr className="border-gray-50 my-4" />
 
-            {/* B2. Upload & Assign Up to 5 Images */}
             <div>
               <div className="flex justify-between items-center mb-1">
                 <h4 className="text-xs font-bold text-gray-500">C. Manage Variant Images <span className="text-red-500">*</span></h4>
@@ -649,7 +617,6 @@ export default function CreateListing({ onProductCreated, onCancel }) {
               </div>
               <p className="text-[11px] text-gray-400 font-medium mb-3">Upload up to 5 presentation images total and assign each to a variant option. Select one as the Cover Image.</p>
 
-              {/* Upload Trigger Area */}
               {uploadedImages.length < 5 && (
                 <label className="border border-dashed border-gray-200 bg-gray-50/20 hover:bg-gray-50/50 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer select-none text-center min-h-[100px] mb-4 transition-colors">
                   <svg className="w-6 h-6 text-gray-400 mb-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
@@ -659,17 +626,13 @@ export default function CreateListing({ onProductCreated, onCancel }) {
                 </label>
               )}
 
-              {/* Uploaded Images List Map */}
               <div className="flex flex-col gap-3">
                 {uploadedImages.map((img) => (
                   <div key={img.id} className="border border-gray-150 p-2.5 rounded-xl bg-white flex flex-col sm:flex-row sm:items-center gap-3.5 relative group animate-fadeIn">
-                    
-                    {/* Image Preview Thumbnail */}
                     <div className="w-16 h-16 rounded-xl bg-gray-50 overflow-hidden shrink-0 border border-gray-100 relative">
                       <img src={img.imageUrl} alt="Variant pool asset" className="w-full h-full object-cover" />
                     </div>
 
-                    {/* Image Settings */}
                     <div className="flex-1 flex flex-col gap-2">
                       <div className="flex flex-col gap-1 max-w-[200px]">
                         <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Assign to variant option</label>
@@ -684,7 +647,6 @@ export default function CreateListing({ onProductCreated, onCancel }) {
                         </select>
                       </div>
 
-                      {/* Cover selection button or visual indicator label */}
                       <div className="flex items-center gap-2 select-none">
                         {img.isCover ? (
                           <div className="inline-flex items-center gap-1 text-[10px] text-green-700 bg-green-50/70 border border-green-150 px-2 py-0.5 rounded-lg font-bold">
@@ -702,7 +664,6 @@ export default function CreateListing({ onProductCreated, onCancel }) {
                       </div>
                     </div>
 
-                    {/* Delete asset trigger */}
                     <button 
                       type="button" 
                       onClick={() => handleRemoveUploadedImage(img.id)} 
@@ -717,7 +678,6 @@ export default function CreateListing({ onProductCreated, onCancel }) {
             </div>
           </div>
           
-          {/* STEP 2 BOTTOM NAVIGATION */}
           <div className="flex flex-col gap-2.5 mt-2 select-none">
             <button 
               type="button" 

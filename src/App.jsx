@@ -3,7 +3,7 @@ import AuthForm from './components/RegisterForm';
 import CreateListing from './components/CreateListing';
 import Homepage from './pages/Homepage';
 import ProductListings from './pages/ProductListings'; 
-import ProductOverview from './components/ProductOverview'; // 🚀 IMPORT THE NEW PRODUCT OVERVIEW STAGE
+import ProductOverview from './components/ProductOverview'; 
 import About from './pages/About';
 import Faq from './pages/Faq';
 import Privacy from './pages/Privacy';
@@ -14,17 +14,17 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentView, setCurrentView] = useState('home'); 
   const [showCreateModal, setShowCreateModal] = useState(false);
+  
+  // Set unified dynamic root collection hooks!
   const [products, setProducts] = useState(initialProducts || []);
+  const [userUploads, setUserUploads] = useState([]);
   
   const [activeTab, setActiveTab] = useState('browse');
-  const [userUploads, setUserUploads] = useState([]);
   const [userName, setUserName] = useState('');
   const [activeSearchTerm, setActiveSearchTerm] = useState('');
 
-  // 🚀 DYNAMIC ACTIVE PRODUCT PORTAL STATE FOR OVERVIEW TRANSITIONS
   const [selectedProduct, setSelectedProduct] = useState(null);
 
-  // 🚀 HOME-TO-EXPLORE NAVIGATION ROUTING STATES
   const [exploreViewMode, setExploreViewMode] = useState('All');
   const [exploreCategoryFilter, setExploreCategoryFilter] = useState('All Categories');
 
@@ -62,27 +62,26 @@ export default function App() {
     setCurrentView('home');
     setActiveTab('browse');
     setActiveSearchTerm('');
-    setSelectedProduct(null); // Reset layout overlays
+    setSelectedProduct(null); 
   };
 
-const handleNewProduct = (newCard) => {
-    setProducts([newCard, ...products]);
+  const handleNewProduct = (newCard) => {
+    // Correctly prepend new product to listings so that it propagates instantly!
+    setProducts(prevProducts => [newCard, ...prevProducts]);
     setUserUploads(prev => [newCard, ...prev]);
     setShowCreateModal(false); 
     
-    // Drop the overview portal state and route to uploads
     setSelectedProduct(null);
     setCurrentView('home');
     setActiveTab('uploads');
     setActiveSearchTerm('');
   };
 
-  // 🚀 CONTEXTUAL NAVIGATION ROUTER HANDOFF ENGINE
   const routeToExploreWithContext = (viewMode = 'All', category = 'All Categories') => {
     setExploreViewMode(viewMode);
     setExploreCategoryFilter(category);
     setCurrentView('explore');
-    setSelectedProduct(null); // Clear active item view on route shift
+    setSelectedProduct(null); 
   };
 
   const routeToSavedTab = () => {
@@ -121,51 +120,32 @@ const handleNewProduct = (newCard) => {
       
       <div className="w-full flex-1 flex flex-col relative overflow-hidden">
         
-        {/* 🚀 FIXED: Render Product Overview screen as a dynamic modal layer or primary screen viewport when selectedProduct has data */}
         {selectedProduct ? (
           <div className="absolute inset-0 overflow-y-auto bg-marix-cream z-50"> 
-      <ProductOverview 
-      product={selectedProduct}
-      allProducts={products}
-      
-      // Global Navbar & Navigation Props
-      isLoggedIn={isLoggedIn}
-      setIsLoggedIn={setIsLoggedIn}
-      userName={userName}
-      showCreateModal={showCreateModal}
-      setShowCreateModal={setShowCreateModal}
-      onNavigateToLogin={routeToLoginView}
-      onNavigateToSignup={routeToSignupView}
-      activeSearchTerm={activeSearchTerm}
-      setActiveSearchTerm={setActiveSearchTerm}
-      onNavigateToExplore={routeToExploreWithContext}
-
-      // 🚀 DIRECT STATE MUTATORS FOR NAVBAR NAVIGATION
-      onNavigateToUploadsTab={() => {
-        setSelectedProduct(null); // Closes Product Overview
-        setCurrentView('home');
-        setActiveTab('uploads'); // Goes straight to Uploads
-      }}
-      onNavigateToSavedTab={() => {
-        setSelectedProduct(null); // Closes Product Overview
-        setCurrentView('home');
-        setActiveTab('saved-mobile'); // Goes straight to Saved
-      }}
-      onNavigateHome={() => {
-        setSelectedProduct(null); // Closes Product Overview
-        setCurrentView('home');
-        setActiveTab('browse'); // Goes straight to Homepage
-      }}
-      
-      savedProducts={savedProducts}
-      onToggleSave={handleToggleSaveProduct}
-      onBack={() => setSelectedProduct(null)} 
-      onSelectRecommendedProduct={(item) => setSelectedProduct(item)} 
-    />
+            <ProductOverview 
+              product={selectedProduct}
+              allProducts={products}
+              isLoggedIn={isLoggedIn}
+              setIsLoggedIn={setIsLoggedIn}
+              userName={userName}
+              showCreateModal={showCreateModal}
+              setShowCreateModal={setShowCreateModal}
+              onNavigateToLogin={routeToLoginView}
+              onNavigateToSignup={routeToSignupView}
+              activeSearchTerm={activeSearchTerm}
+              setActiveSearchTerm={setActiveSearchTerm}
+              onNavigateToExplore={routeToExploreWithContext}
+              onNavigateToUploadsTab={routeToUploadsTab}
+              onNavigateToSavedTab={routeToSavedTab}
+              onNavigateHome={routeToHomeFeed}
+              savedProducts={savedProducts}
+              onToggleSave={handleToggleSaveProduct}
+              onBack={() => setSelectedProduct(null)} 
+              onSelectRecommendedProduct={(item) => setSelectedProduct(item)} 
+            />
           </div>
         ) : (
           <>
-            {/* HOMEPAGE VIEW FRAME */}
             <div className={`absolute inset-0 flex flex-col ${currentView === 'home' ? 'visible pointer-events-auto' : 'invisible pointer-events-none'}`}>
               <Homepage 
                 products={products} 
@@ -188,13 +168,13 @@ const handleNewProduct = (newCard) => {
                 activeSearchTerm={activeSearchTerm}
                 setActiveSearchTerm={setActiveSearchTerm}
                 onNavigateToView={handleStaticViewSwitch}
-                onProductCardClick={(clickedItem) => setSelectedProduct(clickedItem)} // 🚀 WIRE IN CARDS ROUTE HANDOFF
+                onProductCardClick={(clickedItem) => setSelectedProduct(clickedItem)} 
               />
             </div>
             
-            {/* EXPLORE VIEW FRAME */}
             <div className={`absolute inset-0 flex flex-col ${currentView === 'explore' ? 'visible pointer-events-auto' : 'invisible pointer-events-none'}`}>
               <ProductListings 
+                allProducts={products} // Passes the updated live listing state array to filters
                 isLoggedIn={isLoggedIn}
                 setIsLoggedIn={setIsLoggedIn}
                 userName={userName}
@@ -212,13 +192,12 @@ const handleNewProduct = (newCard) => {
                 viewMode={exploreViewMode}
                 setViewMode={setExploreViewMode}
                 initialCategory={exploreCategoryFilter}
-                onProductCardClick={(clickedItem) => setSelectedProduct(clickedItem)} // 🚀 WIRE EXPLORE CARDS AS WELL
+                onProductCardClick={(clickedItem) => setSelectedProduct(clickedItem)} 
               />
             </div>
           </>
         )}
         
-        {/* AUTH FRAME */}
         {(currentView === 'auth-login' || currentView === 'auth-signup') && (
           <div className="absolute inset-0 overflow-y-auto bg-marix-cream z-50">
             <AuthForm 
@@ -229,7 +208,6 @@ const handleNewProduct = (newCard) => {
           </div>
         )}
 
-        {/* STATIC PORTAL VIEWS WITH INDEPENDENT OVERFLOW WRAPPERS */}
         {['about', 'faq', 'privacy', 'terms'].includes(currentView) && (
           <div className="absolute inset-0 overflow-y-auto bg-marix-cream z-40 text-left">
             {currentView === 'about' && (

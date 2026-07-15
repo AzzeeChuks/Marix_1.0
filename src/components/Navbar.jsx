@@ -25,7 +25,7 @@ export default function Navbar({
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [localSearchInput, setLocalSearchInput] = useState(activeSearchTerm);
 
-  // 🚀 LOCAL BUT STORAGE-SYNCED STATE
+  // LOCAL BUT STORAGE-SYNCED STATE
   const [recentSearches, setRecentSearches] = useState(() => {
     const cached = localStorage.getItem('marix_recent_searches');
     if (cached) {
@@ -36,52 +36,56 @@ export default function Navbar({
 
   const popularSearches = ['iPhone', 'Sneakers', 'Wrist Watch', 'Backpack', 'Laptop', 'Jersey', 'Headphones', 'Books', 'Makeup', 'PS5'];
 
+  // Static high-level category words to prioritize during broad searches
+  const generalizedTerms = [
+    "Jeans", "Sneakers", "Shirts", "Perfumes", "Bags", "Hoodies", "Crocs", "Watches", 
+    "Heels", "Snacks", "Laptops", "Phones", "Chargers", "Skincare", "Makeup", "Food"
+  ];
+
+  // 🚀 ADAPTIVE SUGGESTION ENGINE: Category Grouping vs. Deep Title Matching
   const productSuggestions = useMemo(() => {
     const inputClean = localSearchInput.trim().toLowerCase();
     if (!inputClean) return [];
 
-    const inputWords = inputClean.split(/\s+/);
-    const primaryInputWord = inputWords[0];
-    const secondaryInputWord = inputWords[1] || "";
-
-    const uniquePhrases = new Set();
     const productsDB = initialProducts || [];
 
-    productsDB.forEach(product => {
+    // Filter products that match the current query
+    const matchingProducts = productsDB.filter(product => {
       const titleLower = (product.productTitle || "").toLowerCase();
       const catLower = (product.category || "").toLowerCase();
-      const shopLower = (product.shopName || "").toLowerCase();
-      const productTokens = `${titleLower} ${catLower} ${shopLower}`.split(/[\s,./-]+/);
+      const descLower = (product.description || "").toLowerCase();
+      return titleLower.includes(inputClean) || catLower.includes(inputClean) || descLower.includes(inputClean);
+    });
 
-      if (titleLower.includes(primaryInputWord) || catLower.includes(primaryInputWord)) {
-        productTokens.forEach(token => {
-          if (token !== primaryInputWord && token.length > 2) {
-            if (!secondaryInputWord || token.startsWith(secondaryInputWord)) {
-              const combinedPhrase = `${primaryInputWord} ${token}`;
-              
-              const queryMatchExists = productsDB.some(p => {
-                const combinedMatchStr = `${p.productTitle} ${p.description || ''} ${p.category} ${p.shopName}`.toLowerCase();
-                return combinedMatchStr.includes(combinedPhrase);
-              });
+    const suggestionsSet = new Set();
 
-              if (queryMatchExists) {
-                uniquePhrases.add(combinedPhrase);
-              }
-            }
+    // RULE: If there are many matching products (> 3), summarize into general tags
+    if (matchingProducts.length > 3) {
+      // 1. Look for matching pre-defined generalized words first
+      generalizedTerms.forEach(term => {
+        if (term.toLowerCase().includes(inputClean)) {
+          suggestionsSet.add(term);
+        }
+      });
+
+      // 2. Fall back to matching product categories if no general words match
+      if (suggestionsSet.size === 0) {
+        matchingProducts.forEach(p => {
+          if (p.category) {
+            suggestionsSet.add(p.category);
           }
         });
       }
-    });
-
-    if (uniquePhrases.size === 0) {
-      productsDB.forEach(product => {
-        if (product.productTitle?.toLowerCase().includes(inputClean)) {
-          uniquePhrases.add(product.productTitle);
+    } else {
+      // DEEP MATCH RULE: If matches are narrow (<= 3), output the specific product titles directly
+      matchingProducts.forEach(p => {
+        if (p.productTitle) {
+          suggestionsSet.add(p.productTitle);
         }
       });
     }
 
-    return Array.from(uniquePhrases)
+    return Array.from(suggestionsSet)
       .map(phrase => phrase.replace(/\b\w/g, char => char.toUpperCase()))
       .slice(0, 5);
   }, [localSearchInput]);
@@ -200,7 +204,6 @@ export default function Navbar({
             </div>
           </div>
 
-          {/* 🚀 FIXED: Replaced transition-all with specific transitions to prevent layout flashes on mobile mounts */}
           <div className={`w-full transition-[max-width,transform] duration-300 relative flex flex-col pb-2 md:pb-0 mb-1 md:mb-0 ${isSearchFocused ? 'md:flex-1 md:max-w-2xl mx-auto' : 'md:flex-1 max-w-md mx-auto'}`}>
             <div className="w-full relative flex items-center">
               <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">

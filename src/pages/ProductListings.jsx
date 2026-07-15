@@ -1,18 +1,11 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import Navbar from '../components/Navbar';
-import { initialProducts } from '../data/products';
 
 const allCampusesList = ["Absu, Uturu", "Imsu, Owerri", "Futo, Owerri", "UniUyo, Uyo", "UniPort, Harcourt"];
 const allCategoriesList = ["Fashion", "Footwears", "Gadgets", "Accessories", "Beauty", "Food & Snacks", "Home & Kitchen", "Other"];
 
-const baseline = [...(initialProducts || [])];
-for (let i = baseline.length - 1; i > 0; i--) {
-  const j = Math.floor(Math.random() * (i + 1));
-  [baseline[i], baseline[j]] = [baseline[j], baseline[i]];
-}
-const staticShuffledProducts = baseline;
-
 export default function ProductListings({ 
+  allProducts = [], // Dynamic live state from App.jsx
   isLoggedIn, 
   setIsLoggedIn,
   userName, 
@@ -32,7 +25,7 @@ export default function ProductListings({
   viewMode = "All",       
   setViewMode,
   initialCategory = "All Categories",
-  onProductCardClick // 🚀 ADDED PROP
+  onProductCardClick 
 }) {
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -57,7 +50,6 @@ export default function ProductListings({
   useEffect(() => {
     setActiveCategory(initialCategory);
     setStagedCategory(initialCategory);
-    
     setVisibleCount(20);
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = 0;
@@ -110,14 +102,14 @@ export default function ProductListings({
     return count;
   }, [activeCategory, activeCondition, activeCampuses, activePriceMax]);
 
+  // Read directly from the live allProducts array to find dynamic matches instantly
   const filteredProducts = useMemo(() => {
-    let result = [];
+    let result = [...allProducts];
+
     if (viewMode === "Featured") {
-      result = [...staticShuffledProducts.slice(0, 35)];
+      result = result.slice(0, Math.min(result.length, 35));
     } else if (viewMode === "Trending") {
-      result = [...staticShuffledProducts.slice(35, 70)];
-    } else {
-      result = [...staticShuffledProducts];
+      result = result.slice(Math.min(result.length, 35));
     }
 
     if (activeSearchTerm && activeSearchTerm.trim()) {
@@ -153,7 +145,7 @@ export default function ProductListings({
     else if (sortBy === 'Price: High to Low') result.sort((a, b) => parseInt(b.price.replace(/[^\d]/g, ''), 10) - parseInt(a.price.replace(/[^\d]/g, ''), 10));
 
     return result;
-  }, [activeSearchTerm, activeCategory, activeCondition, activeCampuses, activePriceMax, sortBy, viewMode]);
+  }, [allProducts, activeSearchTerm, activeCategory, activeCondition, activeCampuses, activePriceMax, sortBy, viewMode]);
 
   const paginatedProducts = useMemo(() => {
     return filteredProducts.slice(0, visibleCount);
@@ -162,13 +154,13 @@ export default function ProductListings({
   const recommendedProducts = useMemo(() => {
     if (activeSearchTerm.trim() && filteredProducts.length > 0) {
       const detectedCategory = filteredProducts[0].category;
-      const sameCategoryProducts = staticShuffledProducts.filter(
+      const sameCategoryProducts = allProducts.filter(
         product => product.category === detectedCategory
       );
       return sameCategoryProducts.slice(0, 6);
     }
-    return staticShuffledProducts.slice(22, 28);
-  }, [activeSearchTerm, filteredProducts]);
+    return allProducts.slice(0, 6);
+  }, [activeSearchTerm, filteredProducts, allProducts]);
 
   const handleApplyFilters = () => {
     setActiveCategory(stagedCategory);
@@ -200,7 +192,6 @@ export default function ProductListings({
 
   const handleFastContainerScrollToTop = () => {
     if (!scrollContainerRef.current) return;
-    
     const container = scrollContainerRef.current;
     const startPosition = container.scrollTop;
     const duration = 450;
@@ -213,14 +204,12 @@ export default function ProductListings({
     function animateStep(currentTime) {
       const elapsedTime = currentTime - startTime;
       const progress = Math.min(elapsedTime / duration, 1);
-      
       container.scrollTop = startPosition * (1 - easeOutQuad(progress));
 
       if (progress < 1) {
         window.requestAnimationFrame(animateStep);
       }
     }
-
     window.requestAnimationFrame(animateStep);
   };
 
@@ -335,18 +324,19 @@ export default function ProductListings({
               )}
             </div>
 
-            {/* Main Product Feed Grid Layout */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5">
               {paginatedProducts.map((product) => {
                 const primaryImgObj = product.colorVariants?.find(v => v.isMain) || product.colorVariants?.[0];
+                const fallbackImg = product.images?.find(img => img.isCover) || product.images?.[0];
+                const activeSrc = primaryImgObj ? primaryImgObj.imageUrl : (fallbackImg ? fallbackImg.imageUrl : "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800&q=80");
                 return (
                   <div key={product.id} className="w-full">
                     <VolcanoCard 
                       product={product} 
-                      targetImageSrc={primaryImgObj ? primaryImgObj.imageUrl : "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=500&q=80"} 
+                      targetImageSrc={activeSrc} 
                       savedProducts={savedProducts} 
                       onToggleSave={setSavedProducts} 
-                      onProductClick={onProductCardClick} // 🚀 ADDED PROP ROUTING HANDLER
+                      onProductClick={onProductCardClick} 
                     />
                   </div>
                 );
@@ -380,7 +370,6 @@ export default function ProductListings({
               ) : null}
             </div>
 
-            {/* DYNAMIC RECOMMENDATION ENGINE */}
             {activeSearchTerm.trim() !== "" && recommendedProducts.length > 0 && (
               <div className="mt-14 mb-14 select-none w-full overflow-hidden">
                 <h3 className="text-base md:text-lg font-black text-[#111111] tracking-tight mb-5">Recommended for You</h3>
@@ -401,6 +390,8 @@ export default function ProductListings({
                 `}>
                   {recommendedProducts.map((product) => {
                     const primaryImgObj = product.colorVariants?.find(v => v.isMain) || product.colorVariants?.[0];
+                    const fallbackImg = product.images?.find(img => img.isCover) || product.images?.[0];
+                    const activeSrc = primaryImgObj ? primaryImgObj.imageUrl : (fallbackImg ? fallbackImg.imageUrl : "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800&q=80");
                     return (
                       <div 
                         key={`rec-${product.id}`} 
@@ -408,10 +399,10 @@ export default function ProductListings({
                       >
                         <VolcanoCard 
                           product={product} 
-                          targetImageSrc={primaryImgObj ? primaryImgObj.imageUrl : "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=500&q=80"} 
+                          targetImageSrc={activeSrc} 
                           savedProducts={savedProducts} 
                           onToggleSave={setSavedProducts} 
-                          onProductClick={onProductCardClick} // 🚀 ADDED PROP
+                          onProductClick={onProductCardClick} 
                         />
                       </div>
                     );
@@ -422,14 +413,12 @@ export default function ProductListings({
           </main>
         </div>
 
-        {/* FIXED COPYRIGHT CLEAR LAYER */}
         <div className="w-full text-center text-[11px] text-gray-400 font-bold tracking-tight py-6 border-t border-gray-100 bg-white z-30 relative shrink-0">
           <span>&copy; {new Date().getFullYear()} <span className="text-marix-teal font-bold">Marix</span>. Built for Campus Commerce.</span>
         </div>
 
       </div>
 
-      {/* FILTER DRAWER INTERFACE */}
       <div className={`fixed inset-0 z-50 flex justify-end select-none transition-opacity duration-300 ${isFilterDrawerOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}>
         <div onClick={() => setIsFilterDrawerOpen(false)} className={`absolute inset-0 bg-black/60 backdrop-blur-[2px] transition-opacity duration-300 ease-in-out ${isFilterDrawerOpen ? 'opacity-100' : 'opacity-0'}`} />
         <div className={`w-full max-w-full md:max-w-[420px] h-[85vh] md:h-full bg-white shadow-2xl relative z-10 flex flex-col justify-between transform transition-transform duration-300 ease-out mt-auto md:mt-0 rounded-t-[24px] md:rounded-t-none ${isFilterDrawerOpen ? 'translate-y-0 md:translate-x-0' : 'translate-y-full md:translate-y-0 md:translate-x-full'}`}>
@@ -544,7 +533,7 @@ function VolcanoCard({ product, targetImageSrc, savedProducts, onToggleSave, onP
 
   return (
     <div 
-      onClick={() => onProductClick && onProductClick(product)} // 🚀 FIXED TRIGGER
+      onClick={() => onProductClick && onProductClick(product)} 
       className="w-full cursor-pointer flex flex-col gap-y-1 select-none group bg-white p-1.5 rounded-[18px] border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] text-left"
     >
       <div className="w-full aspect-square rounded-[12px] overflow-hidden bg-marix-cream/40 relative shrink-0">

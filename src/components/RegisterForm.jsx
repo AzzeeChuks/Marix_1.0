@@ -19,27 +19,32 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
     setAuthMode(initialMode);
   }, [initialMode]);
 
-  // 🚀 SAFARI VISUAL VIEWPORT & OVERLAY BOUNDS LOCK
+  // 🚀 SAFARI KEYBOARD LAYOUT SNAPPACK:
+  // Forces Safari to drop the entire layout window cleanly back to 0,0 when input focus leaves.
+  // This completely eliminates the sticky scrolled-up white space bug without altering Chrome's rendering height.
   useEffect(() => {
-    if (!window.visualViewport) return;
-
-    const handleViewportResize = () => {
-      const visibleHeight = window.visualViewport.height;
-      document.documentElement.style.setProperty('--visible-height', `${visibleHeight}px`);
+    const handleSafariReset = () => {
+      // Small timeout ensures Safari updates its visual viewport coordinate space first
+      setTimeout(() => {
+        window.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: 'smooth'
+        });
+      }, 80);
     };
 
-    // Listen to both resize and scroll events of the visual viewport
-    window.visualViewport.addEventListener('resize', handleViewportResize);
-    window.visualViewport.addEventListener('scroll', handleViewportResize);
-    
-    // Initial paint calculation
-    handleViewportResize();
+    const inputs = document.querySelectorAll('input');
+    inputs.forEach(input => {
+      input.addEventListener('blur', handleSafariReset);
+    });
 
     return () => {
-      window.visualViewport.removeEventListener('resize', handleViewportResize);
-      window.visualViewport.removeEventListener('scroll', handleViewportResize);
+      inputs.forEach(input => {
+        input.removeEventListener('blur', handleSafariReset);
+      });
     };
-  }, []);
+  }, [authMode]);
 
   // Master Rule Engine for Passwords (Shared across both Sign In and Sign Up views)
   const isStrictEmailValid = /\S+@\S+\.\S+/.test(formData.email);
@@ -82,12 +87,8 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
 
   return (
     <div 
-      className="w-full text-[#111111] px-4 py-6 md:p-6 flex flex-col justify-between select-none relative overflow-hidden bg-marix-cream"
-      style={{ 
-        fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-        height: 'var(--visible-height, 100vh)', // 🚀 Forces Safari to bind height to exact visible viewport space above keyboard
-        overscrollBehavior: 'none' // 🚀 Blocks dragging back-canvas white area
-      }}
+      className="w-full min-h-screen bg-marix-cream text-[#111111] px-4 py-6 md:p-6 flex flex-col justify-between select-none"
+      style={{ fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}
     >
       
       {/* Toast Overlays */}
@@ -101,7 +102,7 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
       )}
 
       {/* Outer Layout Matrix wrapper to handle structural positioning */}
-      <div className="w-full flex flex-col flex-1 overflow-y-auto scrollbar-none">
+      <div className="w-full flex flex-col flex-1">
         
         {/* Brand Header */}
         <header className="w-full max-w-6xl mx-auto flex justify-between items-center py-2 shrink-0 select-none mb-6">
@@ -121,7 +122,7 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
           </span>
         </header>
 
-        {/* ⬅️ SYNCHRONIZED NAVIGATION: Matches clean circular layout precisely */}
+        {/* ⬅️ UPDATED NAVIGATION: Perfectly synchronized back button design */}
         <div className="w-full max-w-6xl mx-auto text-left shrink-0 mb-6 select-none">
           <button 
             type="button"
