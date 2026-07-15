@@ -29,9 +29,10 @@ export default function ProductListings({
   setActiveSearchTerm,
   recentSearches = [],
   setRecentSearches,
-  viewMode = "All",       // 🚀 Recieved navigation track mode
+  viewMode = "All",       
   setViewMode,
-  initialCategory = "All Categories" // 🚀 Recieved navigation category trigger
+  initialCategory = "All Categories",
+  onProductCardClick // 🚀 ADDED PROP
 }) {
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -53,12 +54,10 @@ export default function ProductListings({
   const [sortBy, setSortBy] = useState('Newest');
   const [visibleCount, setVisibleCount] = useState(20);
 
-  // 🚀 INTERCEPT LISTENERS FOR HOMEPAGE CLICK COMMANDS
   useEffect(() => {
     setActiveCategory(initialCategory);
     setStagedCategory(initialCategory);
     
-    // Reset general pagination state whenever configuration contexts pivot
     setVisibleCount(20);
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = 0;
@@ -74,7 +73,6 @@ export default function ProductListings({
     sessionStorage.setItem('marix_explore_scroll_pos', currentScrollY);
     setShowScrollTop(currentScrollY > 300);
 
-    // Optimized threshold calculation to catch bottom touch seamlessly
     if (containerHeight + currentScrollY >= totalContentHeight - 40) {
       setIsAtAbsoluteBottom(true);
     } else {
@@ -83,7 +81,6 @@ export default function ProductListings({
   };
 
   useEffect(() => {
-    // Only apply scroll memory restoration on standard "All" mode navigation loops
     if (viewMode === 'All' && initialCategory === 'All Categories') {
       const savedScrollPos = sessionStorage.getItem('marix_explore_scroll_pos');
       if (savedScrollPos && scrollContainerRef.current) {
@@ -114,7 +111,6 @@ export default function ProductListings({
   }, [activeCategory, activeCondition, activeCampuses, activePriceMax]);
 
   const filteredProducts = useMemo(() => {
-    // 🚀 INVENTORY SPLITTING MATRIX ENGINE BASED ON CHOSEN ROUTE VIEW MODE
     let result = [];
     if (viewMode === "Featured") {
       result = [...staticShuffledProducts.slice(0, 35)];
@@ -228,7 +224,6 @@ export default function ProductListings({
     window.requestAnimationFrame(animateStep);
   };
 
-  // 🚀 CONFIGURE DYNAMIC HEADING INTERFACE LABELS
   const renderHeaderTitle = () => {
     if (activeSearchTerm.trim()) {
       return (
@@ -349,7 +344,9 @@ export default function ProductListings({
                     <VolcanoCard 
                       product={product} 
                       targetImageSrc={primaryImgObj ? primaryImgObj.imageUrl : "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=500&q=80"} 
-                      savedProducts={savedProducts} onToggleSave={setSavedProducts} 
+                      savedProducts={savedProducts} 
+                      onToggleSave={setSavedProducts} 
+                      onProductClick={onProductCardClick} // 🚀 ADDED PROP ROUTING HANDLER
                     />
                   </div>
                 );
@@ -383,12 +380,11 @@ export default function ProductListings({
               ) : null}
             </div>
 
-            {/* 🚀 DYNAMIC RECOMMENDATION ENGINE MATCHED PERFECTLY TO MAIN GRID SIZES */}
+            {/* DYNAMIC RECOMMENDATION ENGINE */}
             {activeSearchTerm.trim() !== "" && recommendedProducts.length > 0 && (
               <div className="mt-14 mb-14 select-none w-full overflow-hidden">
                 <h3 className="text-base md:text-lg font-black text-[#111111] tracking-tight mb-5">Recommended for You</h3>
                 
-                {/* 🚀 FIXED: Cards match the exact grid architecture proportions across screen sizes */}
                 <div className={`
                   w-full pb-4 scrollbar-none snap-x snap-mandatory overflow-x-auto
                   flex max-[1024px]:flex-row gap-4
@@ -415,6 +411,7 @@ export default function ProductListings({
                           targetImageSrc={primaryImgObj ? primaryImgObj.imageUrl : "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=500&q=80"} 
                           savedProducts={savedProducts} 
                           onToggleSave={setSavedProducts} 
+                          onProductClick={onProductCardClick} // 🚀 ADDED PROP
                         />
                       </div>
                     );
@@ -425,14 +422,14 @@ export default function ProductListings({
           </main>
         </div>
 
-        {/* 🚀 FIXED COPYRIGHT CLEAR LAYER */}
+        {/* FIXED COPYRIGHT CLEAR LAYER */}
         <div className="w-full text-center text-[11px] text-gray-400 font-bold tracking-tight py-6 border-t border-gray-100 bg-white z-30 relative shrink-0">
           <span>&copy; {new Date().getFullYear()} <span className="text-marix-teal font-bold">Marix</span>. Built for Campus Commerce.</span>
         </div>
 
       </div>
 
-      {/* 🚀 FILTER DRAWER INTERFACE */}
+      {/* FILTER DRAWER INTERFACE */}
       <div className={`fixed inset-0 z-50 flex justify-end select-none transition-opacity duration-300 ${isFilterDrawerOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}>
         <div onClick={() => setIsFilterDrawerOpen(false)} className={`absolute inset-0 bg-black/60 backdrop-blur-[2px] transition-opacity duration-300 ease-in-out ${isFilterDrawerOpen ? 'opacity-100' : 'opacity-0'}`} />
         <div className={`w-full max-w-full md:max-w-[420px] h-[85vh] md:h-full bg-white shadow-2xl relative z-10 flex flex-col justify-between transform transition-transform duration-300 ease-out mt-auto md:mt-0 rounded-t-[24px] md:rounded-t-none ${isFilterDrawerOpen ? 'translate-y-0 md:translate-x-0' : 'translate-y-full md:translate-y-0 md:translate-x-full'}`}>
@@ -442,7 +439,6 @@ export default function ProductListings({
           </div>
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6 text-left scrollbar-none">
             
-            {/* Category Dropdown */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Category</label>
               <div className="relative w-full">
@@ -454,7 +450,6 @@ export default function ProductListings({
               </div>
             </div>
 
-            {/* Condition Selection Pills */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Item Condition</label>
               <div className="grid grid-cols-3 gap-2">
@@ -471,7 +466,6 @@ export default function ProductListings({
               </div>
             </div>
 
-            {/* Price Max Slider */}
             <div className="flex flex-col gap-1.5">
               <div className="flex justify-between items-center w-full">
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Max Price</label>
@@ -488,7 +482,6 @@ export default function ProductListings({
               />
             </div>
 
-            {/* Campus Location Selection */}
             <div className="flex flex-col gap-2">
               <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Campus Location</label>
               <div className="flex flex-col gap-2 bg-gray-50/50 rounded-2xl p-3 border border-gray-100/50 max-h-[160px] overflow-y-auto scrollbar-none">
@@ -545,13 +538,15 @@ export default function ProductListings({
   );
 }
 
-// 🚀 FIXED: Stripped desktop hover states from mobile viewports to align clean card performance boundaries
-function VolcanoCard({ product, targetImageSrc, savedProducts, onToggleSave }) {
+function VolcanoCard({ product, targetImageSrc, savedProducts, onToggleSave, onProductClick }) {
   const isLiked = savedProducts.some(p => p.id === product.id);
   const cleanCampusName = product.campus ? product.campus.split(',')[0].trim() : 'Campus';
 
   return (
-    <div className="w-full flex flex-col gap-y-1 select-none group bg-white p-1.5 rounded-[18px] border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] text-left">
+    <div 
+      onClick={() => onProductClick && onProductClick(product)} // 🚀 FIXED TRIGGER
+      className="w-full cursor-pointer flex flex-col gap-y-1 select-none group bg-white p-1.5 rounded-[18px] border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] text-left"
+    >
       <div className="w-full aspect-square rounded-[12px] overflow-hidden bg-marix-cream/40 relative shrink-0">
         <img src={targetImageSrc} alt={product.productTitle} className="w-full h-full object-cover" loading="lazy" />
       </div>
@@ -566,7 +561,11 @@ function VolcanoCard({ product, targetImageSrc, savedProducts, onToggleSave }) {
         </div>
         <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-gray-100/50 shrink-0">
           <span className="text-[11px] sm:text-xs md:text-sm font-black text-marix-teal tracking-tight">{product.price}</span>
-          <button type="button" onClick={(e) => { e.stopPropagation(); onToggleSave(product); }} className={`w-[26px] h-[26px] sm:w-7 sm:h-7 rounded-full border flex items-center justify-center bg-white active:scale-90 focus:outline-none transition-colors ${isLiked ? 'border-marix-teal text-marix-teal' : 'border-gray-200 text-[#111111]/40'}`}>
+          <button 
+            type="button" 
+            onClick={(e) => { e.stopPropagation(); onToggleSave(product); }} 
+            className={`w-[26px] h-[26px] sm:w-7 sm:h-7 rounded-full border flex items-center justify-center bg-white active:scale-90 focus:outline-none transition-colors ${isLiked ? 'border-marix-teal text-marix-teal' : 'border-gray-200 text-[#111111]/40'}`}
+          >
             <svg className="w-[11px] h-[11px] sm:w-[13px] sm:h-[13px]" viewBox="0 0 24 24" fill={isLiked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.5"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" /></svg>
           </button>
         </div>

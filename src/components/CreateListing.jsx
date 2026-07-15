@@ -22,9 +22,9 @@ export default function CreateListing({ onProductCreated, onCancel }) {
   const [sizeInput, setSizeInput] = useState('');
   const [productCondition, setProductCondition] = useState('');
 
-  const [colorVariants, setColorVariants] = useState([
-    { colorName: '', fileName: '', fileBlob: null, imageUrl: '', isMain: true }
-  ]);
+  // 🚀 REDESIGNED STATE STRUCTURE: Decoupled text variants and global image pool
+  const [variantsList, setVariantsList] = useState([{ name: '' }]);
+  const [uploadedImages, setUploadedImages] = useState([]); // array of { id, fileName, fileBlob, imageUrl, variantName, isCover }
   
   const campusCategories = [
     "Fashion",
@@ -57,6 +57,13 @@ export default function CreateListing({ onProductCreated, onCancel }) {
       setAvailableSizes(['Regular', 'Full Pack']);
     } else {
       setAvailableSizes([]);
+    }
+  }, [basicInfo.category]);
+
+  // 🚀 AUTOMATIC CLEAN SWEEP: If category changes to "Food & Snacks", wipe the condition field instantly
+  useEffect(() => {
+    if (basicInfo.category === 'Food & Snacks') {
+      setProductCondition('');
     }
   }, [basicInfo.category]);
 
@@ -139,6 +146,7 @@ export default function CreateListing({ onProductCreated, onCancel }) {
 
   const labels = getDynamicLabels();
 
+  // 🚀 UPDATED VALIDATION LOGIC: condition is required unless category is 'Food & Snacks'
   const isFormComplete = 
     basicInfo.productTitle.trim() !== '' &&
     basicInfo.category !== '' &&
@@ -147,7 +155,12 @@ export default function CreateListing({ onProductCreated, onCancel }) {
     basicInfo.shopName.trim() !== '' &&
     basicInfo.campus.trim() !== '' &&
     basicInfo.whatsappNumber.trim() !== '' &&
-    colorVariants.every(v => v.colorName.trim() !== '' && (v.fileName.trim() !== '' || v.imageUrl !== ''));
+    (basicInfo.category === 'Food & Snacks' || productCondition !== '') && // Mandatory logic check
+    variantsList.length > 0 &&
+    variantsList.every(v => v.name.trim() !== '') &&
+    uploadedImages.length > 0 &&
+    uploadedImages.every(img => img.variantName.trim() !== '') &&
+    uploadedImages.some(img => img.isCover);
 
   const handleAddSize = () => {
     if (sizeInput.trim()) {
@@ -164,15 +177,50 @@ export default function CreateListing({ onProductCreated, onCancel }) {
     setAvailableSizes(availableSizes.filter(s => s !== sizeToRemove));
   };
 
-  const handleColorChange = (index, value) => {
-    const updated = [...colorVariants];
-    updated[index].colorName = value;
-    setColorVariants(updated);
+  // 🚀 REDESIGNED VARIANT AND TEXT OPTIONS LOGIC
+  const handleVariantNameChange = (index, value) => {
+    const updated = [...variantsList];
+    const oldName = updated[index].name;
+    updated[index].name = value;
+    setVariantsList(updated);
+
+    // Automatically keep mapped images updated if the variant name is changed
+    setUploadedImages(prev => prev.map(img => {
+      if (img.variantName === oldName) {
+        return { ...img, variantName: value };
+      }
+      return img;
+    }));
   };
 
-  const handleRealImageCompressionUpload = async (index, e) => {
-    const rawFile = e.target.files[0];
-    if (!rawFile) return;
+  const handleAddVariantOption = () => {
+    setVariantsList([...variantsList, { name: '' }]);
+  };
+
+  const handleRemoveVariantOption = (index) => {
+    if (variantsList.length > 1) {
+      const variantToRemove = variantsList[index].name;
+      setVariantsList(variantsList.filter((_, idx) => idx !== index));
+      // Reset image assignments belonging to deleted variants to the first active variant option
+      setUploadedImages(prev => prev.map(img => {
+        if (img.variantName === variantToRemove) {
+          return { ...img, variantName: variantsList[0]?.name || '' };
+        }
+        return img;
+      }));
+    }
+  };
+
+  // 🚀 REDESIGNED MULTI-IMAGE COMPRESSION UPLOAD
+  const handleImagePoolUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    // Strict 5-image total check
+    if (uploadedImages.length + files.length > 5) {
+      alert("A listing can have a maximum of 5 image uploads total.");
+      return;
+    }
 
     setIsCompressing(true);
     const options = {
@@ -183,42 +231,60 @@ export default function CreateListing({ onProductCreated, onCancel }) {
     };
 
     try {
-      const compressedBlob = await imageCompression(rawFile, options);
-      const displayUrlBlobString = URL.createObjectURL(compressedBlob);
+      const compressedList = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const compressedBlob = await imageCompression(file, options);
+        const displayUrl = URL.createObjectURL(compressedBlob);
+        
+        compressedList.push({
+          id: crypto.randomUUID(),
+          fileName: file.name,
+          fileBlob: compressedBlob,
+          imageUrl: displayUrl,
+          variantName: variantsList[0]?.name || '', // Default to first defined variant
+          isCover: false
+        });
+      }
+
+      const updatedImages = [...uploadedImages, ...compressedList];
       
-      const updated = [...colorVariants];
-      updated[index].fileName = rawFile.name;
-      updated[index].fileBlob = compressedBlob;
-      updated[index].imageUrl = displayUrlBlobString;
-      
-      setColorVariants(updated);
+      // Auto-assign cover if no cover is currently selected
+      if (!updatedImages.some(img => img.isCover) && updatedImages.length > 0) {
+        updatedImages[0].isCover = true;
+      }
+
+      setUploadedImages(updatedImages);
     } catch (err) {
-      console.error("Compression error:", err);
+      console.error("Compression engine exception:", err);
     } finally {
       setIsCompressing(false);
     }
   };
 
-  const handleSetMainImage = (index) => {
-    const updated = colorVariants.map((item, idx) => ({
-      ...item,
-      isMain: idx === index
-    }));
-    setColorVariants(updated);
-  };
-
-  const handleAddColorVariant = () => {
-    setColorVariants([...colorVariants, { colorName: '', fileName: '', fileBlob: null, imageUrl: '', isMain: false }]);
-  };
-
-  const handleRemoveColorVariant = (index) => {
-    if (colorVariants.length > 1) {
-      const updated = colorVariants.filter((_, idx) => idx !== index);
-      if (!updated.some(item => item.isMain)) {
-        updated[0].isMain = true;
-      }
-      setColorVariants(updated);
+  const handleRemoveUploadedImage = (id) => {
+    const updated = uploadedImages.filter(img => img.id !== id);
+    // Auto-promote first remaining image as cover if deleted image was the cover
+    if (updated.length > 0 && !updated.some(img => img.isCover)) {
+      updated[0].isCover = true;
     }
+    setUploadedImages(updated);
+  };
+
+  const handleSetCoverImage = (id) => {
+    setUploadedImages(prev => prev.map(img => ({
+      ...img,
+      isCover: img.id === id
+    })));
+  };
+
+  const handleImageVariantAssignment = (id, targetVariantName) => {
+    setUploadedImages(prev => prev.map(img => {
+      if (img.id === id) {
+        return { ...img, variantName: targetVariantName };
+      }
+      return img;
+    }));
   };
 
   const handlePublish = (e) => {
@@ -237,6 +303,31 @@ export default function CreateListing({ onProductCreated, onCancel }) {
 
       const fallbackPlaceholderUrl = "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=500&q=80";
 
+      // 🚀 EXTRACT OVERALL COVER IMAGE
+      const coverImageObj = uploadedImages.find(img => img.isCover) || uploadedImages[0];
+      const coverUrl = coverImageObj ? coverImageObj.imageUrl : fallbackPlaceholderUrl;
+
+      // 🚀 MAP RETROACTIVE COMPATIBILITY ARRAY:
+      const compatibleColorVariants = variantsList.map(variantOption => {
+        // Find the designated cover image or first assigned image for this specific variant option
+        const variantImages = uploadedImages.filter(img => img.variantName === variantOption.name);
+        const hasCoverImage = variantImages.find(img => img.isCover);
+        const selectedImgUrl = hasCoverImage 
+          ? hasCoverImage.imageUrl 
+          : (variantImages[0]?.imageUrl || coverUrl);
+
+        return {
+          colorName: variantOption.name || 'Standard Variant',
+          imageUrl: selectedImgUrl,
+          isMain: hasCoverImage ? true : (coverImageObj && variantImages.some(v => v.id === coverImageObj.id))
+        };
+      });
+
+      // Secure a strict callback representation of 'isMain' to have exactly one default main element
+      if (!compatibleColorVariants.some(v => v.isMain) && compatibleColorVariants.length > 0) {
+        compatibleColorVariants[0].isMain = true;
+      }
+
       const finalProductObj = {
         id: crypto.randomUUID(),
         productTitle: basicInfo.productTitle.trim(),
@@ -246,19 +337,27 @@ export default function CreateListing({ onProductCreated, onCancel }) {
         campus: basicInfo.campus.trim(),
         description: basicInfo.productDescription.trim(),
         whatsappNumber: basicInfo.whatsappNumber.trim(),
-        condition: productCondition || 'Unspecified',
+        condition: basicInfo.category === 'Food & Snacks' ? 'Freshly Made' : (productCondition || 'Unspecified'),
         availableSizes: availableSizes.length > 0 ? availableSizes : ['Standard Spec'],
-        colorVariants: colorVariants.map(variant => ({
-          colorName: variant.colorName || 'Standard Variant',
-          imageUrl: variant.imageUrl || fallbackPlaceholderUrl,
-          isMain: variant.isMain
-        }))
+        
+        // 🚀 THE NEW MULTI-IMAGE ENGINE DATA SCHEMAS
+        images: uploadedImages.map(img => ({
+          id: img.id,
+          imageUrl: img.imageUrl,
+          variantName: img.variantName,
+          isCover: img.isCover
+        })),
+        variants: variantsList.map(v => v.name),
+
+        // Mapped compatible schema for existing marketplace layouts
+        colorVariants: compatibleColorVariants
       };
 
       if (onProductCreated) {
         onProductCreated(finalProductObj);
       }
 
+      // Reset Form State
       setBasicInfo(prev => ({
         ...prev,
         productTitle: '',
@@ -267,7 +366,8 @@ export default function CreateListing({ onProductCreated, onCancel }) {
       }));
       setAvailableSizes(['M', 'L', 'XL']);
       setProductCondition('');
-      setColorVariants([{ colorName: '', fileName: '', fileBlob: null, imageUrl: '', isMain: true }]);
+      setVariantsList([{ name: '' }]);
+      setUploadedImages([]);
       setActiveStep(1);
 
       setTimeout(() => setSuccess(false), 1000);
@@ -310,12 +410,11 @@ export default function CreateListing({ onProductCreated, onCancel }) {
         <button 
           type="button" 
           onClick={onCancel} 
-          className="w-7 h-7 rounded-full bg-gray-50 flex items-center justify-center text-gray-500 focus:outline-none"
+          className="w-7 h-7 rounded-full bg-gray-50 flex items-center justify-center text-gray-500 focus:outline-none cursor-pointer"
         >
           <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
         
-        {/* 🎨 Figma Header Scale Update */}
         <h2 className="text-sm font-bold uppercase tracking-wide text-gray-400">Create a Listing</h2>
         
         <button 
@@ -357,7 +456,6 @@ export default function CreateListing({ onProductCreated, onCancel }) {
             </div>
           </div>
 
-          {/* 🎨 Labels updated to text-xs */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold text-[#111111]">Product Title <span className="text-red-500">*</span></label>
             <input type="text" placeholder="e.g., Louis Vuitton Slim-Fit Shirt" maxLength={100} value={basicInfo.productTitle} onChange={(e) => setBasicInfo({ ...basicInfo, productTitle: e.target.value })} className={inputStyles} />
@@ -391,27 +489,31 @@ export default function CreateListing({ onProductCreated, onCancel }) {
             </div>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-[#111111]">Product Condition <span className="text-gray-400 font-semibold">(Optional)</span></label>
-            <div className="relative w-full">
-              <select value={productCondition} onChange={(e) => setProductCondition(e.target.value)} className={selectStyles}>
-                <option value="">Select condition...</option>
-                <option value="Brand New">Brand New</option>
-                <option value="Like New">Like New</option>
-                <option value="Fair">Fair</option>
-              </select>
-              <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none flex items-center">
-                <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.364-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
-                </svg>
+          {/* 🚀 DYNAMIC CONDITION FIELD: Hidden if "Food & Snacks" category is chosen */}
+          {basicInfo.category !== 'Food & Snacks' && (
+            <div className="flex flex-col gap-1.5 animate-fadeIn">
+              <label className="text-xs font-bold text-[#111111]">
+                Product Condition <span className="text-red-500">*</span>
+              </label>
+              <div className="relative w-full">
+                <select value={productCondition} onChange={(e) => setProductCondition(e.target.value)} className={selectStyles}>
+                  <option value="" disabled hidden>Select Condition</option>
+                  <option value="Brand New">Brand New</option>
+                  <option value="Like New">Like New</option>
+                  <option value="Fair">Fair</option>
+                </select>
+                <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none flex items-center">
+                  <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.364-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+                  </svg>
+                </div>
+              </div>
+              <div className="text-[11px] font-medium tracking-tight text-gray-400 flex flex-wrap items-center gap-x-1 select-none mt-0.5">
+                <span>Condition evaluation is mandatory for non-food listings.</span>
+                {productCondition && <span className="text-marix-teal font-semibold italic text-[10px]">{getSubTextDefinition()}</span>}
               </div>
             </div>
-            {/* 🎨 Helper text updated to text-[11px] */}
-            <div className="text-[11px] font-medium tracking-tight text-gray-400 flex flex-wrap items-center gap-x-1 select-none mt-0.5">
-              <span>Choose the option that best matches condition</span>
-              {productCondition && <span className="text-marix-teal font-semibold italic text-[10px]">{getSubTextDefinition()}</span>}
-            </div>
-          </div>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
@@ -454,15 +556,14 @@ export default function CreateListing({ onProductCreated, onCancel }) {
             <textarea placeholder="e.g., Vintage print, high-quality material. Delivery at ABSU." maxLength={500} rows={3} value={basicInfo.productDescription} onChange={(e) => setBasicInfo({ ...basicInfo, productDescription: e.target.value })} className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-base md:text-sm focus:outline-none focus:border-marix-teal resize-none text-[#111111] font-medium" />
           </div>
 
-          {/* 🚀 FIXED RESET EXECUTION */}
           <div className="flex flex-col gap-2.5 mt-3 select-none">
-            <button type="button" onClick={() => setActiveStep(2)} className="w-full bg-marix-brown text-white font-bold py-3 rounded-xl text-xs shadow-sm focus:outline-none text-center">
+            <button type="button" onClick={() => setActiveStep(2)} className="w-full bg-marix-brown text-white font-bold py-3 rounded-xl text-xs shadow-sm focus:outline-none text-center cursor-pointer">
               Continue to Variants →
             </button>
             <button
               type="button"
               onClick={handleClearCacheAndReset}
-              className="text-[11px] font-bold text-gray-400 bg-gray-50 py-2.5 rounded-xl text-center border border-gray-100 outline-none focus:outline-none active:outline-none"
+              className="text-[11px] font-bold text-gray-400 bg-gray-50 py-2.5 rounded-xl text-center border border-gray-100 outline-none focus:outline-none active:outline-none cursor-pointer"
             >
               Reset Cached Shop Fields
             </button>
@@ -470,7 +571,7 @@ export default function CreateListing({ onProductCreated, onCancel }) {
         </div>
       )}
 
-      {/* STEP 2 SECTION: VARIANTS */}
+      {/* STEP 2 SECTION: VARIANTS & GLOBAL IMAGES REDESIGN */}
       {activeStep === 2 && (
         <div className="flex flex-col gap-4 animate-fadeIn">
           <div className="bg-white border border-gray-100 rounded-xl p-3 md:p-4 shadow-sm">
@@ -481,87 +582,138 @@ export default function CreateListing({ onProductCreated, onCancel }) {
               <h3 className="text-xs font-bold text-[#111111]">2. Product Variants</h3>
             </div>
 
+            {/* A. Dynamic Sizes Block */}
             <div className="mb-4">
               <h4 className="text-xs font-bold text-gray-500 mb-1.5">A. {labels.specLabel} <span className="text-gray-400 font-semibold">(Optional)</span></h4>
               <div className="flex flex-wrap gap-1.5 items-center">
                 {availableSizes.map((size, index) => (
                   <div key={index} className="flex items-center gap-1 bg-gray-50 border border-gray-100 rounded-lg px-2 py-1 text-[11px] font-bold text-[#111111]">
                     <span>{size}</span>
-                    <button type="button" onClick={() => handleRemoveSize(size)} className="text-gray-400 ml-0.5 font-normal text-[11px] focus:outline-none">✕</button>
+                    <button type="button" onClick={() => handleRemoveSize(size)} className="text-gray-400 ml-0.5 font-normal text-[11px] focus:outline-none cursor-pointer">✕</button>
                   </div>
                 ))}
                 <div className="flex items-center gap-1 max-w-[180px]">
                   <input type="text" placeholder={labels.specPlaceholder} value={sizeInput} onChange={(e) => setSizeInput(e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1 text-base md:text-sm focus:outline-none text-[#111111]" />
-                  <button type="button" onClick={handleAddSize} className="px-2 py-1 bg-gray-50 text-xs font-bold rounded-lg border border-gray-200 focus:outline-none">+</button>
+                  <button type="button" onClick={handleAddSize} className="px-2 py-1 bg-gray-50 text-xs font-bold rounded-lg border border-gray-200 focus:outline-none cursor-pointer">+</button>
                 </div>
               </div>
             </div>
 
-            <hr className="border-gray-50 my-3" />
+            <hr className="border-gray-50 my-4" />
 
-            <div>
-              <h4 className="text-xs font-bold text-gray-500 mb-0.5">B. {labels.colorLabel} <span className="text-red-500">*</span></h4>
-              <p className="text-[11px] text-gray-400 font-medium mb-2.5">Add options and their corresponding presentation images below.</p>
+            {/* B1. Defining the Text Variants List */}
+            <div className="mb-6">
+              <h4 className="text-xs font-bold text-gray-500 mb-0.5">B. Create Variant Options <span className="text-red-500">*</span></h4>
+              <p className="text-[11px] text-gray-400 font-medium mb-3">Define the specific {labels.colorLabel.toLowerCase()} options for your product first.</p>
 
-              <div className="flex flex-col gap-3">
-                {colorVariants.map((variant, index) => (
-                  <div key={index} className="border border-gray-100 p-2.5 rounded-xl bg-gray-50/30 flex flex-col gap-2.5 relative group">
-                    {colorVariants.length > 1 && (
-                      <button type="button" onClick={() => handleRemoveColorVariant(index)} className="absolute top-2.5 right-2.5 text-gray-400 focus:outline-none flex items-center justify-center">
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              <div className="flex flex-col gap-2.5">
+                {variantsList.map((variant, index) => (
+                  <div key={index} className="flex items-center gap-2 max-w-md animate-fadeIn">
+                    <input 
+                      type="text" 
+                      placeholder={labels.colorPlaceholder} 
+                      value={variant.name} 
+                      onChange={(e) => handleVariantNameChange(index, e.target.value)} 
+                      className="flex-1 bg-white border border-gray-200 rounded-xl px-3 py-1.5 text-base md:text-sm focus:outline-none text-[#111111] font-semibold" 
+                    />
+                    {variantsList.length > 1 && (
+                      <button 
+                        type="button" 
+                        onClick={() => handleRemoveVariantOption(index)} 
+                        className="w-8 h-8 rounded-xl bg-red-50 hover:bg-red-100/70 text-red-500 flex items-center justify-center focus:outline-none transition-colors shrink-0 cursor-pointer"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7M4 7h16" /></svg>
                       </button>
                     )}
-
-                    <div className="flex flex-col gap-1 max-w-xs">
-                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{labels.colorLabel}</label>
-                      <input type="text" placeholder={labels.colorPlaceholder} value={variant.colorName} onChange={(e) => handleColorChange(index, e.target.value)} className="w-full bg-white border border-gray-200 rounded-xl px-2.5 py-1 text-base md:text-sm focus:outline-none text-[#111111]" />
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
-                      <div className="sm:col-span-4">
-                        <label className="border border-dashed border-gray-200 bg-white rounded-xl p-2 flex flex-col items-center justify-center cursor-pointer select-none text-center min-h-[64px]">
-                          {variant.imageUrl ? (
-                            <div className="w-full h-10 rounded-lg overflow-hidden relative">
-                              <img src={variant.imageUrl} alt="Asset container variant" className="w-full h-full object-cover" />
-                            </div>
-                          ) : (
-                            <>
-                              <svg className="w-4 h-4 text-gray-400 mb-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                              <span className="text-[11px] font-bold text-gray-400">Upload Image</span>
-                            </>
-                          )}
-                          <input type="file" accept="image/*" onChange={(e) => handleRealImageCompressionUpload(index, e)} className="hidden" />
-                        </label>
-                      </div>
-
-                      <div className="sm:col-span-8">
-                        {variant.isMain ? (
-                          <div className="bg-green-50/60 border border-green-100 p-2 rounded-xl text-left flex items-start gap-1.5 select-none animate-fadeIn">
-                            <svg className="w-3 h-3 text-green-600 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.5 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                            <div>
-                              <h5 className="text-[11px] font-bold text-green-800">Main product image</h5>
-                              <p className="text-[10px] text-green-700/70 font-medium">Marketplace card thumbnail banner.</p>
-                            </div>
-                          </div>
-                        ) : (
-                          <div 
-                            onClick={() => handleSetMainImage(index)}
-                            className="border border-dashed border-gray-200 bg-white px-2.5 py-1.5 rounded-xl text-left flex items-center gap-1 cursor-pointer select-none text-[11px] text-gray-400 font-bold"
-                          >
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.364-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
-                            <span>Set as main thumbnail</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
                   </div>
                 ))}
 
-                <button type="button" onClick={handleAddColorVariant} className="w-full border border-dashed border-marix-teal/30 text-marix-teal py-2 rounded-xl text-xs font-bold text-center bg-marix-cream/10 focus:outline-none flex items-center justify-center gap-1">
+                <button 
+                  type="button" 
+                  onClick={handleAddVariantOption} 
+                  className="w-fit border border-dashed border-marix-teal/30 text-marix-teal px-4 py-1.5 rounded-xl text-[11px] font-bold bg-marix-cream/10 focus:outline-none flex items-center gap-1 transition-all cursor-pointer"
+                >
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
-                  <span>Create New Option Variant Entry</span>
+                  <span>Add Option</span>
                 </button>
               </div>
+            </div>
+
+            <hr className="border-gray-50 my-4" />
+
+            {/* B2. Upload & Assign Up to 5 Images */}
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <h4 className="text-xs font-bold text-gray-500">C. Manage Variant Images <span className="text-red-500">*</span></h4>
+                <span className="text-[10px] font-black text-marix-teal">{uploadedImages.length}/5 Images uploaded</span>
+              </div>
+              <p className="text-[11px] text-gray-400 font-medium mb-3">Upload up to 5 presentation images total and assign each to a variant option. Select one as the Cover Image.</p>
+
+              {/* Upload Trigger Area */}
+              {uploadedImages.length < 5 && (
+                <label className="border border-dashed border-gray-200 bg-gray-50/20 hover:bg-gray-50/50 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer select-none text-center min-h-[100px] mb-4 transition-colors">
+                  <svg className="w-6 h-6 text-gray-400 mb-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                  <span className="text-xs font-bold text-gray-500">Select Images to Upload</span>
+                  <span className="text-[10px] text-gray-400 font-medium mt-0.5">Supports multiple selection</span>
+                  <input type="file" accept="image/*" multiple onChange={handleImagePoolUpload} className="hidden" />
+                </label>
+              )}
+
+              {/* Uploaded Images List Map */}
+              <div className="flex flex-col gap-3">
+                {uploadedImages.map((img) => (
+                  <div key={img.id} className="border border-gray-150 p-2.5 rounded-xl bg-white flex flex-col sm:flex-row sm:items-center gap-3.5 relative group animate-fadeIn">
+                    
+                    {/* Image Preview Thumbnail */}
+                    <div className="w-16 h-16 rounded-xl bg-gray-50 overflow-hidden shrink-0 border border-gray-100 relative">
+                      <img src={img.imageUrl} alt="Variant pool asset" className="w-full h-full object-cover" />
+                    </div>
+
+                    {/* Image Settings */}
+                    <div className="flex-1 flex flex-col gap-2">
+                      <div className="flex flex-col gap-1 max-w-[200px]">
+                        <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Assign to variant option</label>
+                        <select 
+                          value={img.variantName} 
+                          onChange={(e) => handleImageVariantAssignment(img.id, e.target.value)}
+                          className="w-full border border-gray-200 rounded-lg px-2 py-1 text-xs font-semibold outline-none bg-white focus:border-marix-teal"
+                        >
+                          {variantsList.map((v, index) => (
+                            <option key={index} value={v.name}>{v.name || `Variant ${index + 1} (Empty)`}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Cover selection button or visual indicator label */}
+                      <div className="flex items-center gap-2 select-none">
+                        {img.isCover ? (
+                          <div className="inline-flex items-center gap-1 text-[10px] text-green-700 bg-green-50/70 border border-green-150 px-2 py-0.5 rounded-lg font-bold">
+                            <i className="ph ph-sparkle text-xs"></i><span>Product Cover Image</span>
+                          </div>
+                        ) : (
+                          <button 
+                            type="button" 
+                            onClick={() => handleSetCoverImage(img.id)}
+                            className="text-[10px] text-gray-400 font-bold hover:text-marix-teal transition-colors border border-dashed border-gray-200 bg-white px-2 py-0.5 rounded-lg focus:outline-none cursor-pointer"
+                          >
+                            Set as Cover Image
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Delete asset trigger */}
+                    <button 
+                      type="button" 
+                      onClick={() => handleRemoveUploadedImage(img.id)} 
+                      className="absolute top-2.5 right-2.5 text-gray-400 hover:text-red-500 focus:outline-none flex items-center justify-center p-1 transition-colors cursor-pointer"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+
             </div>
           </div>
           
@@ -570,14 +722,14 @@ export default function CreateListing({ onProductCreated, onCancel }) {
             <button 
               type="button" 
               onClick={() => setActiveStep(1)} 
-              className="text-xs font-bold text-gray-400 self-center py-1 focus:outline-none"
+              className="text-xs font-bold text-gray-400 self-center py-1 focus:outline-none cursor-pointer"
             >
               ← Back to Basic Details
             </button>
             <button
               type="button"
               onClick={handleClearCacheAndReset}
-              className="text-[11px] font-bold text-gray-400 bg-gray-50 py-2.5 rounded-xl text-center border border-gray-100 outline-none focus:outline-none active:outline-none"
+              className="text-[11px] font-bold text-gray-400 bg-gray-50 py-2.5 rounded-xl text-center border border-gray-100 outline-none focus:outline-none active:outline-none cursor-pointer"
             >
               Reset Cached Shop Fields
             </button>

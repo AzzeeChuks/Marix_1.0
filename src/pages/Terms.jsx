@@ -103,8 +103,11 @@ export default function Terms({
       <div className="w-full h-3 block md:hidden shrink-0"></div>
 
       <div className="hidden md:block w-full max-w-[95%] mx-auto px-2 lg:px-4 pt-6 select-none">
-        <button onClick={onNavigateHome} className="w-9 h-9 bg-white border border-gray-200/70 rounded-xl flex items-center justify-center text-gray-600 hover:text-marix-teal hover:border-marix-teal/40 focus:outline-none transition-all shadow-sm">
-          <i className="ph ph-arrow-left font-bold text-base"></i>
+        <button 
+          onClick={onNavigateHome} 
+          className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center text-gray-600 hover:text-marix-teal hover:border-marix-teal transition-all focus:outline-none cursor-pointer"
+        >
+          <i className="ph ph-arrow-left text-lg font-bold"></i>
         </button>
       </div>
 

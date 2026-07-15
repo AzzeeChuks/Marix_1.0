@@ -3,6 +3,7 @@ import AuthForm from './components/RegisterForm';
 import CreateListing from './components/CreateListing';
 import Homepage from './pages/Homepage';
 import ProductListings from './pages/ProductListings'; 
+import ProductOverview from './components/ProductOverview'; // 🚀 IMPORT THE NEW PRODUCT OVERVIEW STAGE
 import About from './pages/About';
 import Faq from './pages/Faq';
 import Privacy from './pages/Privacy';
@@ -19,6 +20,9 @@ export default function App() {
   const [userUploads, setUserUploads] = useState([]);
   const [userName, setUserName] = useState('');
   const [activeSearchTerm, setActiveSearchTerm] = useState('');
+
+  // 🚀 DYNAMIC ACTIVE PRODUCT PORTAL STATE FOR OVERVIEW TRANSITIONS
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
   // 🚀 HOME-TO-EXPLORE NAVIGATION ROUTING STATES
   const [exploreViewMode, setExploreViewMode] = useState('All');
@@ -58,12 +62,16 @@ export default function App() {
     setCurrentView('home');
     setActiveTab('browse');
     setActiveSearchTerm('');
+    setSelectedProduct(null); // Reset layout overlays
   };
 
-  const handleNewProduct = (newCard) => {
+const handleNewProduct = (newCard) => {
     setProducts([newCard, ...products]);
     setUserUploads(prev => [newCard, ...prev]);
     setShowCreateModal(false); 
+    
+    // Drop the overview portal state and route to uploads
+    setSelectedProduct(null);
     setCurrentView('home');
     setActiveTab('uploads');
     setActiveSearchTerm('');
@@ -74,21 +82,25 @@ export default function App() {
     setExploreViewMode(viewMode);
     setExploreCategoryFilter(category);
     setCurrentView('explore');
+    setSelectedProduct(null); // Clear active item view on route shift
   };
 
   const routeToSavedTab = () => {
     setCurrentView('home');
     setActiveTab('saved-mobile');
+    setSelectedProduct(null);
   };
 
   const routeToUploadsTab = () => {
     setCurrentView('home');
     setActiveTab('uploads');
+    setSelectedProduct(null);
   };
 
   const routeToHomeFeed = () => {
     setCurrentView('home');
     setActiveTab('browse');
+    setSelectedProduct(null);
   };
 
   const routeToLoginView = () => {
@@ -101,6 +113,7 @@ export default function App() {
 
   const handleStaticViewSwitch = (targetView) => {
     setCurrentView(targetView);
+    setSelectedProduct(null);
   };
 
   return (
@@ -108,54 +121,102 @@ export default function App() {
       
       <div className="w-full flex-1 flex flex-col relative overflow-hidden">
         
-        {/* HOMEPAGE VIEW FRAME */}
-        <div className={`absolute inset-0 flex flex-col ${currentView === 'home' ? 'visible pointer-events-auto' : 'invisible pointer-events-none'}`}>
-          <Homepage 
-            products={products} 
-            isLoggedIn={isLoggedIn} 
-            setIsLoggedIn={setIsLoggedIn}
-            userName={userName}
-            onSignOut={handleSignOut} 
-            showCreateModal={showCreateModal}
-            setShowCreateModal={setShowCreateModal}
-            activeTab={activeTab}        
-            setActiveTab={(targetTab) => {
-              setActiveTab(targetTab);
-            }}  
-            userUploads={userUploads}
-            savedProducts={savedProducts}
-            setSavedProducts={handleToggleSaveProduct}     
-            onNavigateToLogin={routeToLoginView}   
-            onNavigateToSignup={routeToSignupView} 
-            onNavigateToExplore={routeToExploreWithContext} // 🚀 Updated to pass down parameters
-            activeSearchTerm={activeSearchTerm}
-            setActiveSearchTerm={setActiveSearchTerm}
-            onNavigateToView={handleStaticViewSwitch}
-          />
-        </div>
-        
-        {/* EXPLORE VIEW FRAME */}
-        <div className={`absolute inset-0 flex flex-col ${currentView === 'explore' ? 'visible pointer-events-auto' : 'invisible pointer-events-none'}`}>
-          <ProductListings 
-            isLoggedIn={isLoggedIn}
-            setIsLoggedIn={setIsLoggedIn}
-            userName={userName}
-            onNavigateHome={routeToHomeFeed}
-            savedProducts={savedProducts}
-            setSavedProducts={handleToggleSaveProduct}
-            showCreateModal={showCreateModal}
-            setShowCreateModal={setShowCreateModal}
-            onNavigateToLogin={routeToLoginView}
-            onNavigateToSignup={routeToSignupView}
-            onNavigateToUploadsTab={routeToUploadsTab}
-            onNavigateToSavedTab={routeToSavedTab}
-            activeSearchTerm={activeSearchTerm}
-            setActiveSearchTerm={setActiveSearchTerm}
-            viewMode={exploreViewMode} // 🚀 Track Mode prop
-            setViewMode={setExploreViewMode}
-            initialCategory={exploreCategoryFilter} // 🚀 Route Category prop
-          />
-        </div>
+        {/* 🚀 FIXED: Render Product Overview screen as a dynamic modal layer or primary screen viewport when selectedProduct has data */}
+        {selectedProduct ? (
+          <div className="absolute inset-0 overflow-y-auto bg-marix-cream z-50"> 
+      <ProductOverview 
+      product={selectedProduct}
+      allProducts={products}
+      
+      // Global Navbar & Navigation Props
+      isLoggedIn={isLoggedIn}
+      setIsLoggedIn={setIsLoggedIn}
+      userName={userName}
+      showCreateModal={showCreateModal}
+      setShowCreateModal={setShowCreateModal}
+      onNavigateToLogin={routeToLoginView}
+      onNavigateToSignup={routeToSignupView}
+      activeSearchTerm={activeSearchTerm}
+      setActiveSearchTerm={setActiveSearchTerm}
+      onNavigateToExplore={routeToExploreWithContext}
+
+      // 🚀 DIRECT STATE MUTATORS FOR NAVBAR NAVIGATION
+      onNavigateToUploadsTab={() => {
+        setSelectedProduct(null); // Closes Product Overview
+        setCurrentView('home');
+        setActiveTab('uploads'); // Goes straight to Uploads
+      }}
+      onNavigateToSavedTab={() => {
+        setSelectedProduct(null); // Closes Product Overview
+        setCurrentView('home');
+        setActiveTab('saved-mobile'); // Goes straight to Saved
+      }}
+      onNavigateHome={() => {
+        setSelectedProduct(null); // Closes Product Overview
+        setCurrentView('home');
+        setActiveTab('browse'); // Goes straight to Homepage
+      }}
+      
+      savedProducts={savedProducts}
+      onToggleSave={handleToggleSaveProduct}
+      onBack={() => setSelectedProduct(null)} 
+      onSelectRecommendedProduct={(item) => setSelectedProduct(item)} 
+    />
+          </div>
+        ) : (
+          <>
+            {/* HOMEPAGE VIEW FRAME */}
+            <div className={`absolute inset-0 flex flex-col ${currentView === 'home' ? 'visible pointer-events-auto' : 'invisible pointer-events-none'}`}>
+              <Homepage 
+                products={products} 
+                isLoggedIn={isLoggedIn} 
+                setIsLoggedIn={setIsLoggedIn}
+                userName={userName}
+                onSignOut={handleSignOut} 
+                showCreateModal={showCreateModal}
+                setShowCreateModal={setShowCreateModal}
+                activeTab={activeTab}        
+                setActiveTab={(targetTab) => {
+                  setActiveTab(targetTab);
+                }}  
+                userUploads={userUploads}
+                savedProducts={savedProducts}
+                setSavedProducts={handleToggleSaveProduct}     
+                onNavigateToLogin={routeToLoginView}   
+                onNavigateToSignup={routeToSignupView} 
+                onNavigateToExplore={routeToExploreWithContext}
+                activeSearchTerm={activeSearchTerm}
+                setActiveSearchTerm={setActiveSearchTerm}
+                onNavigateToView={handleStaticViewSwitch}
+                onProductCardClick={(clickedItem) => setSelectedProduct(clickedItem)} // 🚀 WIRE IN CARDS ROUTE HANDOFF
+              />
+            </div>
+            
+            {/* EXPLORE VIEW FRAME */}
+            <div className={`absolute inset-0 flex flex-col ${currentView === 'explore' ? 'visible pointer-events-auto' : 'invisible pointer-events-none'}`}>
+              <ProductListings 
+                isLoggedIn={isLoggedIn}
+                setIsLoggedIn={setIsLoggedIn}
+                userName={userName}
+                onNavigateHome={routeToHomeFeed}
+                savedProducts={savedProducts}
+                setSavedProducts={handleToggleSaveProduct}
+                showCreateModal={showCreateModal}
+                setShowCreateModal={setShowCreateModal}
+                onNavigateToLogin={routeToLoginView}
+                onNavigateToSignup={routeToSignupView}
+                onNavigateToUploadsTab={routeToUploadsTab}
+                onNavigateToSavedTab={routeToSavedTab}
+                activeSearchTerm={activeSearchTerm}
+                setActiveSearchTerm={setActiveSearchTerm}
+                viewMode={exploreViewMode}
+                setViewMode={setExploreViewMode}
+                initialCategory={exploreCategoryFilter}
+                onProductCardClick={(clickedItem) => setSelectedProduct(clickedItem)} // 🚀 WIRE EXPLORE CARDS AS WELL
+              />
+            </div>
+          </>
+        )}
         
         {/* AUTH FRAME */}
         {(currentView === 'auth-login' || currentView === 'auth-signup') && (

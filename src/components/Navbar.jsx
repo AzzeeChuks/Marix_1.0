@@ -25,7 +25,7 @@ export default function Navbar({
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [localSearchInput, setLocalSearchInput] = useState(activeSearchTerm);
 
-  // 🚀 LOCAL BUT STORAGE-SYNCED STATE: Grabs fresh data independently on every single view mount
+  // 🚀 LOCAL BUT STORAGE-SYNCED STATE
   const [recentSearches, setRecentSearches] = useState(() => {
     const cached = localStorage.getItem('marix_recent_searches');
     if (cached) {
@@ -86,7 +86,6 @@ export default function Navbar({
       .slice(0, 5);
   }, [localSearchInput]);
 
-  // 🚀 REAL-TIME cross-window/cross-component localStorage synchronization hook
   useEffect(() => {
     const syncStorage = () => {
       const cached = localStorage.getItem('marix_recent_searches');
@@ -114,7 +113,6 @@ export default function Navbar({
     localStorage.setItem('marix_recent_searches', JSON.stringify(updatedHistory));
     setRecentSearches(updatedHistory);
     
-    // Dispatches storage change internally so other unmounted navbar structures pick it up instantly
     window.dispatchEvent(new Event('storage'));
     
     if (setActiveSearchTerm) setActiveSearchTerm(cleanTerm);
@@ -202,7 +200,8 @@ export default function Navbar({
             </div>
           </div>
 
-          <div className={`w-full transition-all duration-300 relative flex flex-col pb-2 md:pb-0 mb-1 md:mb-0 ${isSearchFocused ? 'md:flex-1 md:max-w-2xl mx-auto' : 'md:flex-1 max-w-md mx-auto'}`}>
+          {/* 🚀 FIXED: Replaced transition-all with specific transitions to prevent layout flashes on mobile mounts */}
+          <div className={`w-full transition-[max-width,transform] duration-300 relative flex flex-col pb-2 md:pb-0 mb-1 md:mb-0 ${isSearchFocused ? 'md:flex-1 md:max-w-2xl mx-auto' : 'md:flex-1 max-w-md mx-auto'}`}>
             <div className="w-full relative flex items-center">
               <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
                 <i className="ph ph-magnifying-glass text-xs sm:text-sm font-bold"></i>

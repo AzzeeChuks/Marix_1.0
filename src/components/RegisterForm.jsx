@@ -19,6 +19,28 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
     setAuthMode(initialMode);
   }, [initialMode]);
 
+  // 🚀 SAFARI VISUAL VIEWPORT & OVERLAY BOUNDS LOCK
+  useEffect(() => {
+    if (!window.visualViewport) return;
+
+    const handleViewportResize = () => {
+      const visibleHeight = window.visualViewport.height;
+      document.documentElement.style.setProperty('--visible-height', `${visibleHeight}px`);
+    };
+
+    // Listen to both resize and scroll events of the visual viewport
+    window.visualViewport.addEventListener('resize', handleViewportResize);
+    window.visualViewport.addEventListener('scroll', handleViewportResize);
+    
+    // Initial paint calculation
+    handleViewportResize();
+
+    return () => {
+      window.visualViewport.removeEventListener('resize', handleViewportResize);
+      window.visualViewport.removeEventListener('scroll', handleViewportResize);
+    };
+  }, []);
+
   // Master Rule Engine for Passwords (Shared across both Sign In and Sign Up views)
   const isStrictEmailValid = /\S+@\S+\.\S+/.test(formData.email);
   const hasMinLength = formData.password.length >= 8;
@@ -60,8 +82,12 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
 
   return (
     <div 
-      className="w-full min-h-screen bg-marix-cream text-[#111111] px-4 py-6 md:p-6 flex flex-col justify-between select-none"
-      style={{ fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}
+      className="w-full text-[#111111] px-4 py-6 md:p-6 flex flex-col justify-between select-none relative overflow-hidden bg-marix-cream"
+      style={{ 
+        fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+        height: 'var(--visible-height, 100vh)', // 🚀 Forces Safari to bind height to exact visible viewport space above keyboard
+        overscrollBehavior: 'none' // 🚀 Blocks dragging back-canvas white area
+      }}
     >
       
       {/* Toast Overlays */}
@@ -75,7 +101,7 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
       )}
 
       {/* Outer Layout Matrix wrapper to handle structural positioning */}
-      <div className="w-full flex flex-col flex-1">
+      <div className="w-full flex flex-col flex-1 overflow-y-auto scrollbar-none">
         
         {/* Brand Header */}
         <header className="w-full max-w-6xl mx-auto flex justify-between items-center py-2 shrink-0 select-none mb-6">
@@ -95,14 +121,14 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
           </span>
         </header>
 
-        {/* ⬅️ UPDATED NAVIGATION: Matches the subpage back navigation layout architecture */}
+        {/* ⬅️ SYNCHRONIZED NAVIGATION: Matches clean circular layout precisely */}
         <div className="w-full max-w-6xl mx-auto text-left shrink-0 mb-6 select-none">
           <button 
             type="button"
             onClick={onCancel}
-            className="w-9 h-9 bg-white border border-gray-200/70 rounded-xl flex items-center justify-center text-gray-600 hover:text-marix-teal hover:border-marix-teal/40 focus:outline-none transition-all shadow-sm"
+            className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center text-gray-600 hover:text-marix-teal hover:border-marix-teal transition-all focus:outline-none cursor-pointer"
           >
-            <i className="ph ph-arrow-left font-bold text-base"></i>
+            <i className="ph ph-arrow-left text-lg font-bold"></i>
           </button>
         </div>
         
@@ -139,7 +165,7 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
                 type="button"
                 disabled={isLoading}
                 onClick={() => setAuthMode('login')}
-                className={`flex-1 py-2 text-xs md:text-sm font-bold rounded-md transition-all duration-150 outline-none focus:outline-none focus:ring-0 active:outline-none ${
+                className={`flex-1 py-2 text-xs md:text-sm font-bold rounded-md transition-all duration-150 outline-none focus:outline-none focus:ring-0 active:outline-none cursor-pointer ${
                   authMode === 'login' 
                     ? 'bg-white text-[#111111] shadow-sm' 
                     : 'text-[#111111]/40'
@@ -151,7 +177,7 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
                 type="button"
                 disabled={isLoading}
                 onClick={() => setAuthMode('signup')}
-                className={`flex-1 py-2 text-xs md:text-sm font-bold rounded-md transition-all duration-150 outline-none focus:outline-none focus:ring-0 active:outline-none ${
+                className={`flex-1 py-2 text-xs md:text-sm font-bold rounded-md transition-all duration-150 outline-none focus:outline-none focus:ring-0 active:outline-none cursor-pointer ${
                   authMode === 'signup' 
                     ? 'bg-white text-[#111111] shadow-sm' 
                     : 'text-[#111111]/40'
@@ -165,7 +191,7 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
             <button 
               type="button"
               disabled={isLoading}
-              className="w-full bg-white border border-gray-200 text-[#111111] font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-3 transition-colors mb-5 disabled:opacity-50 shadow-sm outline-none focus:outline-none focus:ring-0 active:outline-none"
+              className="w-full bg-white border border-gray-200 text-[#111111] font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-3 transition-colors mb-5 disabled:opacity-50 shadow-sm outline-none focus:outline-none focus:ring-0 active:outline-none cursor-pointer"
             >
               <img src={googleIcon} alt="Google" className="w-5 h-5 object-contain" />
               <span>Continue with Google</span>
@@ -180,7 +206,6 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
             {/* Form wrapper */}
             <form onSubmit={handleSubmit} className="flex flex-col gap-3.5 select-text transition-all duration-300">
               
-              {/* 🎯 SHIELDED TEXT INPUTS: Base text sizes set to 16px (text-base) blocks iPhone auto-zooming quirks */}
               {authMode === 'signup' && (
                 <div className="flex flex-col gap-1 text-left animate-fadeIn">
                   <label className="text-[11px] font-bold tracking-wider uppercase text-[#111111]/70">First Name</label>
@@ -225,7 +250,7 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#111111] transition-colors focus:outline-none flex items-center justify-center"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#111111] transition-colors focus:outline-none flex items-center justify-center cursor-pointer"
                   >
                     <i className={`ph ${showPassword ? 'ph-eye-slash' : 'ph-eye'} text-base`}></i>
                   </button>
@@ -274,7 +299,7 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
               <button
                 type="submit"
                 disabled={isLoading || (authMode === 'signup' ? !isSignUpValid : !isLoginValid)}
-                className="w-full bg-marix-brown hover:opacity-95 disabled:bg-gray-200 disabled:text-gray-400 font-bold py-3 rounded-xl text-sm transition-all shadow-md mt-2 flex items-center justify-center gap-2 text-white focus:outline-none select-none"
+                className="w-full bg-marix-brown hover:opacity-95 disabled:bg-gray-200 disabled:text-gray-400 font-bold py-3 rounded-xl text-sm transition-all shadow-md mt-2 flex items-center justify-center gap-2 text-white focus:outline-none select-none cursor-pointer"
               >
                 {authMode === 'signup' ? 'Create Account' : 'Sign In'}
               </button>
@@ -285,7 +310,7 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
       </div>
 
       {/* Footer System Baseline */}
-      <footer className="w-full text-center text-[11px] text-gray-400 font-bold py-6 border-t border-gray-100 max-w-6xl mx-auto mt-auto shrink-0">
+      <footer className="w-full text-center text-[11px] text-gray-400 font-bold py-6 border-t border-gray-100 max-w-6xl mx-auto mt-auto shrink-0 select-none">
         &copy; {new Date().getFullYear()} <span className="text-marix-teal font-bold">Marix</span>. Built for Campus Commerce.
       </footer>
 

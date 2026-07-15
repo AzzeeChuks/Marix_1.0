@@ -115,27 +115,34 @@ export default function Privacy({
       {/* 🚀 Precise h-3 spacer right beneath the nav block flow on mobile */}
       <div className="w-full h-3 block md:hidden shrink-0"></div>
 
-      {/* DESKTOP BACK BUTTON VIEW */}
-      <div className="hidden md:block w-full max-w-[95%] mx-auto px-2 lg:px-4 pt-6 select-none">
-        <button onClick={onNavigateHome} className="w-9 h-9 bg-white border border-gray-200/70 rounded-xl flex items-center justify-center text-gray-600 hover:text-marix-teal hover:border-marix-teal/40 focus:outline-none transition-all shadow-sm">
-          <i className="ph ph-arrow-left font-bold text-base"></i>
+      {/* 🚀 DESKTOP BACK BUTTON VIEW: Synchronized with ProductOverview */}
+      <div className="hidden md:block w-full max-w-[95%] mx-auto px-2 lg:px-4 pt-6 select-none text-left">
+        <button 
+          onClick={onNavigateHome} 
+          className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center text-gray-600 hover:text-marix-teal hover:border-marix-teal transition-all focus:outline-none cursor-pointer"
+        >
+          <i className="ph ph-arrow-left text-lg font-bold"></i>
         </button>
       </div>
 
       <main className="w-full max-w-[90%] md:max-w-3xl mx-auto py-6 md:py-12 flex-1">
-        {/* 📱 MOBILE BACK BUTTON VIEW: Tightened up! Removed pb-4 wrapper padding to let h-3 dictate the gap */}
-        <div className="block md:hidden pb-4">
-          <button onClick={onNavigateHome} className="w-9 h-9 bg-white border border-gray-200/70 rounded-xl flex items-center justify-center text-gray-600 focus:outline-none active:scale-95 transition-transform shadow-sm">
+        
+        {/* 🚀 MOBILE BACK BUTTON VIEW: Synchronized with ProductOverview and tightened up! */}
+        <div className="block md:hidden pb-4 text-left">
+          <button 
+            onClick={onNavigateHome} 
+            className="w-10 h-10 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center text-gray-600 focus:outline-none active:scale-95 transition-transform cursor-pointer"
+          >
             <i className="ph ph-arrow-left text-base font-bold"></i>
           </button>
         </div>
 
-        <div className="pb-4 mb-8">
+        <div className="pb-4 mb-8 text-left">
           <h1 className="text-3xl font-black text-[#111111] tracking-tight mb-1">Privacy Policy</h1>
           <p className="text-xs font-black tracking-widest text-marix-teal uppercase">Last updated: August 2026</p>
         </div>
 
-        <div className="text-xs md:text-sm text-gray-700 font-medium leading-relaxed">
+        <div className="text-xs md:text-sm text-gray-700 font-medium leading-relaxed text-left">
           <p className="mb-8 text-gray-800">
             <span className="text-marix-teal font-bold">Marix</span> respects your privacy and is committed to protecting your personal information.
           </p>
@@ -227,7 +234,7 @@ export default function Privacy({
       )} */}
 
       {/* 🎯 SINGLE PATCHED COPYRIGHT ROW */}
-      <div className="w-full text-center text-[11px] text-gray-400 font-bold tracking-tight py-6 border-t border-gray-100 bg-white z-30 relative">
+      <div className="w-full text-center text-[11px] text-gray-400 font-bold tracking-tight py-6 border-t border-gray-100 bg-white z-30 relative shrink-0">
         <span>&copy; {new Date().getFullYear()} <span className="text-marix-teal font-bold">Marix</span>. Built for Campus Commerce.</span>
       </div>
 

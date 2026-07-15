@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import marixLogoM from '../images/marix-logo-m.png';
 import Navbar from '../components/Navbar';
 
@@ -20,7 +20,8 @@ export default function Homepage({
   onNavigateToExplore, 
   onNavigateToView,
   activeSearchTerm,
-  setActiveSearchTerm
+  setActiveSearchTerm,
+  onProductCardClick // 🚀 NEW HANDLER PROP FROM ROUTER ENGINE
 }) {
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [isAtAbsoluteBottom, setIsAtAbsoluteBottom] = useState(false); 
@@ -41,7 +42,7 @@ export default function Homepage({
     setActiveTab(newTab);
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const savedDepth = sessionStorage.getItem(`marix_scroll_${activeTab}`);
     if (savedDepth && scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = parseInt(savedDepth, 10);
@@ -217,38 +218,45 @@ export default function Homepage({
                       </div>
                     </div>
 
-                    <div className="hidden min-[1025px]:block w-full h-full relative">
-                      <div className="absolute top-[6%] left-[2%] w-[155px] bg-white p-2 rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.04)] border border-gray-100/60 transform -rotate-[6deg] hover:-translate-y-2 hover:rotate-0 hover:z-30 transition-all duration-300 ease-out">
-                        <div className="w-full aspect-square rounded-xl bg-gray-50 overflow-hidden mb-1.5"><img src={showcaseItems[0].img} alt="" className="w-full h-full object-cover" /></div>
-                        <h5 className="text-xs font-bold text-[#111111] truncate">{showcaseItems[0].name}</h5>
-                        <span className="text-xs font-black text-marix-teal">{showcaseItems[0].price}</span>
+                    {typeof window !== 'undefined' && window.innerWidth >= 1025 && (
+                      <div className="hidden min-[1025px]:block w-full h-full relative">
+                        <div className="absolute top-[6%] left-[2%] w-[155px] bg-white p-2 rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.04)] border border-gray-100/60 transform -rotate-[6deg] hover:-translate-y-2 hover:rotate-0 hover:z-30 transition-transform duration-300 ease-out">
+                          <div className="w-full aspect-square rounded-xl bg-gray-50 overflow-hidden mb-1.5"><img src={showcaseItems[0].img} alt="" className="w-full h-full object-cover" /></div>
+                          <h5 className="text-xs font-bold text-[#111111] truncate">{showcaseItems[0].name}</h5>
+                          <span className="text-xs font-black text-marix-teal">{showcaseItems[0].price}</span>
+                        </div>
+                        
+                        <div className="absolute top-[0%] left-[44%] w-[165px] bg-white p-2 rounded-2xl shadow-[0_12px_32px_rgba(0,0,0,0.05)] border border-gray-100/60 transform rotate-[4deg] hover:-translate-y-2 hover:rotate-0 hover:z-30 transition-transform duration-300 ease-out z-10">
+                          <div className="w-full aspect-square rounded-xl bg-gray-50 overflow-hidden mb-1.5"><img src={showcaseItems[1].img} alt="" className="w-full h-full object-cover" /></div>
+                          <h5 className="text-xs font-bold text-[#111111] truncate">{showcaseItems[1].name}</h5>
+                          <span className="text-xs font-black text-marix-teal">{showcaseItems[1].price}</span>
+                        </div>
+                        
+                        <div className="absolute top-[14%] right-[2%] w-[145px] bg-white p-2 rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.04)] border border-gray-100/60 transform -rotate-[3deg] hover:-translate-y-2 hover:rotate-0 hover:z-30 transition-transform duration-300 ease-out">
+                          <div className="w-full aspect-square rounded-xl bg-gray-50 overflow-hidden mb-1.5"><img src={showcaseItems[2].img} alt="" className="w-full h-full object-cover" /></div>
+                          <h5 className="text-xs font-bold text-[#111111] truncate">{showcaseItems[2].name}</h5>
+                          <span className="text-xs font-black text-marix-teal">{showcaseItems[2].price}</span>
+                        </div>
+                        
+                        <div className="absolute top-[44%] left-[28%] w-[165px] bg-white p-2 rounded-2xl shadow-[0_16px_36px_rgba(69,43,31,0.08)] border border-gray-100 transform -rotate-[2deg] hover:-translate-y-2 hover:rotate-0 hover:z-30 transition-transform duration-300 ease-out z-20">
+                          <div className="w-full aspect-square rounded-xl bg-gray-50 overflow-hidden mb-1.5"><img src={showcaseItems[3].img} alt="" className="w-full h-full object-cover" /></div>
+                          <h5 className="text-xs font-bold text-[#111111] truncate">{showcaseItems[3].name}</h5>
+                          <span className="text-xs font-black text-marix-teal">{showcaseItems[3].price}</span>
+                        </div>
+                        
+                        <div className="absolute bottom-[4%] left-[4%] w-[145px] bg-white p-2 rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.04)] border border-gray-100/60 transform rotate-[5deg] hover:-translate-y-2 hover:rotate-0 hover:z-30 transition-transform duration-300 ease-out">
+                          <div className="w-full aspect-square rounded-xl bg-gray-50 overflow-hidden mb-1.5"><img src={showcaseItems[4].img} alt="" className="w-full h-full object-cover" /></div>
+                          <h5 className="text-xs font-bold text-[#111111] truncate">{showcaseItems[4].name}</h5>
+                          <span className="text-xs font-black text-marix-teal">{showcaseItems[4].price}</span>
+                        </div>
+                        
+                        <div className="absolute bottom-[6%] right-[4%] w-[145px] bg-white p-2 rounded-2xl shadow-[0_10px_28px_rgba(0,0,0,0.05)] border border-gray-100/60 transform -rotate-[4deg] hover:-translate-y-2 hover:rotate-0 hover:z-30 transition-transform duration-300 ease-out z-10">
+                          <div className="w-full aspect-square rounded-xl bg-gray-50 overflow-hidden mb-1.5"><img src={showcaseItems[5].img} alt="" className="w-full h-full object-cover" /></div>
+                          <h5 className="text-xs font-bold text-[#111111] truncate">{showcaseItems[5].name}</h5>
+                          <span className="text-xs font-black text-marix-teal">{showcaseItems[5].price}</span>
+                        </div>
                       </div>
-                      <div className="absolute top-[0%] left-[44%] w-[165px] bg-white p-2 rounded-2xl shadow-[0_12px_32px_rgba(0,0,0,0.05)] border border-gray-100/60 transform rotate-[4deg] hover:-translate-y-2 hover:rotate-0 hover:z-30 transition-all duration-300 ease-out z-10">
-                        <div className="w-full aspect-square rounded-xl bg-gray-50 overflow-hidden mb-1.5"><img src={showcaseItems[1].img} alt="" className="w-full h-full object-cover" /></div>
-                        <h5 className="text-xs font-bold text-[#111111] truncate">{showcaseItems[1].name}</h5>
-                        <span className="text-xs font-black text-marix-teal">{showcaseItems[1].price}</span>
-                      </div>
-                      <div className="absolute top-[14%] right-[2%] w-[145px] bg-white p-2 rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.04)] border border-gray-100/60 transform -rotate-[3deg] hover:-translate-y-2 hover:rotate-0 hover:z-30 transition-all duration-300 ease-out">
-                        <div className="w-full aspect-square rounded-xl bg-gray-50 overflow-hidden mb-1.5"><img src={showcaseItems[2].img} alt="" className="w-full h-full object-cover" /></div>
-                        <h5 className="text-xs font-bold text-[#111111] truncate">{showcaseItems[2].name}</h5>
-                        <span className="text-xs font-black text-marix-teal">{showcaseItems[2].price}</span>
-                      </div>
-                      <div className="absolute top-[44%] left-[28%] w-[165px] bg-white p-2 rounded-2xl shadow-[0_16px_36px_rgba(69,43,31,0.08)] border border-gray-100 transform -rotate-[2deg] hover:-translate-y-2 hover:rotate-0 hover:z-30 transition-all duration-300 ease-out z-20">
-                        <div className="w-full aspect-square rounded-xl bg-gray-50 overflow-hidden mb-1.5"><img src={showcaseItems[3].img} alt="" className="w-full h-full object-cover" /></div>
-                        <h5 className="text-xs font-bold text-[#111111] truncate">{showcaseItems[3].name}</h5>
-                        <span className="text-xs font-black text-marix-teal">{showcaseItems[3].price}</span>
-                      </div>
-                      <div className="absolute bottom-[4%] left-[4%] w-[145px] bg-white p-2 rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.04)] border border-gray-100/60 transform rotate-[5deg] hover:-translate-y-2 hover:rotate-0 hover:z-30 transition-all duration-300 ease-out">
-                        <div className="w-full aspect-square rounded-xl bg-gray-50 overflow-hidden mb-1.5"><img src={showcaseItems[4].img} alt="" className="w-full h-full object-cover" /></div>
-                        <h5 className="text-xs font-bold text-[#111111] truncate">{showcaseItems[4].name}</h5>
-                        <span className="text-xs font-black text-marix-teal">{showcaseItems[4].price}</span>
-                      </div>
-                      <div className="absolute bottom-[6%] right-[4%] w-[145px] bg-white p-2 rounded-2xl shadow-[0_10px_28px_rgba(0,0,0,0.05)] border border-gray-100/60 transform -rotate-[4deg] hover:-translate-y-2 hover:rotate-0 hover:z-30 transition-all duration-300 ease-out z-10">
-                        <div className="w-full aspect-square rounded-xl bg-gray-50 overflow-hidden mb-1.5"><img src={showcaseItems[5].img} alt="" className="w-full h-full object-cover" /></div>
-                        <h5 className="text-xs font-bold text-[#111111] truncate">{showcaseItems[5].name}</h5>
-                        <span className="text-xs font-black text-marix-teal">{showcaseItems[5].price}</span>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </section>
 
@@ -276,15 +284,18 @@ export default function Homepage({
                 <section className="w-full max-w-[95%] mx-auto px-2 lg:px-4 py-6 text-left">
                   <div className="flex justify-between items-center w-full mb-5 select-none">
                     <h3 className="text-base md:text-lg font-black tracking-tight text-[#111111]">Featured Products</h3>
-                    {/* 🚀 FIXED: Mobile hover state removed securely */}
                     <span className="text-[11px] font-bold text-gray-400 cursor-pointer md:hover:text-marix-teal transition-colors" onClick={() => onNavigateToExplore('Featured', 'All Categories')}>See All</span>
                   </div>
                   <div className="flex overflow-x-auto min-[1025px]:grid min-[1025px]:grid-cols-6 gap-3.5 md:gap-5 pb-3 scrollbar-none snap-x snap-mandatory">
                     {featuredDeck.map((product) => {
+                      // 🚀 NEW COMPATIBILITY FALLBACK HANDLER
                       const primaryImgObj = product.colorVariants?.find(v => v.isMain) || product.colorVariants?.[0];
+                      const fallbackImg = product.images?.find(img => img.isCover) || product.images?.[0];
+                      const finalTargetSrc = primaryImgObj ? primaryImgObj.imageUrl : (fallbackImg ? fallbackImg.imageUrl : "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=500&q=80");
+
                       return (
                         <div key={product.id} className="shrink-0 snap-start max-[599px]:w-[46%] min-[600px]:max-[829px]:w-[31%] min-[830px]:max-[1024px]:w-[23%] min-[1025px]:w-full">
-                          <VolcanoCard product={product} targetImageSrc={primaryImgObj ? primaryImgObj.imageUrl : "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=500&q=80"} savedProducts={savedProducts} onToggleSave={setSavedProducts} />
+                          <VolcanoCard product={product} targetImageSrc={finalTargetSrc} savedProducts={savedProducts} onToggleSave={setSavedProducts} onProductClick={onProductCardClick} />
                         </div>
                       );
                     })}
@@ -301,7 +312,6 @@ export default function Homepage({
                         onClick={() => onNavigateToExplore('All', cat.name)} 
                         className="bg-white p-3 rounded-xl border border-gray-200/60 text-center flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors shadow-sm active:scale-98 group md:hover:border-marix-teal/50"
                       >
-                        {/* 🚀 FIXED: Background color and text stay perfectly constant on hover now */}
                         <div className="w-10 h-10 rounded-xl bg-marix-teal/10 text-marix-teal flex items-center justify-center text-xl">
                           <i className={`ph ${cat.iconClass} font-bold`}></i>
                         </div>
@@ -315,15 +325,17 @@ export default function Homepage({
                 <section className="w-full max-w-[95%] mx-auto px-2 lg:px-4 py-6 text-left pb-24 md:pb-12">
                   <div className="flex justify-between items-center w-full mb-5 select-none">
                     <h3 className="text-base md:text-lg font-black tracking-tight text-[#111111]">Trending This Week 🔥</h3>
-                    {/* 🚀 FIXED: Mobile hover state removed safely */}
                     <span className="text-[11px] font-bold text-gray-400 cursor-pointer md:hover:text-marix-teal transition-colors" onClick={() => onNavigateToExplore('Trending', 'All Categories')}>See All</span>
                   </div>
                   <div className="flex overflow-x-auto min-[1025px]:grid min-[1025px]:grid-cols-6 gap-3.5 md:gap-5 pb-3 scrollbar-none snap-x snap-mandatory">
                     {trendingDeck.map((product) => {
                       const primaryImgObj = product.colorVariants?.find(v => v.isMain) || product.colorVariants?.[0];
+                      const fallbackImg = product.images?.find(img => img.isCover) || product.images?.[0];
+                      const finalTargetSrc = primaryImgObj ? primaryImgObj.imageUrl : (fallbackImg ? fallbackImg.imageUrl : "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=500&q=80");
+
                       return (
                         <div key={product.id} className="shrink-0 snap-start max-[599px]:w-[46%] min-[600px]:max-[829px]:w-[31%] min-[830px]:max-[1024px]:w-[23%] min-[1025px]:w-full">
-                          <VolcanoCard product={product} targetImageSrc={primaryImgObj ? primaryImgObj.imageUrl : "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=500&q=80"} savedProducts={savedProducts} onToggleSave={setSavedProducts} />
+                          <VolcanoCard product={product} targetImageSrc={finalTargetSrc} savedProducts={savedProducts} onToggleSave={setSavedProducts} onProductClick={onProductCardClick} />
                         </div>
                       );
                     })}
@@ -364,13 +376,17 @@ export default function Homepage({
                     <div className="grid grid-cols-2 min-[600px]:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-5">
                       {currentTabItemsList.map((product) => {
                         const primaryImg = product.colorVariants?.find(v => v.isMain) || product.colorVariants?.[0];
+                        const fallbackImg = product.images?.find(img => img.isCover) || product.images?.[0];
+                        const finalTargetSrc = primaryImg ? primaryImg.imageUrl : (fallbackImg ? fallbackImg.imageUrl : "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=500&q=80");
+
                         return (
                           <VolcanoCard 
                             key={product.id} 
                             product={product} 
-                            targetImageSrc={primaryImg ? primaryImg.imageUrl : "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=500&q=80"} 
+                            targetImageSrc={finalTargetSrc} 
                             savedProducts={savedProducts}
                             onToggleSave={setSavedProducts}
+                            onProductClick={onProductCardClick} // 🚀 BIND HANDLER
                           />
                         );
                       })}
@@ -474,14 +490,17 @@ export default function Homepage({
   );
 }
 
-function VolcanoCard({ product, targetImageSrc, savedProducts, onToggleSave }) {
+function VolcanoCard({ product, targetImageSrc, savedProducts, onToggleSave, onProductClick }) {
   const isLiked = savedProducts.some(p => p.id === product.id);
   const cleanCampusName = product.campus ? product.campus.split(',')[0].trim() : 'Campus';
 
   return (
-    <div className="w-full flex flex-col gap-y-1 select-none group bg-white p-1.5 rounded-[18px] border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] text-left">
+    <div 
+      onClick={() => onProductClick && onProductClick(product)} // 🚀 CLICK HANDLER
+      className="w-full cursor-pointer hover:scale-[1.01] active:scale-[0.99] transition-transform duration-200 flex flex-col gap-y-1 select-none group bg-white p-1.5 rounded-[18px] border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] text-left"
+    >
       <div className="w-full aspect-square rounded-[12px] overflow-hidden bg-marix-cream/40 relative shrink-0">
-        <img src={targetImageSrc} alt={product.productTitle} className="w-full h-full object-cover" loading="lazy" />
+        <img src={targetImageSrc} alt={product.productTitle} className="w-full h-full object-cover animate-fadeIn" loading="lazy" />
       </div>
       <div className="flex flex-col gap-y-0.5 px-1 pb-1 flex-1 justify-between min-w-0">
         <div className="flex flex-col min-w-0">
@@ -494,7 +513,14 @@ function VolcanoCard({ product, targetImageSrc, savedProducts, onToggleSave }) {
         </div>
         <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-gray-100/50 shrink-0">
           <span className="text-[11px] sm:text-xs md:text-sm font-black text-marix-teal tracking-tight">{product.price}</span>
-          <button type="button" onClick={(e) => { e.stopPropagation(); onToggleSave(product); }} className={`w-[26px] h-[26px] sm:w-7 sm:h-7 rounded-full border flex items-center justify-center bg-white active:scale-90 focus:outline-none transition-colors ${isLiked ? 'border-marix-teal text-marix-teal' : 'border-gray-200 text-[#111111]/40'}`}>
+          <button 
+            type="button" 
+            onClick={(e) => { 
+              e.stopPropagation(); // Stop click bubbling into the overall card component click
+              onToggleSave(product); 
+            }} 
+            className={`w-[26px] h-[26px] sm:w-7 sm:h-7 rounded-full border flex items-center justify-center bg-white active:scale-90 focus:outline-none transition-colors ${isLiked ? 'border-marix-teal text-marix-teal' : 'border-gray-200 text-[#111111]/40'}`}
+          >
             <svg className="w-[11px] h-[11px] sm:w-[13px] sm:h-[13px]" viewBox="0 0 24 24" fill={isLiked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.5"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" /></svg>
           </button>
         </div>

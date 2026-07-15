@@ -13,8 +13,18 @@ export const initialProducts = [
     description: "Premium grade-A vintage leather jacket. Perfect condition with zero tears or blemishes. Soft inner lining.",
     whatsappNumber: "2348012345678",
     availableSizes: ["M", "L", "XL"],
+    
+    // 🚀 NEW MULTI-IMAGE GALLERY SCHEMA FOR DYNAMIC OVERVIEW DEMO
+    variants: ["Black", "Tan Brown"],
+    images: [
+      { id: "v1-img1", imageUrl: "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=500&q=80", variantName: "Black", isCover: true },
+      { id: "v1-img2", imageUrl: "https://images.unsplash.com/photo-1521223890158-f9f7c3d5ded1?w=500&q=80", variantName: "Black", isCover: false },
+      { id: "v1-img3", imageUrl: "https://images.unsplash.com/photo-1495105787522-5334e3ffa0ef?w=500&q=80", variantName: "Tan Brown", isCover: false },
+      { id: "v1-img4", imageUrl: "https://images.unsplash.com/photo-1548883354-7622d03aca27?w=500&q=80", variantName: "Tan Brown", isCover: false }
+    ],
     colorVariants: [
-      { colorName: "Black", imageUrl: "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=500&q=80", isMain: true }
+      { colorName: "Black", imageUrl: "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=500&q=80", isMain: true },
+      { colorName: "Tan Brown", imageUrl: "https://images.unsplash.com/photo-1495105787522-5334e3ffa0ef?w=500&q=80", isMain: false }
     ]
   },
   {
@@ -103,8 +113,16 @@ export const initialProducts = [
     description: "High-speed 22.5W fast charging output cell block with dual integrated type-C connection lines.",
     whatsappNumber: "2347065432101",
     availableSizes: ["One Size"],
+    
+    // 🚀 NEW MULTI-IMAGE SCHEMA
+    variants: ["Matte Black", "Ice White"],
+    images: [
+      { id: "v7-img1", imageUrl: "https://images.unsplash.com/photo-1609592424109-dd9892f1b177?w=500&q=80", variantName: "Matte Black", isCover: true },
+      { id: "v7-img2", imageUrl: "https://images.unsplash.com/photo-1625766763788-95dcce9bf5ac?w=500&q=80", variantName: "Ice White", isCover: false }
+    ],
     colorVariants: [
-      { colorName: "Matte Black", imageUrl: "https://images.unsplash.com/photo-1609592424109-dd9892f1b177?w=500&q=80", isMain: true }
+      { colorName: "Matte Black", imageUrl: "https://images.unsplash.com/photo-1609592424109-dd9892f1b177?w=500&q=80", isMain: true },
+      { colorName: "Ice White", imageUrl: "https://images.unsplash.com/photo-1625766763788-95dcce9bf5ac?w=500&q=80", isMain: false }
     ]
   },
   {
@@ -180,8 +198,16 @@ export const initialProducts = [
     description: "Sporty, cushion-padded athletic performance footwear blocks. Perfect layout comfort tracking.",
     whatsappNumber: "2348123456789",
     availableSizes: ["41", "42", "43", "44"],
+    
+    // 🚀 NEW MULTI-IMAGE SCHEMA
+    variants: ["Onyx Black", "Classic White"],
+    images: [
+      { id: "v12-img1", imageUrl: "https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=500&q=80", variantName: "Onyx Black", isCover: true },
+      { id: "v12-img2", imageUrl: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&q=80", variantName: "Classic White", isCover: false }
+    ],
     colorVariants: [
-      { colorName: "Onyx Black", imageUrl: "https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=500&q=80", isMain: true }
+      { colorName: "Onyx Black", imageUrl: "https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=500&q=80", isMain: true },
+      { colorName: "Classic White", imageUrl: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&q=80", isMain: false }
     ]
   },
   {
@@ -317,8 +343,16 @@ export const initialProducts = [
     description: "Active Noise Cancelling over-ear headphones. Deep bass with up to 30 hours battery life.",
     whatsappNumber: "2349034567890",
     availableSizes: ["Neutral"],
+    
+    // 🚀 NEW MULTI-IMAGE SCHEMA
+    variants: ["Midnight Black", "Alabaster White"],
+    images: [
+      { id: "v21-img1", imageUrl: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&q=80", variantName: "Midnight Black", isCover: true },
+      { id: "v21-img2", imageUrl: "https://images.unsplash.com/photo-1484704849700-f032a568e944?w=500&q=80", variantName: "Alabaster White", isCover: false }
+    ],
     colorVariants: [
-      { colorName: "Black", imageUrl: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&q=80", isMain: true }
+      { colorName: "Midnight Black", imageUrl: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&q=80", isMain: true },
+      { colorName: "Alabaster White", imageUrl: "https://images.unsplash.com/photo-1484704849700-f032a568e944?w=500&q=80", isMain: false }
     ]
   },
   {
@@ -469,8 +503,16 @@ export const initialProducts = [
     description: "Classic triple white crisp Air Force 1. Original box included, deadstock condition.",
     whatsappNumber: "2348123456789",
     availableSizes: ["42", "43", "44"],
+    
+    // 🚀 NEW MULTI-IMAGE SCHEMA
+    variants: ["Pure White", "Vintage Green"],
+    images: [
+      { id: "v31-img1", imageUrl: "https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?w=500&q=80", variantName: "Pure White", isCover: true },
+      { id: "v31-img2", imageUrl: "https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=500&q=80", variantName: "Vintage Green", isCover: false }
+    ],
     colorVariants: [
-      { colorName: "White", imageUrl: "https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?w=500&q=80", isMain: true }
+      { colorName: "Pure White", imageUrl: "https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?w=500&q=80", isMain: true },
+      { colorName: "Vintage Green", imageUrl: "https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=500&q=80", isMain: false }
     ]
   },
   {
