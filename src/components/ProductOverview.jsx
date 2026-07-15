@@ -41,46 +41,90 @@ export default function ProductOverview({
 
   const isEarlySeller = userRegistrationIndex !== null && userRegistrationIndex <= 50;
 
-  // Sync state cleanly with product changes
+  // Extract initial layout arrays safely
   const hasExtendedGallery = product.images && product.images.length > 0;
-  const defaultVariant = product.variants && product.variants.length > 0 
-    ? product.variants[0] 
-    : (product.colorVariants && product.colorVariants.length > 0 ? product.colorVariants[0].colorName : null);
+  const uniqueVariantNames = product.variants || (product.colorVariants ? product.colorVariants.map(v => v.colorName) : []);
+  
+  const defaultVariant = uniqueVariantNames.length > 0 ? uniqueVariantNames[0] : null;
 
   const [selectedVariant, setSelectedVariant] = useState(defaultVariant);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [selectedSize, setSelectedSize] = useState(product.availableSizes?.[0] || null);
+  const [selectedSize, setSelectedSize] = useState(null);
   const [isDescExpanded, setIsDescExpanded] = useState(false);
 
   // --- SCROLL PRESERVATION ENGINE ---
-  // Store the scroll position of whatever viewport brought us here before we mount
   useEffect(() => {
-    // Capture background view scroll before focusing on the overview
     const mainFeed = document.querySelector('.homepage-feed-viewport') || document.querySelector('.explore-feed-viewport');
     if (mainFeed) {
       sessionStorage.setItem('marix_pre_overview_scroll_pos', mainFeed.scrollTop);
     }
   }, [product]);
 
+  // Handle active sizes list mapped specifically to the currently selected color variant
+  const activeSizesList = useMemo(() => {
+    if (product.colorVariants && product.colorVariants.length > 0 && selectedVariant) {
+      const activeVariantData = product.colorVariants.find(v => v.colorName === selectedVariant);
+      if (activeVariantData && activeVariantData.sizes) {
+        return activeVariantData.sizes;
+      }
+    }
+    return product.availableSizes || [];
+  }, [product, selectedVariant]);
+
+  // Sync component state cleanly whenever the product changes
   useEffect(() => {
-    const newDefault = product.variants && product.variants.length > 0 
-      ? product.variants[0] 
-      : (product.colorVariants && product.colorVariants.length > 0 ? product.colorVariants[0].colorName : null);
+    const newDefault = uniqueVariantNames.length > 0 ? uniqueVariantNames[0] : null;
     setSelectedVariant(newDefault);
     setActiveImageIndex(0);
-    setSelectedSize(product.availableSizes?.[0] || null);
     setIsDescExpanded(false);
     
+    // Automatically equip the first size option available under this variant payload
+    let initialSizes = product.availableSizes || [];
+    if (product.colorVariants && product.colorVariants.length > 0 && newDefault) {
+      const activeVariantData = product.colorVariants.find(v => v.colorName === newDefault);
+      if (activeVariantData && activeVariantData.sizes) {
+        initialSizes = activeVariantData.sizes;
+      }
+    }
+    setSelectedSize(initialSizes.length > 0 ? initialSizes[0] : null);
+
     if (wrapperRef.current) {
       wrapperRef.current.scrollTop = 0;
     }
-  }, [product]);
+  }, [product, uniqueVariantNames]);
+
+  // Auto-select first available option when user swaps color variants
+  useEffect(() => {
+    if (activeSizesList.length > 0) {
+      if (!activeSizesList.includes(selectedSize)) {
+        setSelectedSize(activeSizesList[0]);
+      }
+    } else {
+      setSelectedSize(null);
+    }
+  }, [selectedVariant, activeSizesList]);
+
+  // --- DYNAMIC PRICE EVALUATION ENGINE ---
+  const displayedPrice = useMemo(() => {
+    if (product.colorVariants && product.colorVariants.length > 0 && selectedVariant) {
+      const activeVariantData = product.colorVariants.find(v => v.colorName === selectedVariant);
+      if (activeVariantData) {
+        // 1. Check for specific Option-Based Price configured for the active selection
+        if (selectedSize && activeVariantData.optionPrices && activeVariantData.optionPrices[selectedSize]) {
+          return `₦${Number(activeVariantData.optionPrices[selectedSize]).toLocaleString()}`;
+        }
+        // 2. Check for Simple Price Override configured for the variant
+        if (activeVariantData.overridePrice && activeVariantData.customPrice) {
+          return activeVariantData.customPrice;
+        }
+      }
+    }
+    // 3. Fallback to base listing price
+    return product.price || 'Contact Seller';
+  }, [product, selectedVariant, selectedSize]);
 
   const handleBackWithScrollPreservation = () => {
-    // Execute the parent's back navigation first
     onBack();
-
-    // Give the DOM a tiny frame to paint the returning view, then restore the exact scroll position
     requestAnimationFrame(() => {
       setTimeout(() => {
         const mainFeed = document.querySelector('.homepage-feed-viewport') || document.querySelector('.explore-feed-viewport');
@@ -92,7 +136,7 @@ export default function ProductOverview({
     });
   };
 
-  // Handle display images based on variant selections or fallbacks
+  // Gallery resolution logic based on variant assignment
   let displayImages = [];
   if (hasExtendedGallery) {
     displayImages = product.images.filter(img => img.variantName === selectedVariant);
@@ -106,7 +150,6 @@ export default function ProductOverview({
   const activeImage = displayImages[activeImageIndex] || displayImages[0] || {};
   const activeImageSrc = activeImage.imageUrl;
 
-  const uniqueVariantNames = product.variants || (product.colorVariants ? product.colorVariants.map(v => v.colorName) : []);
   const variantVisuals = uniqueVariantNames.map(vName => {
     let vImg = product.images?.find(img => img.variantName === vName)?.imageUrl;
     if (!vImg) vImg = product.colorVariants?.find(cv => cv.colorName === vName)?.imageUrl;
@@ -118,7 +161,7 @@ export default function ProductOverview({
     const cleanNumber = product.whatsappNumber ? product.whatsappNumber.replace(/\D/g, '') : "2348012345678";
     const variantDetail = selectedVariant ? `\n- Variant: ${selectedVariant}` : "";
     const sizeDetail = selectedSize ? `\n- Option/Size: ${selectedSize}` : "";
-    const message = `Hello, I saw your listing for "${product.productTitle}" (${product.price}) on Marix.${variantDetail}${sizeDetail}\n\nIs this item still available?`;
+    const message = `Hello, I saw your listing for "${product.productTitle}" (${displayedPrice}) on Marix.${variantDetail}${sizeDetail}\n\nIs this item still available?`;
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/${cleanNumber}?text=${encodedMessage}`, '_blank');
   };
@@ -134,7 +177,6 @@ export default function ProductOverview({
       return copy;
     };
 
-    // Strip out excess whitespaces and handle case-insensitivity cleanly
     const currentCampusClean = (product.campus || '').trim().toLowerCase();
 
     const sameCampusPool = allProducts.filter(item => {
@@ -287,7 +329,7 @@ export default function ProductOverview({
 
                 <div className="flex items-center justify-between mt-1 pb-4 border-b border-gray-200/60">
                   <span className="text-2xl font-black text-marix-teal tracking-tight">
-                    {product.price}
+                    {displayedPrice}
                   </span>
                 </div>
               </div>
@@ -326,14 +368,14 @@ export default function ProductOverview({
                 </div>
               )}
 
-              {/* DYNAMIC SIZE CHIPS */}
-              {product.availableSizes && product.availableSizes.length > 0 && (
-                <div className="flex flex-col gap-2.5 select-none mt-2">
+              {/* DYNAMIC SIZE CHIPS (FILTERS LIVE ACCORDING TO CURRENT COLOR VARIANT SELECTIONS) */}
+              {activeSizesList && activeSizesList.length > 0 && (
+                <div className="flex flex-col gap-2.5 select-none mt-2 animate-fadeIn">
                   <span className="text-xs font-black tracking-wider uppercase text-gray-400">
                     Select Option
                   </span>
                   <div className="flex flex-wrap gap-2">
-                    {product.availableSizes.map((size, index) => {
+                    {activeSizesList.map((size, index) => {
                       const isSelected = selectedSize === size;
                       return (
                         <button
@@ -382,7 +424,7 @@ export default function ProductOverview({
                 </p>
               </div>
 
-              {/* SELLER CARD WITH DYNAMIC TRUNCATION & SQUASH SAFEGUARDS */}
+              {/* SELLER CARD */}
               <div className="mt-4 pt-6 border-t border-gray-200/60 select-none">
                 <span className="text-xs font-black tracking-wider uppercase text-gray-400 mb-4 block">
                   Seller Information

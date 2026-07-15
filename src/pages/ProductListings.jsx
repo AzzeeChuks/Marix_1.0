@@ -5,7 +5,7 @@ const allCampusesList = ["Absu, Uturu", "Imsu, Owerri", "Futo, Owerri", "UniUyo,
 const allCategoriesList = ["Fashion", "Footwears", "Gadgets", "Accessories", "Beauty", "Food & Snacks", "Home & Kitchen", "Other"];
 
 export default function ProductListings({ 
-  allProducts = [], // Dynamic live state from App.jsx
+  allProducts = [], 
   isLoggedIn, 
   setIsLoggedIn,
   userName, 
@@ -45,12 +45,20 @@ export default function ProductListings({
   const [activePriceMax, setActivePriceMax] = useState(500000);
 
   const [sortBy, setSortBy] = useState('Newest');
-  const [visibleCount, setVisibleCount] = useState(20);
+  
+  // --- PAGINATION STATE ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isPageTransitioning, setIsPageTransitioning] = useState(false);
+  const itemsPerPage = 20;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeSearchTerm]);
 
   useEffect(() => {
     setActiveCategory(initialCategory);
     setStagedCategory(initialCategory);
-    setVisibleCount(20);
+    setCurrentPage(1);
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = 0;
     }
@@ -102,7 +110,6 @@ export default function ProductListings({
     return count;
   }, [activeCategory, activeCondition, activeCampuses, activePriceMax]);
 
-  // Read directly from the live allProducts array to find dynamic matches instantly
   const filteredProducts = useMemo(() => {
     let result = [...allProducts];
 
@@ -147,9 +154,12 @@ export default function ProductListings({
     return result;
   }, [allProducts, activeSearchTerm, activeCategory, activeCondition, activeCampuses, activePriceMax, sortBy, viewMode]);
 
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage) || 1;
+  
   const paginatedProducts = useMemo(() => {
-    return filteredProducts.slice(0, visibleCount);
-  }, [filteredProducts, visibleCount]);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredProducts, currentPage]);
 
   const recommendedProducts = useMemo(() => {
     if (activeSearchTerm.trim() && filteredProducts.length > 0) {
@@ -167,7 +177,7 @@ export default function ProductListings({
     setActiveCondition(stagedCondition);
     setActiveCampuses(stagedCampuses);
     setActivePriceMax(priceMax);
-    setVisibleCount(20);
+    setCurrentPage(1); 
     setIsFilterDrawerOpen(false);
   };
 
@@ -180,7 +190,7 @@ export default function ProductListings({
     setActiveCondition('');
     setActiveCampuses([]);
     setActivePriceMax(500000);
-    setVisibleCount(20);
+    setCurrentPage(1);
     setIsFilterDrawerOpen(false);
   };
 
@@ -188,6 +198,55 @@ export default function ProductListings({
     setStagedCampuses(prev => 
       prev.includes(campus) ? prev.filter(c => c !== campus) : [...prev, campus]
     );
+  };
+
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages && page !== currentPage) {
+      setIsPageTransitioning(true);
+      
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+        });
+      }
+
+      setTimeout(() => {
+        setCurrentPage(page);
+        setIsPageTransitioning(false);
+      }, 300);
+    }
+  };
+
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisibleNeighbours = 1;
+
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      pages.push(1);
+
+      if (currentPage > 3) {
+        pages.push('...');
+      }
+
+      const start = Math.max(2, currentPage - maxVisibleNeighbours);
+      const end = Math.min(totalPages - 1, currentPage + maxVisibleNeighbours);
+
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+
+      if (currentPage < totalPages - 2) {
+        pages.push('...');
+      }
+
+      pages.push(totalPages);
+    }
+    return pages;
   };
 
   const handleFastContainerScrollToTop = () => {
@@ -258,7 +317,7 @@ export default function ProductListings({
           .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
         `}</style>
 
-        <div>
+        <div className="flex-1 flex flex-col pb-8">
           <Navbar 
             isLoggedIn={isLoggedIn} 
             setIsLoggedIn={setIsLoggedIn} 
@@ -284,17 +343,18 @@ export default function ProductListings({
             onNavigateToExplore={() => setViewMode?.("All")} 
           />
 
-          <main className="w-full max-w-[95%] mx-auto px-2 lg:px-4 flex flex-col pt-4 md:pt-24 animate-fadeIn flex-1">
+          <main className="w-full max-w-[95%] mx-auto px-2 lg:px-4 flex flex-col pt-4 md:pt-24 flex-1">
             
             <div className="flex flex-col gap-1.5 mt-2 mb-6 select-none w-full">
               {renderHeaderTitle()}
             </div>
 
-            <div className="w-full flex items-center justify-between border-b border-gray-200/40 pb-4 mb-6 select-none">
+            {/* Filter / Count row */}
+            <div className="w-full flex items-center justify-between gap-x-4 border-b border-gray-200/40 pb-4 mb-6 select-none">
               <div className="flex items-center gap-2.5">
                 <button 
                   onClick={() => setIsFilterDrawerOpen(true)}
-                  className="h-9 px-4 bg-white border border-gray-200 hover:border-gray-300 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors focus:outline-none shadow-sm"
+                  className="h-9 px-4 bg-white border border-gray-200 hover:border-gray-300 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors focus:outline-none shadow-sm shrink-0"
                 >
                   <svg className="w-3.5 h-3.5 text-[#111111]" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
@@ -305,7 +365,7 @@ export default function ProductListings({
                   )}
                 </button>
 
-                <div className="relative">
+                <div className="relative shrink-0">
                   <select 
                     value={sortBy} onChange={(e) => setSortBy(e.target.value)}
                     className="h-9 pl-3 pr-8 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none appearance-none cursor-pointer focus:border-gray-300 transition-colors"
@@ -320,60 +380,116 @@ export default function ProductListings({
               </div>
 
               {!isSearching && (
-                <span className="text-xs font-semibold text-gray-400 tracking-tight">{filteredProducts.length.toLocaleString()} Products</span>
+                <span className="text-xs font-semibold text-gray-400 tracking-tight shrink-0 text-right">
+                  {filteredProducts.length.toLocaleString()} Products
+                </span>
               )}
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5">
-              {paginatedProducts.map((product) => {
-                const primaryImgObj = product.colorVariants?.find(v => v.isMain) || product.colorVariants?.[0];
-                const fallbackImg = product.images?.find(img => img.isCover) || product.images?.[0];
-                const activeSrc = primaryImgObj ? primaryImgObj.imageUrl : (fallbackImg ? fallbackImg.imageUrl : "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800&q=80");
-                return (
-                  <div key={product.id} className="w-full">
-                    <VolcanoCard 
-                      product={product} 
-                      targetImageSrc={activeSrc} 
-                      savedProducts={savedProducts} 
-                      onToggleSave={setSavedProducts} 
-                      onProductClick={onProductCardClick} 
-                    />
-                  </div>
-                );
-              })}
+            {/* Content grid */}
+            <div className="w-full flex-grow flex flex-col pb-2">
+              <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5 transition-all duration-300 transform ${
+                isPageTransitioning ? 'opacity-0 translate-y-3 pointer-events-none' : 'opacity-100 translate-y-0'
+              }`}>
+                {paginatedProducts.map((product) => {
+                  const primaryImgObj = product.colorVariants?.find(v => v.isMain) || product.colorVariants?.[0];
+                  const fallbackImg = product.images?.find(img => img.isCover) || product.images?.[0];
+                  const activeSrc = primaryImgObj ? primaryImgObj.imageUrl : (fallbackImg ? fallbackImg.imageUrl : "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800&q=80");
+                  return (
+                    <div key={product.id} className="w-full">
+                      <VolcanoCard 
+                        product={product} 
+                        targetImageSrc={activeSrc} 
+                        savedProducts={savedProducts} 
+                        onToggleSave={setSavedProducts} 
+                        onProductClick={onProductCardClick} 
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+
+              {filteredProducts.length === 0 && (
+                <div className="w-full py-16 text-center select-none flex-grow flex flex-col items-center justify-center">
+                  <h4 className="text-xs font-bold text-gray-400 tracking-tight mb-2">No listings found matching your active selection criteria.</h4>
+                  <button onClick={handleResetFilters} className="text-xs text-marix-teal font-black underline focus:outline-none">Clear Active Settings</button>
+                </div>
+              )}
             </div>
 
-            {filteredProducts.length === 0 && (
-              <div className="w-full py-16 text-center select-none">
-                <h4 className="text-xs font-bold text-gray-400 tracking-tight mb-2">No listings found matching your active selection criteria.</h4>
-                <button onClick={handleResetFilters} className="text-xs text-marix-teal font-black underline focus:outline-none">Clear Active Settings</button>
+            {/* 🎯 SPACER CONTROLLER: CHANGE 'h-16' (64px) OR 'h-12' (48px) TO ADJUST THE BOTTOM GAP */}
+            {totalPages === 1 && (
+              <div className="w-full h-16 select-none pointer-events-none" aria-hidden="true" />
+            )}
+
+            {/* Pagination block */}
+            {totalPages > 1 && (
+              <div className="w-full flex items-center justify-center pt-8 pb-12 select-none">
+                <div className="flex items-center gap-1 md:gap-2 text-[13px] text-[#555555]">
+                  
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className={`h-9 px-3 rounded-full flex items-center gap-1.5 transition-colors focus:outline-none ${
+                      currentPage === 1 
+                        ? 'text-gray-300 cursor-not-allowed' 
+                        : 'text-gray-500 hover:text-marix-teal cursor-pointer active:scale-95'
+                    }`}
+                  >
+                    <i className="ph ph-caret-left font-black text-xs"></i>
+                    <span className="font-semibold text-xs tracking-tight">Previous</span>
+                  </button>
+
+                  {getPageNumbers().map((pageNum, idx) => {
+                    const isDots = pageNum === '...';
+                    const isSelected = pageNum === currentPage;
+
+                    if (isDots) {
+                      return (
+                        <span 
+                          key={`dots-${idx}`} 
+                          className="w-8 h-8 flex items-center justify-center text-xs font-semibold text-gray-400"
+                        >
+                          {pageNum}
+                        </span>
+                      );
+                    }
+
+                    return (
+                      <button
+                        key={`page-${pageNum}`}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-semibold transition-all focus:outline-none cursor-pointer ${
+                          isSelected
+                            ? 'border border-marix-teal bg-white text-marix-teal shadow-[0_1px_4px_rgba(0,128,128,0.08)] scale-102 font-bold'
+                            : 'border border-transparent hover:border-marix-teal/40 hover:text-marix-teal text-[#555555] active:scale-95'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className={`h-9 px-3 rounded-full flex items-center gap-1.5 transition-colors focus:outline-none ${
+                      currentPage === totalPages 
+                        ? 'text-gray-300 cursor-not-allowed' 
+                        : 'text-gray-500 hover:text-marix-teal cursor-pointer active:scale-95'
+                    }`}
+                  >
+                    <span className="font-semibold text-xs tracking-tight">Next</span>
+                    <i className="ph ph-caret-right font-black text-xs"></i>
+                  </button>
+
+                </div>
               </div>
             )}
 
-            <div className="w-full flex flex-col items-center justify-center pt-12 pb-14 border-b border-gray-200/40 select-none">
-              {filteredProducts.length > visibleCount ? (
-                <button 
-                  onClick={() => setVisibleCount(prev => prev + 20)}
-                  className="w-full max-w-[260px] h-10 border border-gray-200 bg-white text-xs font-bold text-[#111111] hover:opacity-85 transition-opacity rounded-xl focus:outline-none flex items-center justify-center gap-1.5 shadow-sm active:scale-98"
-                >
-                  <span>View More</span>
-                  <div className="text-[9px] pt-0.5"><i className="ph ph-caret-down font-bold"></i></div>
-                </button>
-              ) : filteredProducts.length > 20 ? (
-                <button 
-                  onClick={() => setVisibleCount(20)}
-                  className="w-full max-w-[260px] h-10 border border-gray-200 bg-white text-xs font-bold text-[#111111] hover:opacity-85 transition-opacity rounded-xl focus:outline-none flex items-center justify-center gap-1.5 shadow-sm active:scale-98"
-                >
-                  <span>View Less</span>
-                  <div className="text-[9px] pt-0.5"><i className="ph ph-caret-up font-bold"></i></div>
-                </button>
-              ) : null}
-            </div>
-
             {activeSearchTerm.trim() !== "" && recommendedProducts.length > 0 && (
-              <div className="mt-14 mb-14 select-none w-full overflow-hidden">
+              <div className="mt-8 select-none w-full overflow-hidden">
                 <h3 className="text-base md:text-lg font-black text-[#111111] tracking-tight mb-5">Recommended for You</h3>
-                
                 <div className={`
                   w-full pb-4 scrollbar-none snap-x snap-mandatory overflow-x-auto
                   flex max-[1024px]:flex-row gap-4
@@ -413,6 +529,7 @@ export default function ProductListings({
           </main>
         </div>
 
+        {/* FOOTER COMPONENT */}
         <div className="w-full text-center text-[11px] text-gray-400 font-bold tracking-tight py-6 border-t border-gray-100 bg-white z-30 relative shrink-0">
           <span>&copy; {new Date().getFullYear()} <span className="text-marix-teal font-bold">Marix</span>. Built for Campus Commerce.</span>
         </div>
@@ -442,7 +559,7 @@ export default function ProductListings({
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Item Condition</label>
               <div className="grid grid-cols-3 gap-2">
-                {['New', 'Like New', 'Fair'].map((cond) => (
+                {['Brand New', 'Like New', 'Fair'].map((cond) => (
                   <button
                     key={cond}
                     type="button"

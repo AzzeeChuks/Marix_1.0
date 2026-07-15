@@ -146,55 +146,60 @@ export default function App() {
           </div>
         ) : (
           <>
-            <div className={`absolute inset-0 flex flex-col ${currentView === 'home' ? 'visible pointer-events-auto' : 'invisible pointer-events-none'}`}>
-              <Homepage 
-                products={products} 
-                isLoggedIn={isLoggedIn} 
-                setIsLoggedIn={setIsLoggedIn}
-                userName={userName}
-                onSignOut={handleSignOut} 
-                showCreateModal={showCreateModal}
-                setShowCreateModal={setShowCreateModal}
-                activeTab={activeTab}        
-                setActiveTab={(targetTab) => {
-                  setActiveTab(targetTab);
-                }}  
-                userUploads={userUploads}
-                savedProducts={savedProducts}
-                setSavedProducts={handleToggleSaveProduct}     
-                onNavigateToLogin={routeToLoginView}   
-                onNavigateToSignup={routeToSignupView} 
-                onNavigateToExplore={routeToExploreWithContext}
-                activeSearchTerm={activeSearchTerm}
-                setActiveSearchTerm={setActiveSearchTerm}
-                onNavigateToView={handleStaticViewSwitch}
-                onProductCardClick={(clickedItem) => setSelectedProduct(clickedItem)} 
-              />
-            </div>
+            {/* 🚀 FIXED: True Conditional Rendering. We completely unmount the components when they aren't active. */}
+            {currentView === 'home' && (
+              <div className="absolute inset-0 flex flex-col">
+                <Homepage 
+                  products={products} 
+                  isLoggedIn={isLoggedIn} 
+                  setIsLoggedIn={setIsLoggedIn}
+                  userName={userName}
+                  onSignOut={handleSignOut} 
+                  showCreateModal={showCreateModal}
+                  setShowCreateModal={setShowCreateModal}
+                  activeTab={activeTab}        
+                  setActiveTab={(targetTab) => {
+                    setActiveTab(targetTab);
+                  }}  
+                  userUploads={userUploads}
+                  savedProducts={savedProducts}
+                  setSavedProducts={handleToggleSaveProduct}     
+                  onNavigateToLogin={routeToLoginView}   
+                  onNavigateToSignup={routeToSignupView} 
+                  onNavigateToExplore={routeToExploreWithContext}
+                  activeSearchTerm={activeSearchTerm}
+                  setActiveSearchTerm={setActiveSearchTerm}
+                  onNavigateToView={handleStaticViewSwitch}
+                  onProductCardClick={(clickedItem) => setSelectedProduct(clickedItem)} 
+                />
+              </div>
+            )}
             
-            <div className={`absolute inset-0 flex flex-col ${currentView === 'explore' ? 'visible pointer-events-auto' : 'invisible pointer-events-none'}`}>
-              <ProductListings 
-                allProducts={products} // Passes the updated live listing state array to filters
-                isLoggedIn={isLoggedIn}
-                setIsLoggedIn={setIsLoggedIn}
-                userName={userName}
-                onNavigateHome={routeToHomeFeed}
-                savedProducts={savedProducts}
-                setSavedProducts={handleToggleSaveProduct}
-                showCreateModal={showCreateModal}
-                setShowCreateModal={setShowCreateModal}
-                onNavigateToLogin={routeToLoginView}
-                onNavigateToSignup={routeToSignupView}
-                onNavigateToUploadsTab={routeToUploadsTab}
-                onNavigateToSavedTab={routeToSavedTab}
-                activeSearchTerm={activeSearchTerm}
-                setActiveSearchTerm={setActiveSearchTerm}
-                viewMode={exploreViewMode}
-                setViewMode={setExploreViewMode}
-                initialCategory={exploreCategoryFilter}
-                onProductCardClick={(clickedItem) => setSelectedProduct(clickedItem)} 
-              />
-            </div>
+            {currentView === 'explore' && (
+              <div className="absolute inset-0 flex flex-col animate-fadeIn">
+                <ProductListings 
+                  allProducts={products} 
+                  isLoggedIn={isLoggedIn}
+                  setIsLoggedIn={setIsLoggedIn}
+                  userName={userName}
+                  onNavigateHome={routeToHomeFeed}
+                  savedProducts={savedProducts}
+                  setSavedProducts={handleToggleSaveProduct}
+                  showCreateModal={showCreateModal}
+                  setShowCreateModal={setShowCreateModal}
+                  onNavigateToLogin={routeToLoginView}
+                  onNavigateToSignup={routeToSignupView}
+                  onNavigateToUploadsTab={routeToUploadsTab}
+                  onNavigateToSavedTab={routeToSavedTab}
+                  activeSearchTerm={activeSearchTerm}
+                  setActiveSearchTerm={setActiveSearchTerm}
+                  viewMode={exploreViewMode}
+                  setViewMode={setExploreViewMode}
+                  initialCategory={exploreCategoryFilter}
+                  onProductCardClick={(clickedItem) => setSelectedProduct(clickedItem)} 
+                />
+              </div>
+            )}
           </>
         )}
         
