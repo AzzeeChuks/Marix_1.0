@@ -156,14 +156,14 @@ export default function Profile({
           setCurrentPassword('');
           setConfirmPassword('');
         }}
-        className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-white border border-gray-200/60 flex items-center justify-center text-gray-600 hover:text-marix-teal transition-all focus:outline-none cursor-pointer shadow-sm z-10 shrink-0"
+        className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-white border border-gray-200/60 flex items-center justify-center text-gray-600 hover:text-marix-teal transition-all focus:outline-none cursor-pointer shadow-sm z-10 shrink-0"
       >
         <i className="ph ph-arrow-left text-lg font-bold"></i>
       </button>
       <h2 className="text-xs md:text-sm font-black uppercase tracking-wider text-[#111111] absolute left-1/2 -translate-x-1/2">
         {title}
       </h2>
-      <div className="w-9 h-9 md:w-10 md:h-10 opacity-0 pointer-events-none"></div>
+      <div className="w-10 h-10 md:w-11 md:h-11 opacity-0 pointer-events-none"></div>
     </div>
   );
 
