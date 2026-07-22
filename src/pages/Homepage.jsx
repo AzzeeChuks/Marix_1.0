@@ -1,18 +1,22 @@
-import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import marixLogoM from '../images/marix-logo-m.png';
+import React, { useState, useLayoutEffect, useRef } from 'react';
 import Navbar from '../components/Navbar';
+import Profile from '../components/Profile';
+import Notifications from '../components/Notifications';
+import Uploads from '../components/Uploads'; 
 
 export default function Homepage({ 
   products = [], 
-  setProducts,
   isLoggedIn, 
   setIsLoggedIn, 
   userName,
+  userEmail,
   showCreateModal,
   setShowCreateModal,
   activeTab,       
-  setActiveTab,    
-  userUploads,     
+  setActiveTab,
+  recentlyViewed = [],
+  onProductCardClick,    
+  userUploads = [],     
   savedProducts = [],
   setSavedProducts,
   onNavigateToLogin, 
@@ -21,25 +25,45 @@ export default function Homepage({
   onNavigateToView,
   activeSearchTerm,
   setActiveSearchTerm,
-  onProductCardClick // 🚀 NEW HANDLER PROP FROM ROUTER ENGINE
+  onSignOut,
+  notifications = [], 
+  onClearNotificationsCount, 
+  historyFallbackTab = 'browse',
+  editingProductData,
+  setEditingProductData,
+  onProductDeleted,
+  hasCompletedSellerOnboarding,
+  onBecomeSellerTrigger,
+  shopDetails,
+  setShopDetails,
+  onOpenCreateListingModal,
+  setHasCompletedSellerOnboarding,
+  userLocation,
+  setUserLocation,
+  onUpdateUserName
 }) {
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [isAtAbsoluteBottom, setIsAtAbsoluteBottom] = useState(false); 
   const scrollContainerRef = useRef(null);
+  const [profileSubView, setProfileSubView] = useState('main');
+  const [productToDelete, setProductToDelete] = useState(null);
 
   const handleTabChange = (newTab) => {
     if (!newTab) return;
-    
     if (scrollContainerRef.current) {
       sessionStorage.setItem(`marix_scroll_${activeTab}`, scrollContainerRef.current.scrollTop);
     }
-
     if (newTab === 'explore') {
       if (onNavigateToExplore) onNavigateToExplore('All', 'All Categories');
       return;
     }
-    
     setActiveTab(newTab);
+    if (newTab === 'notifications' && onClearNotificationsCount) {
+      onClearNotificationsCount();
+    }
+    if (newTab !== 'profile') {
+      setProfileSubView('main');
+    }
   };
 
   useLayoutEffect(() => {
@@ -57,7 +81,7 @@ export default function Homepage({
     const containerHeight = target.clientHeight;
     const totalContentHeight = target.scrollHeight;
 
-    if (activeTab === 'browse') {
+    if (activeTab === 'browse' || activeTab === 'profile' || activeTab === 'notifications') {
       setShowBackToTop(false);
     } else {
       setShowBackToTop(currentScrollY > 300);
@@ -72,28 +96,28 @@ export default function Homepage({
 
   const handleFastScrollToTop = () => {
     if (!scrollContainerRef.current) return;
-    
     const container = scrollContainerRef.current;
     const startPosition = container.scrollTop;
     const duration = 450;
     const startTime = performance.now();
 
-    function easeOutQuad(t) {
-      return t * (2 - t);
-    }
-
+    function easeOutQuad(t) { return t * (2 - t); }
     function animateStep(currentTime) {
       const elapsedTime = currentTime - startTime;
       const progress = Math.min(elapsedTime / duration, 1);
-      
-      container.scrollTop = startPosition * (1 - easeOutQuad(progress));
-
-      if (progress < 1) {
-        window.requestAnimationFrame(animateStep);
-      }
+      const ease = easeOutQuad(progress);
+      container.scrollTop = startPosition * (1 - ease);
+      if (progress < 1) window.requestAnimationFrame(animateStep);
     }
-
     window.requestAnimationFrame(animateStep);
+  };
+
+  const executeLocalDelete = () => {
+    if (!productToDelete) return;
+    if (onProductDeleted) {
+      onProductDeleted(productToDelete.id);
+    }
+    setProductToDelete(null);
   };
 
   const categories = [
@@ -116,32 +140,12 @@ export default function Homepage({
     { name: 'Minimal Chain/Watch', price: '₦6,500', img: 'https://images.pexels.com/photos/190819/pexels-photo-190819.jpeg?auto=compress&cs=tinysrgb&w=500' }
   ];
 
-  const defaultFeaturedProducts = [
-    { id: 'f-1', productTitle: 'Shawarma Deluxe Combo', price: '₦2,000', shopName: 'Melts & Bites', campus: 'ABSU, Uturu', colorVariants: [{ isMain: true, imageUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&q=80' }] },
-    { id: 'f-2', productTitle: 'Vintage Denim Jacket', price: '₦12,500', shopName: 'ThriftByFaith', campus: 'ABSU, Uturu', colorVariants: [{ isMain: true, imageUrl: 'https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=500&q=80' }] },
-    { id: 'f-3', productTitle: 'Acoustic Guitar (Natural)', price: '₦45,000', shopName: 'Strings Plug', campus: 'IMSU, Owerri', colorVariants: [{ isMain: true, imageUrl: 'https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=500&q=80' }] },
-    { id: 'f-4', productTitle: 'Anker PowerBank 20k', price: '₦18,000', shopName: 'Gadget Vault', campus: 'FUTO, Owerri', colorVariants: [{ isMain: true, imageUrl: 'https://images.unsplash.com/photo-1609592424109-dd9892f1b177?w=500&q=80' }] },
-    { id: 'f-5', productTitle: 'Silver Cuban Link Chain', price: '₦4,500', shopName: 'Ice Palace', campus: 'ABSU, Uturu', colorVariants: [{ isMain: true, imageUrl: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=500&q=80' }] },
-    { id: 'f-6', productTitle: 'Mattress Protector Pack', price: '₦7,500', shopName: 'Bed Bedding Depot', campus: 'UniAbuja', colorVariants: [{ isMain: true, imageUrl: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=500&q=80' }] }
-  ];
-
-  const defaultTrendingProducts = [
-    { id: 't-1', productTitle: 'Nike Air Force 1 Retro', price: '₦28,500', shopName: 'KicksPlug', campus: 'FUTO, Owerri', colorVariants: [{ isMain: true, imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&q=80' }] },
-    { id: 't-2', productTitle: 'AirPods Pro 2nd Gen', price: '₦35,000', shopName: 'Apple Hub', campus: 'ABSU, Uturu', colorVariants: [{ isMain: true, imageUrl: 'https://images.unsplash.com/photo-1588449668365-d15e397f6787?w=300&q=80' }] },
-    { id: 't-3', productTitle: 'Minimalist Leather Watch', price: '₦14,000', shopName: 'Chrono Studio', campus: 'IMSU, Owerri', colorVariants: [{ isMain: true, imageUrl: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=500&q=80' }] },
-    { id: 't-4', productTitle: 'Victoria Secret Scented', price: '₦12,000', shopName: 'Glow Essence', campus: 'UniAbuja', colorVariants: [{ isMain: true, imageUrl: 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=500&q=80' }] },
-    { id: 't-5', productTitle: 'Mechanical Keyboard RGB', price: '₦22,500', shopName: 'Tech Central', campus: 'FUTO, Owerri', colorVariants: [{ isMain: true, imageUrl: 'https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?w=500&q=80' }] },
-    { id: 't-6', productTitle: 'Oversized Cotton Hoodie', price: '₦8,000', shopName: 'StreetWear Co', campus: 'ABSU, Uturu', colorVariants: [{ isMain: true, imageUrl: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=500&q=80' }] }
-  ];
-
-  const featuredDeck = products.length > 0 ? products.slice(0, 6) : defaultFeaturedProducts;
-  const trendingDeck = products.length > 0 ? products.slice(6, 12) : defaultTrendingProducts;
-
-  const currentTabItemsList = activeTab === 'saved-mobile' ? savedProducts : userUploads;
+  const featuredDeck = products.slice(0, 6);
+  const trendingDeck = products.slice(6, 12);
+  const firstLetter = userName ? userName.charAt(0).toUpperCase() : 'M';
 
   return (
     <div className="w-full h-full flex flex-col relative overflow-hidden bg-marix-cream">
-      
       <div 
         ref={scrollContainerRef}
         onScroll={handleScrollPhysics}
@@ -153,14 +157,13 @@ export default function Homepage({
         `}</style>
         
         <div className="w-full flex-1 flex flex-col">
-          
           <Navbar 
             isLoggedIn={isLoggedIn}
             setIsLoggedIn={setIsLoggedIn}
             userName={userName}
             activeTab={activeTab}
             handleTabChange={handleTabChange}
-            savedCount={savedProducts.length}
+            savedCount={savedProducts ? savedProducts.length : 0}
             showCreateModal={showCreateModal}
             setShowCreateModal={setShowCreateModal}
             onNavigateToLogin={onNavigateToLogin}
@@ -168,10 +171,14 @@ export default function Homepage({
             activeSearchTerm={activeSearchTerm}
             setActiveSearchTerm={setActiveSearchTerm}
             onNavigateToExplore={() => onNavigateToExplore('All', 'All Categories')}
+            onNavigateToNotifications={() => handleTabChange('notifications')}
+            onNavigateToProfile={() => handleTabChange('profile')}
+            editInitialData={editingProductData}
           />
 
           <div className="w-full pt-[4px] md:pt-[84px] flex-1 flex flex-col">
             
+            {/* VIEW A: BROWSE MAIN HUB */}
             {activeTab === 'browse' && (
               <>
                 {/* Hero Section */}
@@ -190,7 +197,7 @@ export default function Homepage({
                       <button onClick={() => onNavigateToExplore('All', 'All Categories')} className="bg-marix-brown text-white font-bold text-xs md:text-sm px-5 py-3 rounded-xl shadow-md hover:opacity-95 transition-opacity flex items-center gap-2 focus:outline-none">
                         Explore Products <span>→</span>
                       </button>
-                      <button onClick={() => isLoggedIn ? setShowCreateModal(true) : onNavigateToLogin()} className="bg-white border border-gray-200 text-[#111111] font-bold text-xs md:text-sm px-5 py-3 rounded-xl shadow-sm hover:bg-gray-50 transition-colors focus:outline-none">
+                      <button onClick={() => setShowCreateModal(true)} className="bg-white border border-gray-200 text-[#111111] font-bold text-xs md:text-sm px-5 py-3 rounded-xl shadow-sm hover:bg-gray-50 transition-colors focus:outline-none">
                         Start Selling
                       </button>
                     </div>
@@ -225,31 +232,26 @@ export default function Homepage({
                           <h5 className="text-xs font-bold text-[#111111] truncate">{showcaseItems[0].name}</h5>
                           <span className="text-xs font-black text-marix-teal">{showcaseItems[0].price}</span>
                         </div>
-                        
                         <div className="absolute top-[0%] left-[44%] w-[165px] bg-white p-2 rounded-2xl shadow-[0_12px_32px_rgba(0,0,0,0.05)] border border-gray-100/60 transform rotate-[4deg] hover:-translate-y-2 hover:rotate-0 hover:z-30 transition-transform duration-300 ease-out z-10">
                           <div className="w-full aspect-square rounded-xl bg-gray-50 overflow-hidden mb-1.5"><img src={showcaseItems[1].img} alt="" className="w-full h-full object-cover" /></div>
                           <h5 className="text-xs font-bold text-[#111111] truncate">{showcaseItems[1].name}</h5>
                           <span className="text-xs font-black text-marix-teal">{showcaseItems[1].price}</span>
                         </div>
-                        
                         <div className="absolute top-[14%] right-[2%] w-[145px] bg-white p-2 rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.04)] border border-gray-100/60 transform -rotate-[3deg] hover:-translate-y-2 hover:rotate-0 hover:z-30 transition-transform duration-300 ease-out">
                           <div className="w-full aspect-square rounded-xl bg-gray-50 overflow-hidden mb-1.5"><img src={showcaseItems[2].img} alt="" className="w-full h-full object-cover" /></div>
                           <h5 className="text-xs font-bold text-[#111111] truncate">{showcaseItems[2].name}</h5>
                           <span className="text-xs font-black text-marix-teal">{showcaseItems[2].price}</span>
                         </div>
-                        
                         <div className="absolute top-[44%] left-[28%] w-[165px] bg-white p-2 rounded-2xl shadow-[0_16px_36px_rgba(69,43,31,0.08)] border border-gray-100 transform -rotate-[2deg] hover:-translate-y-2 hover:rotate-0 hover:z-30 transition-transform duration-300 ease-out z-20">
                           <div className="w-full aspect-square rounded-xl bg-gray-50 overflow-hidden mb-1.5"><img src={showcaseItems[3].img} alt="" className="w-full h-full object-cover" /></div>
                           <h5 className="text-xs font-bold text-[#111111] truncate">{showcaseItems[3].name}</h5>
                           <span className="text-xs font-black text-marix-teal">{showcaseItems[3].price}</span>
                         </div>
-                        
                         <div className="absolute bottom-[4%] left-[4%] w-[145px] bg-white p-2 rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.04)] border border-gray-100/60 transform rotate-[5deg] hover:-translate-y-2 hover:rotate-0 hover:z-30 transition-transform duration-300 ease-out">
                           <div className="w-full aspect-square rounded-xl bg-gray-50 overflow-hidden mb-1.5"><img src={showcaseItems[4].img} alt="" className="w-full h-full object-cover" /></div>
                           <h5 className="text-xs font-bold text-[#111111] truncate">{showcaseItems[4].name}</h5>
                           <span className="text-xs font-black text-marix-teal">{showcaseItems[4].price}</span>
                         </div>
-                        
                         <div className="absolute bottom-[6%] right-[4%] w-[145px] bg-white p-2 rounded-2xl shadow-[0_10px_28px_rgba(0,0,0,0.05)] border border-gray-100/60 transform -rotate-[4deg] hover:-translate-y-2 hover:rotate-0 hover:z-30 transition-transform duration-300 ease-out z-10">
                           <div className="w-full aspect-square rounded-xl bg-gray-50 overflow-hidden mb-1.5"><img src={showcaseItems[5].img} alt="" className="w-full h-full object-cover" /></div>
                           <h5 className="text-xs font-bold text-[#111111] truncate">{showcaseItems[5].name}</h5>
@@ -280,7 +282,7 @@ export default function Homepage({
                   ))}
                 </section>
 
-                {/* Featured Cards */}
+                {/* Featured Products */}
                 <section className="w-full max-w-[95%] mx-auto px-2 lg:px-4 py-6 text-left">
                   <div className="flex justify-between items-center w-full mb-5 select-none">
                     <h3 className="text-base md:text-lg font-black tracking-tight text-[#111111]">Featured Products</h3>
@@ -288,7 +290,6 @@ export default function Homepage({
                   </div>
                   <div className="flex overflow-x-auto min-[1025px]:grid min-[1025px]:grid-cols-6 gap-3.5 md:gap-5 pb-3 scrollbar-none snap-x snap-mandatory">
                     {featuredDeck.map((product) => {
-                      // 🚀 NEW COMPATIBILITY FALLBACK HANDLER
                       const primaryImgObj = product.colorVariants?.find(v => v.isMain) || product.colorVariants?.[0];
                       const fallbackImg = product.images?.find(img => img.isCover) || product.images?.[0];
                       const finalTargetSrc = primaryImgObj ? primaryImgObj.imageUrl : (fallbackImg ? fallbackImg.imageUrl : "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=500&q=80");
@@ -344,37 +345,33 @@ export default function Homepage({
               </>
             )}
 
-            {/* Uploads and Profile Tabs View Frame Sections */}
-            {(activeTab === 'uploads' || activeTab === 'saved-mobile') && (
+            {/* VIEW B: SAVED ITEMS */}
+            {activeTab === 'saved-mobile' && (
               <section className="w-full max-w-[95%] mx-auto px-2 lg:px-4 pt-6 pb-6 flex-1 text-left relative min-h-[55vh]">
-                <div className="border-b border-gray-200/60 pb-4 mb-6 select-none relative z-10">
-                  <h2 className="text-xl md:text-2xl font-black tracking-tight text-[#111111]">
-                    {activeTab === 'saved-mobile' ? 'Your Saved Items' : 'Your Listings'}
-                  </h2>
-                  <p className="text-xs text-gray-400 font-medium mt-0.5">
-                    {activeTab === 'saved-mobile' ? 'Track your favorite bookmarked campus discoveries.' : 'Manage and view your live product listings on campus.'}
-                  </p>
+                <div className="border-b border-gray-200/60 pb-4 mb-6 select-none flex items-center justify-between relative z-10">
+                  <div className="flex flex-col text-left">
+                    <h2 className="text-xl md:text-2xl font-black tracking-tight text-[#111111]">Your Saved Items</h2>
+                    <p className="text-xs text-gray-400 font-medium mt-0.5">Track your favorite bookmarked campus discoveries.</p>
+                  </div>
                 </div>
 
-                {currentTabItemsList.length === 0 ? (
+                {savedProducts.length === 0 ? (
                   <div className="w-full py-20 flex flex-col items-center justify-center text-center select-none z-10">
                     <div className="w-16 h-16 rounded-2xl bg-marix-teal/10 text-marix-teal flex items-center justify-center text-3xl mb-4">
-                      <i className={`ph font-bold ${activeTab === 'saved-mobile' ? 'ph-heart-break' : 'ph-tray'}`}></i>
+                      <i className="ph font-bold ph-heart-break"></i>
                     </div>
-                    <h4 className="text-base font-black text-[#111111] tracking-tight">
-                      {activeTab === 'saved-mobile' ? 'Your saved shelf is empty' : 'No active uploads found'}
-                    </h4>
+                    <h4 className="text-base font-black text-[#111111] tracking-tight">Your saved shelf is empty</h4>
                     <p className="text-xs text-gray-500 max-w-xs leading-relaxed font-medium mt-1 mb-5">
-                      {activeTab === 'saved-mobile' ? 'Tap the heart icon on cards while browsing to save products you want to keep track of here.' : "You haven't posted any items yet. Create your first marketplace entry to showcase products to campus shoppers instantly."}
+                      Tap the heart icon on cards while browsing to save products.
                     </p>
-                    <button onClick={() => activeTab === 'saved-mobile' ? handleTabChange('browse') : setShowCreateModal(true)} className="bg-marix-brown hover:bg-marix-brown/95 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all active:scale-95 focus:outline-none">
-                      {activeTab === 'saved-mobile' ? 'Explore Products' : 'List your products'}
+                    <button onClick={() => handleTabChange('browse')} className="bg-marix-brown hover:bg-marix-brown/95 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all active:scale-95 focus:outline-none">
+                      Explore Products
                     </button>
                   </div>
                 ) : (
                   <div className="relative z-10">
                     <div className="grid grid-cols-2 min-[600px]:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-5">
-                      {currentTabItemsList.map((product) => {
+                      {savedProducts.map((product) => {
                         const primaryImg = product.colorVariants?.find(v => v.isMain) || product.colorVariants?.[0];
                         const fallbackImg = product.images?.find(img => img.isCover) || product.images?.[0];
                         const finalTargetSrc = primaryImg ? primaryImg.imageUrl : (fallbackImg ? fallbackImg.imageUrl : "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=500&q=80");
@@ -386,7 +383,8 @@ export default function Homepage({
                             targetImageSrc={finalTargetSrc} 
                             savedProducts={savedProducts}
                             onToggleSave={setSavedProducts}
-                            onProductClick={onProductCardClick} // 🚀 BIND HANDLER
+                            onProductClick={onProductCardClick} 
+                            isManageMode={false}
                           />
                         );
                       })}
@@ -395,6 +393,63 @@ export default function Homepage({
                 )}
               </section>
             )}
+
+            {/* UPLOADS MOUNT */}
+            {activeTab === 'uploads' && (
+              <div className="w-full flex flex-col items-center justify-start">
+                <Uploads 
+                  userUploads={userUploads}
+                  onEditTrigger={(prod) => {
+                    // 🚀 Set the edit data FIRST, then show modal directly
+                    if (typeof setEditingProductData === 'function') {
+                      setEditingProductData(prod);
+                    }
+                  }}
+                  onDeleteTrigger={(prod) => setProductToDelete(prod)}
+                  onProductCardClick={onProductCardClick}
+                />
+              </div>
+            )}
+
+            {/* VIEW D: NOTIFICATION MODULE */}
+            {activeTab === 'notifications' && (
+              <section className="w-full max-w-[95%] mx-auto px-2 lg:px-4 pt-6 pb-16 flex-1 text-left relative animate-fadeIn">
+                <Notifications 
+                  notifications={notifications}
+                  firstLetter={firstLetter}
+                  onBack={() => handleTabChange(historyFallbackTab)} 
+                />
+              </section>
+            )}
+
+            {/* VIEW E: PROFILE PANEL */}
+{activeTab === 'profile' && (
+  <section className="w-full max-w-[95%] mx-auto px-2 lg:px-4 pt-6 pb-16 flex-1 text-left relative">
+    <Profile 
+      userName={userName}
+      userEmail={userEmail}
+      userLocation={userLocation}
+      setUserLocation={setUserLocation}
+      onUpdateUserName={onUpdateUserName}
+      onNavigateTab={(targetTab) => handleTabChange(targetTab)}
+      onLogOut={onSignOut}
+      forcedView={profileSubView}
+      setForcedView={setProfileSubView}
+      isSeller={hasCompletedSellerOnboarding}
+      onBecomeSellerTrigger={onBecomeSellerTrigger}
+      shopDetails={shopDetails}
+      setShopDetails={setShopDetails}
+      onOpenCreateListingModal={onOpenCreateListingModal}
+      
+      /* 🚀 RECENTLY VIEWED CRITICAL PROPS */
+      recentlyViewed={recentlyViewed} 
+      onProductCardClick={onProductCardClick}
+      savedProducts={savedProducts}
+      onToggleSave={setSavedProducts}
+    />
+  </section>
+)}
+
           </div>
         </div>
 
@@ -439,14 +494,13 @@ export default function Homepage({
                   </ul>
                 </div>
               </div>
-              
               <div className="w-full text-center text-[11px] text-gray-400 font-bold tracking-tight pt-8 mt-8 border-t border-gray-100">
                 <span>&copy; {new Date().getFullYear()} <span className="text-marix-teal font-bold">Marix</span>. Built for Campus Commerce.</span>
               </div>
             </div>
           </footer>
         ) : (
-          <footer className="w-full bg-white border-t border-gray-100 py-6 text-center select-none mt-auto z-20 shrink-0 pb-[24px] md:pb-8">
+          <footer className="w-full bg-marix-cream border-t bg-white border-gray-200/30 py-6 text-center select-none mt-auto z-20 shrink-0 pb-[24px] md:pb-8">
             <p className="text-[11px] font-bold text-gray-400 tracking-tight">&copy; {new Date().getFullYear()} <span className="text-marix-teal font-bold">Marix</span>. Built for Campus Commerce.</p>
           </footer>
         )}
@@ -468,7 +522,7 @@ export default function Homepage({
           <button onClick={() => handleTabChange('uploads')} className={`flex flex-col items-center gap-0.5 py-1 focus:outline-none ${activeTab === 'uploads' ? 'text-marix-teal' : 'text-gray-400'}`}>
             <i className="ph ph-tray text-xl"></i><span className="text-[10px] font-bold">Uploads</span>
           </button>
-          <button onClick={() => handleTabChange('saved-mobile')} className={`flex flex-col items-center gap-0.5 py-1 focus:outline-none ${activeTab === 'saved-mobile' ? 'text-marix-teal' : 'text-gray-400'}`}>
+          <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center gap-0.5 py-1 focus:outline-none ${activeTab === 'profile' ? 'text-marix-teal' : 'text-gray-400'}`}>
             <i className="ph ph-user text-xl"></i><span className="text-[10px] font-bold">Profile</span>
           </button>
         </div>
@@ -478,7 +532,6 @@ export default function Homepage({
         <button
           onClick={handleFastScrollToTop}
           className="fixed bottom-24 right-5 w-12 h-12 bg-marix-brown text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-105 active:scale-95 transition-all z-[100] focus:outline-none cursor-pointer"
-          aria-label="Scroll back to top fast"
         >
           <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
@@ -486,22 +539,77 @@ export default function Homepage({
         </button>
       )}
 
+      {/* DELETE LISTING MODAL */}
+      {productToDelete && (
+        <div className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-[4px] flex items-center justify-center p-4 select-none animate-fadeIn">
+          <div className="w-full max-w-[320px] bg-white p-6 rounded-2xl border border-gray-100 shadow-2xl text-center flex flex-col items-center animate-scaleIn">
+            <div className="w-12 h-12 rounded-full bg-marix-teal/5 text-marix-teal flex items-center justify-center text-xl mb-3.5">
+              <i className="ph ph-warning-circle font-bold"></i>
+            </div>
+            <h3 className="text-sm font-black text-[#111111] tracking-tight">Delete Listing?</h3>
+            <p className="text-xs text-gray-500 max-w-[240px] mt-1.5 leading-relaxed font-semibold">
+              Are you sure you want to delete <span className="text-[#111111] font-black">"{productToDelete.productTitle}"</span>? This action cannot be undone.
+            </p>
+            
+            <div className="grid grid-cols-2 gap-3 w-full mt-6">
+              <button 
+                onClick={() => setProductToDelete(null)}
+                className="w-full bg-marix-teal/10 hover:bg-marix-teal/20 text-marix-teal font-black text-xs py-3 rounded-xl transition-colors focus:outline-none cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={executeLocalDelete}
+                className="w-full bg-marix-brown hover:opacity-95 text-white font-black text-xs py-3 rounded-xl shadow-md transition-all focus:outline-none cursor-pointer"
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
 
-function VolcanoCard({ product, targetImageSrc, savedProducts, onToggleSave, onProductClick }) {
-  const isLiked = savedProducts.some(p => p.id === product.id);
+function VolcanoCard({ product, targetImageSrc, savedProducts = [], onToggleSave, onProductClick, isManageMode, onDeleteTrigger, onEditTrigger }) {
+  const isLiked = savedProducts && Array.isArray(savedProducts) ? savedProducts.some(p => p.id === product.id) : false;
   const cleanCampusName = product.campus ? product.campus.split(',')[0].trim() : 'Campus';
 
   return (
     <div 
-      onClick={() => onProductClick && onProductClick(product)} // 🚀 CLICK HANDLER
-      className="w-full cursor-pointer hover:scale-[1.01] active:scale-[0.99] transition-transform duration-200 flex flex-col gap-y-1 select-none group bg-white p-1.5 rounded-[18px] border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] text-left"
+      onClick={() => {
+        // 🚀 RESTORED CLICK INTERCEPT FOR PRODUCT OVERVIEW
+        if (!isManageMode && onProductClick) onProductClick(product);
+      }} 
+      className={`w-full relative transition-transform duration-200 flex flex-col gap-y-1 select-none group bg-white p-1.5 rounded-[18px] border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] text-left ${isManageMode ? 'cursor-default' : 'cursor-pointer hover:scale-[1.01] active:scale-[0.99]'}`}
     >
       <div className="w-full aspect-square rounded-[12px] overflow-hidden bg-marix-cream/40 relative shrink-0">
         <img src={targetImageSrc} alt={product.productTitle} className="w-full h-full object-cover animate-fadeIn" loading="lazy" />
+
+        {isManageMode && (
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px] flex items-center justify-center p-2 animate-fadeIn z-20 select-none">
+            <div className="bg-white rounded-xl shadow-xl border border-gray-200/80 p-1 flex items-center divide-x divide-gray-100 max-w-[120px] w-full transform scale-95 md:scale-100">
+              <button 
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onEditTrigger?.(); }}
+                className="flex-1 h-9 flex items-center justify-center text-gray-600 hover:text-marix-teal active:scale-90 transition-all focus:outline-none cursor-pointer"
+              >
+                <i className="ph ph-pencil-simple text-base font-bold"></i>
+              </button>
+              <button 
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onDeleteTrigger?.(); }}
+                className="flex-1 h-9 flex items-center justify-center text-red-500 hover:text-red-600 active:scale-90 transition-all focus:outline-none cursor-pointer"
+              >
+                <i className="ph ph-trash text-base font-bold"></i>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
+
       <div className="flex flex-col gap-y-0.5 px-1 pb-1 flex-1 justify-between min-w-0">
         <div className="flex flex-col min-w-0">
           <h4 className="text-[11px] sm:text-xs md:text-sm font-semibold text-[#111111] truncate tracking-tight mt-1">{product.productTitle}</h4>
@@ -515,11 +623,12 @@ function VolcanoCard({ product, targetImageSrc, savedProducts, onToggleSave, onP
           <span className="text-[11px] sm:text-xs md:text-sm font-black text-marix-teal tracking-tight">{product.price}</span>
           <button 
             type="button" 
+            disabled={isManageMode}
             onClick={(e) => { 
-              e.stopPropagation(); // Stop click bubbling into the overall card component click
-              onToggleSave(product); 
+              e.stopPropagation(); 
+              if (onToggleSave) onToggleSave(product); 
             }} 
-            className={`w-[26px] h-[26px] sm:w-7 sm:h-7 rounded-full border flex items-center justify-center bg-white active:scale-90 focus:outline-none transition-colors ${isLiked ? 'border-marix-teal text-marix-teal' : 'border-gray-200 text-[#111111]/40'}`}
+            className={`w-[26px] h-[26px] sm:w-7 sm:h-7 rounded-full border flex items-center justify-center bg-white focus:outline-none transition-colors ${isManageMode ? 'opacity-30 cursor-not-allowed border-gray-100 text-gray-300' : 'active:scale-90 cursor-pointer ' + (isLiked ? 'border-marix-teal text-marix-teal' : 'border-gray-200 text-[#111111]/40')}`}
           >
             <svg className="w-[11px] h-[11px] sm:w-[13px] sm:h-[13px]" viewBox="0 0 24 24" fill={isLiked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.5"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" /></svg>
           </button>

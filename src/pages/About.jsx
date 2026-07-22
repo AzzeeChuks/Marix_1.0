@@ -78,26 +78,26 @@ export default function About({
     <div className="min-h-screen bg-marix-cream text-[#111111] flex flex-col justify-between w-full relative overflow-x-hidden md:pt-[76px] pb-0">
       
       <Navbar 
-        isLoggedIn={isLoggedIn}
-        setIsLoggedIn={setIsLoggedIn}
-        userName={userName}
-        savedCount={savedCount}
-        showCreateModal={showCreateModal}
-        setShowCreateModal={setShowCreateModal}
-        onNavigateToLogin={onNavigateToLogin}
-        onNavigateToSignup={onNavigateToSignup}
-        // 🚀 ROUTING & SEARCH WIRED
-        activeSearchTerm={activeSearchTerm}
-        setActiveSearchTerm={setActiveSearchTerm}
-        onNavigateToExplore={onNavigateToExplore}
-        handleTabChange={(targetTab) => {
-          if (onNavigateHome) {
-            onNavigateHome();
-          } else if (onNavigateToView) {
-            onNavigateToView('home');
-          }
-        }}
-      />
+  isLoggedIn={isLoggedIn}
+  setIsLoggedIn={setIsLoggedIn}
+  userName={userName}
+  activeTab="" // Leave blank since it's a static page
+  savedCount={savedCount}
+  showCreateModal={false}
+  setShowCreateModal={setShowCreateModal}
+  onNavigateToLogin={onNavigateToLogin}
+  onNavigateToSignup={onNavigateToSignup}
+  activeSearchTerm={activeSearchTerm}
+  setActiveSearchTerm={setActiveSearchTerm}
+  onNavigateToExplore={onNavigateToExplore}
+  handleTabChange={(tab) => {
+    if (tab === 'browse' || tab === 'home') onNavigateHome?.();
+    else if (tab === 'uploads') onNavigateToUploads?.();
+    else if (tab === 'saved-mobile') onNavigateToSaved?.();
+    else if (tab === 'profile') onNavigateToProfileTab?.();
+    else if (tab === 'notifications') onNavigateToNotificationsTab?.();
+  }}
+/>
 
       <div ref={observerTargetRef} className="w-full h-px pointer-events-none absolute top-[110px]"></div>
       <div className="w-full h-3 block md:hidden shrink-0"></div>

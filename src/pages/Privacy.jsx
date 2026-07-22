@@ -17,11 +17,12 @@ export default function Privacy({
   setShowCreateModal,
   activeTab,
   setActiveTab,
-  // 🚀 FIXED: Injected these missing props into the signature to stop the white screen crash!
   activeSearchTerm,
   setActiveSearchTerm,
   onNavigateToExplore,
-  onNavigateToView
+  onNavigateToView,
+  onNavigateToProfileTab,
+  onNavigateToNotificationsTab
 }) {
   const [showBackToTop, setShowBackToTop] = useState(false);
   const observerTargetRef = useRef(null);
@@ -82,29 +83,46 @@ export default function Privacy({
     <div className="min-h-screen bg-marix-cream text-[#111111] flex flex-col justify-between w-full relative overflow-x-hidden md:pt-[76px] pb-0">
       
       <Navbar 
-        isLoggedIn={isLoggedIn} 
-        setIsLoggedIn={setIsLoggedIn} 
-        userName={userName} 
-        savedCount={savedCount} 
-        showCreateModal={showCreateModal} 
-        setShowCreateModal={setShowCreateModal} 
-        onNavigateToLogin={onNavigateToLogin} 
+        isLoggedIn={isLoggedIn}
+        setIsLoggedIn={setIsLoggedIn}
+        userName={userName}
+        activeTab="" 
+        savedCount={savedCount}
+        showCreateModal={false}
+        setShowCreateModal={setShowCreateModal}
+        onNavigateToLogin={onNavigateToLogin}
         onNavigateToSignup={onNavigateToSignup}
-        
-        // 🚀 GLOBAL ROUTING & SEARCH BRIDGE
-        // This passes the global state so they can search from anywhere!
-        activeSearchTerm={activeSearchTerm} 
+        activeSearchTerm={activeSearchTerm}
         setActiveSearchTerm={setActiveSearchTerm}
-        
-        // This forces the app to jump to the 'explore' grid view on search
-        onNavigateToExplore={onNavigateToExplore} 
-        
-        handleTabChange={(targetTab) => {
-          // Standardizes navigation back to Home/Browse from any static page
-          if (onNavigateHome) {
-            onNavigateHome();
-          } else if (onNavigateToView) {
-            onNavigateToView('home');
+        onNavigateToExplore={onNavigateToExplore}
+        // 🚀 LINKED LOGO TO ESCAPE HATCH DIRECTLY
+        onLogoClick={() => {
+          window.dispatchEvent(new CustomEvent('marix_force_home_reset'));
+        }}
+        // 🚀 DIRECT PROPS: Save history snapshot cleanly before state changes unmount the view!
+        onNavigateToNotifications={() => {
+          window.sessionStorage.setItem('marix_static_back_source', 'privacy');
+          onNavigateToView?.('home');
+          onNavigateToNotificationsTab?.();
+        }}
+        onNavigateToProfile={() => {
+          window.sessionStorage.setItem('marix_static_back_source', 'privacy');
+          onNavigateToView?.('home');
+          onNavigateToProfileTab?.();
+        }}
+        handleTabChange={(tab) => {
+          if (tab === 'browse' || tab === 'home') {
+            window.dispatchEvent(new CustomEvent('marix_force_home_reset'));
+            onNavigateHome?.();
+            onNavigateToView?.('home');
+          }
+          else if (tab === 'uploads') {
+            onNavigateToView?.('home');
+            onNavigateToUploads?.();
+          }
+          else if (tab === 'saved-mobile') {
+            onNavigateToView?.('home');
+            onNavigateToSaved?.();
           }
         }}
       />
@@ -220,18 +238,6 @@ export default function Privacy({
           </div>
         </div>
       </main>
-
-      {/* 🚀 UPDATED FLOATING ARROW SYSTEM: Changed bottom-6 to bottom-24 to match Homepage height exactly */}
-      {/* {showBackToTop && !showCreateModal && (
-        <button
-          onClick={handleFastScrollToTop}
-          className="fixed bottom-24 right-5 w-12 h-12 bg-marix-brown text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all z-[100] focus:outline-none animate-fadeIn"
-          style={{ display: window.innerWidth >= 768 ? 'none' : 'flex' }}
-          aria-label="Scroll back to top fast"
-        >
-          <i className="ph ph-arrow-up font-black text-lg"></i>
-        </button>
-      )} */}
 
       {/* 🎯 SINGLE PATCHED COPYRIGHT ROW */}
       <div className="w-full text-center text-[11px] text-gray-400 font-bold tracking-tight py-6 border-t border-gray-100 bg-white z-30 relative shrink-0">

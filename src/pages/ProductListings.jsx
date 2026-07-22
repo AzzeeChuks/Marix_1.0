@@ -18,6 +18,8 @@ export default function ProductListings({
   onNavigateToSignup,
   onNavigateToUploadsTab,
   onNavigateToSavedTab,
+  onNavigateToProfileTab, 
+  onNavigateToNotificationsTab,
   activeSearchTerm = "",
   setActiveSearchTerm,
   recentSearches = [],
@@ -70,7 +72,7 @@ export default function ProductListings({
     const containerHeight = target.clientHeight;
     const totalContentHeight = target.scrollHeight;
 
-    sessionStorage.setItem('marix_explore_scroll_pos', currentScrollY);
+    sessionStorage.setItem('marix_browse_isolated_scroll_pos', currentScrollY);
     setShowScrollTop(currentScrollY > 300);
 
     if (containerHeight + currentScrollY >= totalContentHeight - 40) {
@@ -82,7 +84,7 @@ export default function ProductListings({
 
   useEffect(() => {
     if (viewMode === 'All' && initialCategory === 'All Categories') {
-      const savedScrollPos = sessionStorage.getItem('marix_explore_scroll_pos');
+      const savedScrollPos = sessionStorage.getItem('marix_browse_isolated_scroll_pos');
       if (savedScrollPos && scrollContainerRef.current) {
         scrollContainerRef.current.scrollTop = parseInt(savedScrollPos, 10);
       }
@@ -323,13 +325,17 @@ export default function ProductListings({
             setIsLoggedIn={setIsLoggedIn} 
             userName={userName} 
             activeTab="explore"
+            onNavigateToNotifications={onNavigateToNotificationsTab}
+            onNavigateToProfile={onNavigateToProfileTab}
             handleTabChange={(tab) => {
               if (tab === 'browse' || tab === 'home') {
                 setViewMode?.("All");
-                onNavigateHome?.();
+                onNavigateHome?.(); 
               }
               else if (tab === 'uploads') onNavigateToUploadsTab?.();
+              else if (tab === 'profile') onNavigateToProfileTab?.();
               else if (tab === 'saved-mobile') onNavigateToSavedTab?.();
+              else if (tab === 'notifications') onNavigateToNotificationsTab?.();
             }}
             savedCount={savedProducts.length} 
             showCreateModal={showCreateModal} 
@@ -417,7 +423,6 @@ export default function ProductListings({
               )}
             </div>
 
-            {/* 🎯 SPACER CONTROLLER: CHANGE 'h-16' (64px) OR 'h-12' (48px) TO ADJUST THE BOTTOM GAP */}
             {totalPages === 1 && (
               <div className="w-full h-16 select-none pointer-events-none" aria-hidden="true" />
             )}
@@ -636,7 +641,7 @@ export default function ProductListings({
           <button onClick={() => { setViewMode?.("All"); }} className="flex flex-col items-center gap-0.5 py-1 text-marix-teal focus:outline-none"><i className="ph ph-squares-four text-xl"></i><span className="text-[10px] font-bold">Browse</span></button>
           <button onClick={() => setShowCreateModal(!showCreateModal)} className="w-11 h-11 rounded-full bg-marix-brown text-white flex items-center justify-center shadow-md -translate-y-2.5 border-4 border-marix-cream focus:outline-none z-50"><i className="ph font-black text-xl ph-plus"></i></button>
           <button onClick={onNavigateToUploadsTab} className="flex flex-col items-center gap-0.5 py-1 text-gray-400 focus:outline-none"><i className="ph ph-tray text-xl"></i><span className="text-[10px] font-bold">Uploads</span></button>
-          <button onClick={onNavigateToSavedTab} className="flex flex-col items-center gap-0.5 py-1 text-gray-400 focus:outline-none"><i className="ph ph-user text-xl"></i><span className="text-[10px] font-bold">Profile</span></button>
+          <button onClick={onNavigateToProfileTab} className="flex flex-col items-center gap-0.5 py-1 text-gray-400 focus:outline-none"><i className="ph ph-user text-xl"></i><span className="text-[10px] font-bold">Profile</span></button>
         </div>
       )}
 

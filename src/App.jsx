@@ -15,18 +15,64 @@ export default function App() {
   const [currentView, setCurrentView] = useState('home'); 
   const [showCreateModal, setShowCreateModal] = useState(false);
   
-  // Set unified dynamic root collection hooks!
   const [products, setProducts] = useState(initialProducts || []);
   const [userUploads, setUserUploads] = useState([]);
   
   const [activeTab, setActiveTab] = useState('browse');
-  const [userName, setUserName] = useState('');
+  const [previousTab, setPreviousTab] = useState('browse'); 
+  
+  // 🚀 CENTRAL DYNAMIC USER STATES
+  const [userName, setUserName] = useState('Student');
+  const [userEmail, setUserEmail] = useState('');
+  const [userLocation, setUserLocation] = useState('');
+  
   const [activeSearchTerm, setActiveSearchTerm] = useState('');
-
   const [selectedProduct, setSelectedProduct] = useState(null);
+
+  // RECENTLY VIEWED PRODUCT TRACKING STATE
+  const [recentlyViewed, setRecentlyViewed] = useState([]);
+
+  // PUBLIC SELLER PROFILE MODAL STATE
+  const [publicSellerData, setPublicSellerData] = useState(null);
 
   const [exploreViewMode, setExploreViewMode] = useState('All');
   const [exploreCategoryFilter, setExploreCategoryFilter] = useState('All Categories');
+  const [editingProductData, setEditingProductData] = useState(null);
+
+  const [hasCompletedSellerOnboarding, setHasCompletedSellerOnboarding] = useState(false);
+  const [shopDetails, setShopDetails] = useState({
+    shopName: '',
+    campus: '',
+    whatsappNumber: '',
+    aboutShop: ''
+  });
+
+  // Modal Temp States
+  const [onboardingTempCampus, setOnboardingTempCampus] = useState('');
+  const [sellerTempDetails, setSellerTempDetails] = useState({
+    shopName: '',
+    campus: '',
+    whatsappNumber: '',
+    aboutShop: ''
+  });
+
+  // 🚀 SEPARATED ONBOARDING OVERLAY STATES
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false); // For Signups
+  const [showOnboardingOverlay, setShowOnboardingOverlay] = useState(false); // For Login missing location
+  
+  const [showBecomeSellerModal, setShowBecomeSellerModal] = useState(false);
+  const [sellerRegistrationSource, setSellerRegistrationSource] = useState('dock');
+
+  // Dynamic Notification List
+  const [notifications, setNotifications] = useState([
+    { 
+      id: 1, 
+      title: "Welcome to Marix! 🎉", 
+      message: "Thanks for joining Marix. Discover amazing products on your campus and start connecting!", 
+      createdAt: new Date().toISOString(), 
+      read: false 
+    }
+  ]);
 
   const [savedProducts, setSavedProducts] = useState(() => {
     const saved = localStorage.getItem('marix_saved_items');
@@ -36,6 +82,29 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('marix_saved_items', JSON.stringify(savedProducts));
   }, [savedProducts]);
+
+  useEffect(() => {
+    const handleGlobalHomeReset = () => {
+      setSelectedProduct(null);
+      setPublicSellerData(null);
+      setCurrentView('home');
+      setActiveTab('browse');
+    };
+    
+    window.addEventListener('marix_force_home_reset', handleGlobalHomeReset);
+    return () => window.removeEventListener('marix_force_home_reset', handleGlobalHomeReset);
+  }, []);
+
+  useEffect(() => {
+    const handleTriggerEditListingModal = (e) => {
+      if (e.detail) {
+        setEditingProductData(e.detail);
+        setShowCreateModal(true);
+      }
+    };
+    window.addEventListener('marix_trigger_edit_listing', handleTriggerEditListingModal);
+    return () => window.removeEventListener('marix_trigger_edit_listing', handleTriggerEditListingModal);
+  }, []);
 
   const handleToggleSaveProduct = (product) => {
     setSavedProducts((prevSaved) => {
@@ -48,33 +117,133 @@ export default function App() {
     });
   };
 
-  const handleLoginSuccess = (firstName) => {
-    setUserName(firstName || 'Student');
+  const handleProductCardClick = (clickedProduct) => {
+    setSelectedProduct(clickedProduct);
+
+    setRecentlyViewed((prev) => {
+      const now = new Date().toISOString();
+      const newEntry = { ...clickedProduct, viewedAt: now };
+      const withoutDuplicate = prev.filter((p) => p.id !== clickedProduct.id);
+      return [newEntry, ...withoutDuplicate];
+    });
+  };
+
+  // 🚀 GUARANTEED STAGGERED 2-SECOND DELAY FOR BOTH SIGNUP & LOGIN
+  const handleLoginSuccess = (firstName, email, isNewSignup = false) => {
+    const finalName = firstName || 'Student';
+    const finalEmail = email || 'student@campus.edu';
+    
+    setUserName(finalName);
+    setUserEmail(finalEmail);
     setIsLoggedIn(true);
     setCurrentView('home');
     setActiveTab('browse');
     setActiveSearchTerm('');
+    
+    if (isNewSignup) {
+      // 1. SIGNUP: Add notification, then trigger Welcome Modal after 2 seconds
+      setNotifications(prev => [
+        {
+          id: Date.now(),
+          title: "Welcome to Marix! 🎉",
+          message: `Hi ${finalName}, thanks for joining Marix! Start discovering campus deals near you.`,
+          createdAt: new Date().toISOString(),
+          read: false
+        },
+        ...prev
+      ]);
+
+      setTimeout(() => {
+        setShowWelcomeModal(true);
+      }, 2000); // ⏱️ Smooth 2-second delay
+    } else {
+      // 2. LOGIN: Trigger "One Last Step!" overlay after 2 seconds IF location is missing
+      if (!userLocation) {
+        setTimeout(() => {
+          setShowOnboardingOverlay(true);
+        }, 2000); // ⏱️ Smooth 2-second delay
+      }
+    }
   };
 
   const handleSignOut = () => {
     setUserName('');
+    setUserEmail('');
     setIsLoggedIn(false);
     setCurrentView('home');
     setActiveTab('browse');
     setActiveSearchTerm('');
     setSelectedProduct(null); 
+    setPublicSellerData(null);
+    setHasCompletedSellerOnboarding(false);
+    setUserLocation('');
+    setShopDetails({ shopName: '', campus: '', whatsappNumber: '', aboutShop: '' });
   };
 
   const handleNewProduct = (newCard) => {
-    // Correctly prepend new product to listings so that it propagates instantly!
-    setProducts(prevProducts => [newCard, ...prevProducts]);
-    setUserUploads(prev => [newCard, ...prev]);
+    const augmentedCard = {
+      ...newCard,
+      shopName: editingProductData ? (editingProductData.shopName || newCard.shopName) : (shopDetails.shopName || userName || 'Store'),
+      campus: editingProductData ? (editingProductData.campus || newCard.campus) : (shopDetails.campus || userLocation || 'Campus'),
+      whatsappNumber: editingProductData ? (editingProductData.whatsappNumber || newCard.whatsappNumber) : (shopDetails.whatsappNumber || '')
+    };
+
+    if (editingProductData) {
+      setProducts(prev => prev.map(p => p.id === newCard.id ? augmentedCard : p));
+      setUserUploads(prev => prev.map(p => p.id === newCard.id ? augmentedCard : p));
+      setSavedProducts(prev => prev.map(p => p.id === newCard.id ? augmentedCard : p));
+    } else {
+      setProducts(prevProducts => [augmentedCard, ...prevProducts]);
+      setUserUploads(prev => [augmentedCard, ...prev]);
+    }
+
     setShowCreateModal(false); 
-    
+    setEditingProductData(null); 
     setSelectedProduct(null);
     setCurrentView('home');
     setActiveTab('uploads');
     setActiveSearchTerm('');
+  };
+
+  const handleCreateActionIntercept = () => {
+    if (!isLoggedIn) {
+      setCurrentView('auth-login');
+      return;
+    }
+    if (!hasCompletedSellerOnboarding) {
+      setSellerRegistrationSource('dock');
+      setSellerTempDetails({
+        shopName: shopDetails.shopName || '',
+        campus: shopDetails.campus || userLocation || '',
+        whatsappNumber: shopDetails.whatsappNumber || '',
+        aboutShop: shopDetails.aboutShop || ''
+      });
+      setShowBecomeSellerModal(true);
+    } else {
+      setShowCreateModal(true);
+    }
+  };
+
+  const handleEditInitActionIntercept = (productToEdit) => {
+    setEditingProductData(productToEdit);
+    setShowCreateModal(true);
+  };
+
+  const handleProductDelete = (productId) => {
+    setProducts(prev => prev.filter(p => p.id !== productId));
+    setUserUploads(prev => prev.filter(p => p.id !== productId));
+    setSavedProducts(prev => prev.filter(p => p.id !== productId));
+  };
+
+  const handleProfileSellerIntercept = () => {
+    setSellerRegistrationSource('profile');
+    setSellerTempDetails({
+      shopName: shopDetails.shopName || '',
+      campus: shopDetails.campus || userLocation || '',
+      whatsappNumber: shopDetails.whatsappNumber || '',
+      aboutShop: shopDetails.aboutShop || ''
+    });
+    setShowBecomeSellerModal(true);
   };
 
   const routeToExploreWithContext = (viewMode = 'All', category = 'All Categories') => {
@@ -84,182 +253,403 @@ export default function App() {
     setSelectedProduct(null); 
   };
 
-  const routeToSavedTab = () => {
-    setCurrentView('home');
-    setActiveTab('saved-mobile');
-    setSelectedProduct(null);
+  const handleHomepageTabBackClick = (targetTab) => {
+    if (targetTab === 'logo-home-reset') {
+      setSelectedProduct(null); 
+      setCurrentView('home');
+      setActiveTab('browse');
+      return;
+    }
+    if (targetTab !== 'notifications') setPreviousTab(targetTab);
+    setActiveTab(targetTab);
   };
 
-  const routeToUploadsTab = () => {
-    setCurrentView('home');
-    setActiveTab('uploads');
-    setSelectedProduct(null);
+  const handleOpenPublicSellerProfile = (product) => {
+    const shopName = product.shopName || 'Campus Merchant';
+    const campus = product.campus || userLocation || 'Campus';
+    const whatsappNumber = product.whatsappNumber || '';
+    const joinDate = product.joinDate || "July 2026";
+    
+    const sellerListings = products.filter(p => 
+      (p.shopName && p.shopName.toLowerCase() === shopName.toLowerCase()) || 
+      (p.whatsappNumber && whatsappNumber && p.whatsappNumber === whatsappNumber)
+    );
+
+    setPublicSellerData({
+      shopName,
+      campus,
+      whatsappNumber,
+      joinDate,
+      aboutShop: product.aboutShop || "Welcome to my store! Browse through our listed items or chat directly on WhatsApp for pre-orders.",
+      listings: sellerListings
+    });
   };
 
-  const routeToHomeFeed = () => {
-    setCurrentView('home');
-    setActiveTab('browse');
-    setSelectedProduct(null);
-  };
-
-  const routeToLoginView = () => {
-    setCurrentView('auth-login');
-  };
-
-  const routeToSignupView = () => {
-    setCurrentView('auth-signup');
-  };
-
-  const handleStaticViewSwitch = (targetView) => {
-    setCurrentView(targetView);
-    setSelectedProduct(null);
+  const handleSeeAllSellerListings = () => {
+    if (publicSellerData) {
+      setActiveSearchTerm(publicSellerData.shopName);
+      routeToExploreWithContext('All', 'All Categories');
+      setPublicSellerData(null);
+    }
   };
 
   return (
-    <div className="fixed inset-0 bg-marix-cream text-[#111111] flex flex-col overflow-hidden selection:bg-marix-teal/20">
+    /* 🚀 SAFARI-FRIENDLY & SCREENSHOT-FRIENDLY ROOT WRAPPER (MIN-H-[100DVH]) */
+    <div className="w-full min-h-[100dvh] bg-marix-cream text-[#111111] flex flex-col relative selection:bg-marix-teal/20">
       
-      <div className="w-full flex-1 flex flex-col relative overflow-hidden">
+      <div className="w-full flex-1 flex flex-col relative">
         
-        {selectedProduct ? (
-          <div className="absolute inset-0 overflow-y-auto bg-marix-cream z-50"> 
+        {/* PRODUCT OVERVIEW CONTAINER */}
+        <div className={`absolute inset-0 overflow-y-auto bg-marix-cream z-[99] relative shadow-2xl ${
+          (selectedProduct && activeTab !== 'profile' && activeTab !== 'notifications') ? '' : 'hidden'
+        }`}>
+          {selectedProduct && (
             <ProductOverview 
-              product={selectedProduct}
-              allProducts={products}
-              isLoggedIn={isLoggedIn}
-              setIsLoggedIn={setIsLoggedIn}
-              userName={userName}
-              showCreateModal={showCreateModal}
-              setShowCreateModal={setShowCreateModal}
-              onNavigateToLogin={routeToLoginView}
-              onNavigateToSignup={routeToSignupView}
-              activeSearchTerm={activeSearchTerm}
-              setActiveSearchTerm={setActiveSearchTerm}
-              onNavigateToExplore={routeToExploreWithContext}
-              onNavigateToUploadsTab={routeToUploadsTab}
-              onNavigateToSavedTab={routeToSavedTab}
-              onNavigateHome={routeToHomeFeed}
-              savedProducts={savedProducts}
-              onToggleSave={handleToggleSaveProduct}
-              onBack={() => setSelectedProduct(null)} 
-              onSelectRecommendedProduct={(item) => setSelectedProduct(item)} 
+              product={selectedProduct} allProducts={products} isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} userName={userName}
+              showCreateModal={showCreateModal} setShowCreateModal={handleCreateActionIntercept} onNavigateToLogin={() => setCurrentView('auth-login')} onNavigateToSignup={() => setCurrentView('auth-signup')}
+              activeSearchTerm={activeSearchTerm} setActiveSearchTerm={setActiveSearchTerm} onNavigateToExplore={routeToExploreWithContext}
+              onNavigateToUploadsTab={() => { setCurrentView('home'); setActiveTab('uploads'); setSelectedProduct(null); }}
+              onNavigateToSavedTab={() => { setCurrentView('home'); setActiveTab('saved-mobile'); setSelectedProduct(null); }}
+              onNavigateToProfileTab={() => { setCurrentView('home'); setActiveTab('profile'); }}
+              onNavigateToNotificationsTab={() => { setCurrentView('home'); setActiveTab('notifications'); }}
+              onNavigateHome={() => { setSelectedProduct(null); setCurrentView('home'); setActiveTab('browse'); }}
+              savedProducts={savedProducts} onToggleSave={handleToggleSaveProduct} onBack={() => setSelectedProduct(null)} 
+              onSelectRecommendedProduct={handleProductCardClick} activeTab={activeTab}
+              onViewSellerShop={handleOpenPublicSellerProfile}
             />
-          </div>
-        ) : (
-          <>
-            {/* 🚀 FIXED: True Conditional Rendering. We completely unmount the components when they aren't active. */}
-            {currentView === 'home' && (
-              <div className="absolute inset-0 flex flex-col">
-                <Homepage 
-                  products={products} 
-                  isLoggedIn={isLoggedIn} 
-                  setIsLoggedIn={setIsLoggedIn}
-                  userName={userName}
-                  onSignOut={handleSignOut} 
-                  showCreateModal={showCreateModal}
-                  setShowCreateModal={setShowCreateModal}
-                  activeTab={activeTab}        
-                  setActiveTab={(targetTab) => {
-                    setActiveTab(targetTab);
-                  }}  
-                  userUploads={userUploads}
-                  savedProducts={savedProducts}
-                  setSavedProducts={handleToggleSaveProduct}     
-                  onNavigateToLogin={routeToLoginView}   
-                  onNavigateToSignup={routeToSignupView} 
-                  onNavigateToExplore={routeToExploreWithContext}
-                  activeSearchTerm={activeSearchTerm}
-                  setActiveSearchTerm={setActiveSearchTerm}
-                  onNavigateToView={handleStaticViewSwitch}
-                  onProductCardClick={(clickedItem) => setSelectedProduct(clickedItem)} 
-                />
-              </div>
-            )}
-            
-            {currentView === 'explore' && (
-              <div className="absolute inset-0 flex flex-col animate-fadeIn">
-                <ProductListings 
-                  allProducts={products} 
-                  isLoggedIn={isLoggedIn}
-                  setIsLoggedIn={setIsLoggedIn}
-                  userName={userName}
-                  onNavigateHome={routeToHomeFeed}
-                  savedProducts={savedProducts}
-                  setSavedProducts={handleToggleSaveProduct}
-                  showCreateModal={showCreateModal}
-                  setShowCreateModal={setShowCreateModal}
-                  onNavigateToLogin={routeToLoginView}
-                  onNavigateToSignup={routeToSignupView}
-                  onNavigateToUploadsTab={routeToUploadsTab}
-                  onNavigateToSavedTab={routeToSavedTab}
-                  activeSearchTerm={activeSearchTerm}
-                  setActiveSearchTerm={setActiveSearchTerm}
-                  viewMode={exploreViewMode}
-                  setViewMode={setExploreViewMode}
-                  initialCategory={exploreCategoryFilter}
-                  onProductCardClick={(clickedItem) => setSelectedProduct(clickedItem)} 
-                />
-              </div>
-            )}
-          </>
-        )}
+          )}
+        </div>
         
+        {/* CORE VIEWS */}
+        <div className={`w-full min-h-[100dvh] flex flex-col ${currentView === 'home' ? '' : 'hidden'}`}>
+          <Homepage 
+            products={products} isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} userName={userName} userEmail={userEmail} onSignOut={handleSignOut} 
+            showCreateModal={showCreateModal} setShowCreateModal={handleCreateActionIntercept} activeTab={activeTab} setActiveTab={handleHomepageTabBackClick}  
+            userUploads={userUploads} savedProducts={savedProducts} setSavedProducts={handleToggleSaveProduct}     
+            onNavigateToLogin={() => setCurrentView('auth-login')} onNavigateToSignup={() => setCurrentView('auth-signup')} 
+            onNavigateToExplore={routeToExploreWithContext} activeSearchTerm={activeSearchTerm} setActiveSearchTerm={setActiveSearchTerm}
+            onNavigateToView={(view) => setCurrentView(view)} onProductCardClick={handleProductCardClick} 
+            notifications={notifications} onClearNotificationsCount={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))}
+            historyFallbackTab={previousTab} editingProductData={editingProductData} setEditingProductData={handleEditInitActionIntercept}
+            onProductDeleted={handleProductDelete}
+            hasCompletedSellerOnboarding={hasCompletedSellerOnboarding} onBecomeSellerTrigger={handleProfileSellerIntercept}
+            shopDetails={shopDetails} setShopDetails={setShopDetails} setHasCompletedSellerOnboarding={setHasCompletedSellerOnboarding}
+            userLocation={userLocation} setUserLocation={setUserLocation} onUpdateUserName={setUserName}
+            onOpenCreateListingModal={() => setShowCreateModal(true)}
+            recentlyViewed={recentlyViewed}
+          />
+        </div>
+        
+        <div className={`w-full min-h-[100dvh] flex flex-col animate-fadeIn ${currentView === 'explore' ? '' : 'hidden'}`}>
+          <ProductListings 
+            allProducts={products} isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} userName={userName}
+            onNavigateHome={() => { setCurrentView('home'); setActiveTab('browse'); }} savedProducts={savedProducts} setSavedProducts={handleToggleSaveProduct}
+            showCreateModal={showCreateModal} setShowCreateModal={handleCreateActionIntercept} onNavigateToLogin={() => setCurrentView('auth-login')} onNavigateToSignup={() => setCurrentView('auth-signup')}
+            onNavigateToUploadsTab={() => { setCurrentView('home'); setActiveTab('uploads'); }} onNavigateToSavedTab={() => { setCurrentView('home'); setActiveTab('saved-mobile'); }}
+            onNavigateToProfileTab={() => { setCurrentView('home'); setActiveTab('profile'); }} onNavigateToNotificationsTab={() => { setCurrentView('home'); setActiveTab('notifications'); }}
+            activeSearchTerm={activeSearchTerm} setActiveSearchTerm={setActiveSearchTerm} viewMode={exploreViewMode} setViewMode={setExploreViewMode}
+            initialCategory={exploreCategoryFilter} onProductCardClick={handleProductCardClick} 
+          />
+        </div>
+        
+        {/* AUTH FORMS */}
         {(currentView === 'auth-login' || currentView === 'auth-signup') && (
-          <div className="absolute inset-0 overflow-y-auto bg-marix-cream z-50">
+          <div className="fixed inset-0 overflow-y-auto bg-marix-cream z-50">
             <AuthForm 
-              initialMode={currentView === 'auth-login' ? 'login' : 'signup'}
-              onSuccessLogin={handleLoginSuccess}
-              onCancel={routeToHomeFeed}
+              initialMode={currentView === 'auth-login' ? 'login' : 'signup'} 
+              onSuccessLogin={(name, email, isSignupFromForm) => {
+                const isSignup = typeof isSignupFromForm === 'boolean' ? isSignupFromForm : currentView === 'auth-signup';
+                handleLoginSuccess(name, email, isSignup);
+              }} 
+              onCancel={() => setCurrentView('home')} 
             />
           </div>
         )}
 
-        {['about', 'faq', 'privacy', 'terms'].includes(currentView) && (
-          <div className="absolute inset-0 overflow-y-auto bg-marix-cream z-40 text-left">
-            {currentView === 'about' && (
-              <About 
-                onNavigateHome={routeToHomeFeed} isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} userName={userName}
-                onNavigateToLogin={routeToLoginView} onNavigateToSignup={routeToSignupView} savedCount={savedProducts.length}
-                onNavigateToSaved={routeToSavedTab} onNavigateToUploads={routeToUploadsTab} onSignOut={handleSignOut}
-                setShowCreateModal={setShowCreateModal} onNavigateToExplore={() => routeToExploreWithContext('All', 'All Categories')} activeSearchTerm={activeSearchTerm}
-                setActiveSearchTerm={setActiveSearchTerm} onNavigateToView={handleStaticViewSwitch}
+        {/* STATIC PAGES */}
+        {['about', 'faq', 'privacy', 'terms'].map((staticView) => {
+          const Comp = staticView === 'about' ? About : staticView === 'faq' ? Faq : staticView === 'privacy' ? Privacy : Terms;
+          return (
+            <div key={staticView} className={`absolute inset-0 overflow-y-auto bg-marix-cream z-40 text-left ${currentView === staticView ? '' : 'hidden'}`}>
+              <Comp 
+                onNavigateHome={() => { setCurrentView('home'); setActiveTab('browse'); }} isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} userName={userName}
+                onNavigateToLogin={() => setCurrentView('auth-login')} onNavigateToSignup={() => setCurrentView('auth-signup')} savedCount={savedProducts.length}
+                onNavigateToSaved={() => { setCurrentView('home'); setActiveTab('saved-mobile'); }} onNavigateToUploads={() => { setCurrentView('home'); setActiveTab('uploads'); }}
+                onNavigateToProfileTab={() => { setCurrentView('home'); setActiveTab('profile'); }} onNavigateToNotificationsTab={() => { setCurrentView('home'); setActiveTab('notifications'); }}
+                onSignOut={handleSignOut} setShowCreateModal={handleCreateActionIntercept} onNavigateToExplore={() => routeToExploreWithContext('All', 'All Categories')}
+                activeSearchTerm={activeSearchTerm} setActiveSearchTerm={setActiveSearchTerm} onNavigateToView={(view) => setCurrentView(view)}
               />
-            )}
-            {currentView === 'faq' && (
-              <Faq 
-                onNavigateHome={routeToHomeFeed} isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} userName={userName}
-                onNavigateToLogin={routeToLoginView} onNavigateToSignup={routeToSignupView} savedCount={savedProducts.length}
-                onNavigateToSaved={routeToSavedTab} onNavigateToUploads={routeToUploadsTab} onSignOut={handleSignOut}
-                setShowCreateModal={setShowCreateModal} onNavigateToExplore={() => routeToExploreWithContext('All', 'All Categories')} activeSearchTerm={activeSearchTerm}
-                setActiveSearchTerm={setActiveSearchTerm} onNavigateToView={handleStaticViewSwitch}
-              />
-            )}
-            {currentView === 'privacy' && (
-              <Privacy 
-                onNavigateHome={routeToHomeFeed} isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} userName={userName}
-                onNavigateToLogin={routeToLoginView} onNavigateToSignup={routeToSignupView} savedCount={savedProducts.length}
-                onNavigateToSaved={routeToSavedTab} onNavigateToUploads={routeToUploadsTab} onSignOut={handleSignOut}
-                setShowCreateModal={setShowCreateModal} onNavigateToExplore={() => routeToExploreWithContext('All', 'All Categories')} activeSearchTerm={activeSearchTerm}
-                setActiveSearchTerm={setActiveSearchTerm} onNavigateToView={handleStaticViewSwitch}
-              />
-            )}
-            {currentView === 'terms' && (
-              <Terms 
-                onNavigateHome={routeToHomeFeed} isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} userName={userName}
-                onNavigateToLogin={routeToLoginView} onNavigateToSignup={routeToSignupView} savedCount={savedProducts.length}
-                onNavigateToSaved={routeToSavedTab} onNavigateToUploads={routeToUploadsTab} onSignOut={handleSignOut}
-                setShowCreateModal={setShowCreateModal} onNavigateToExplore={() => routeToExploreWithContext('All', 'All Categories')} activeSearchTerm={activeSearchTerm}
-                setActiveSearchTerm={setActiveSearchTerm} onNavigateToView={handleStaticViewSwitch}
-              />
-            )}
-          </div>
-        )}
+            </div>
+          );
+        })}
+
       </div>
 
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 bg-[#111111]/40 backdrop-blur-[4px] flex items-center justify-center p-4 md:p-6 select-none animate-fadeIn">
-          <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-gray-200/50 max-h-[90vh] overflow-y-auto relative animate-scaleIn">
-            <div className="p-1">
-              <CreateListing onProductCreated={handleNewProduct} onCancel={() => setShowCreateModal(false)} />
+        <div className="fixed inset-0 z-[200] bg-[#111111]/40 backdrop-blur-[4px] flex items-center justify-center p-4 select-none animate-fadeIn">
+          <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto relative p-1 animate-scaleIn">
+            <CreateListing 
+              editInitialData={editingProductData} 
+              onProductCreated={handleNewProduct} 
+              onCancel={() => { 
+                setShowCreateModal(false); 
+                setEditingProductData(null); 
+              }} 
+            />
+          </div>
+        </div>
+      )}
+
+      {/* 🚀 1. SIGNUP WELCOME TO MARIX POP-UP MODAL */}
+      {showWelcomeModal && (
+        <div className="fixed inset-0 z-[250] bg-black/50 backdrop-blur-md flex items-center justify-center p-4 select-none animate-fadeIn">
+          <div className="w-full max-w-md bg-white p-6 rounded-2xl border border-gray-100 shadow-2xl text-center flex flex-col items-center animate-scaleIn relative">
+            <button onClick={() => setShowWelcomeModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer">
+              <i className="ph ph-x text-lg"></i>
+            </button>
+
+            <div className="w-16 h-16 rounded-full bg-marix-teal/10 text-marix-teal flex items-center justify-center text-3xl mb-4">
+              🎉
+            </div>
+
+            <h3 className="text-xl font-black text-[#111111] tracking-tight">
+              Welcome to Marix!
+            </h3>
+
+            <p className="text-xs text-gray-500 max-w-xs leading-relaxed font-medium mt-1 mb-6">
+              Personalize your campus experience and discover deals near you.
+            </p>
+
+            <div className="w-full text-left flex flex-col gap-1.5 mb-6">
+              <label className="text-xs font-bold text-[#111111] px-0.5">Your Campus Hub</label>
+              <input 
+                type="text" 
+                placeholder="e.g., ABSU, Uturu" 
+                value={onboardingTempCampus} 
+                onChange={(e) => setOnboardingTempCampus(e.target.value)} 
+                className="w-full bg-transparent border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-marix-teal text-[#111111] font-medium placeholder:text-gray-400/40" 
+              />
+            </div>
+
+            <button 
+              onClick={() => { 
+                if(onboardingTempCampus.trim()) {
+                  setUserLocation(onboardingTempCampus.trim());
+                  setShopDetails(p => ({...p, campus: onboardingTempCampus.trim()}));
+                }
+                setShowWelcomeModal(false); 
+              }} 
+              className="w-full bg-marix-brown text-white font-black text-sm py-3.5 rounded-xl shadow-md hover:opacity-95 transition-all focus:outline-none cursor-pointer"
+            >
+              Get Started
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 🚀 2. LOGIN RETURNING LOCATION OVERLAY */}
+      {showOnboardingOverlay && (
+        <div className="fixed inset-0 z-[250] bg-black/50 backdrop-blur-md flex items-center justify-center p-4 select-none animate-fadeIn">
+          <div className="w-full max-w-md bg-white p-6 rounded-2xl border border-gray-100 shadow-2xl text-center flex flex-col items-center animate-scaleIn relative">
+            <button onClick={() => setShowOnboardingOverlay(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer">
+              <i className="ph ph-x text-lg"></i>
+            </button>
+
+            <div className="w-16 h-16 rounded-full bg-marix-teal/10 text-marix-teal flex items-center justify-center text-3xl mb-4">
+              <i className="ph ph-map-pin-line font-bold"></i>
+            </div>
+
+            <h3 className="text-xl font-black text-[#111111] tracking-tight">
+              One Last Step!
+            </h3>
+
+            <p className="text-xs text-gray-500 max-w-xs leading-relaxed font-medium mt-1 mb-6">
+              Add your campus location to discover nearby sellers and products.
+            </p>
+
+            <div className="w-full text-left flex flex-col gap-1.5 mb-6">
+              <label className="text-xs font-bold text-[#111111] px-0.5">Campus Location</label>
+              <input 
+                type="text" 
+                placeholder="e.g., ABSU, Uturu" 
+                value={onboardingTempCampus} 
+                onChange={(e) => setOnboardingTempCampus(e.target.value)} 
+                className="w-full bg-transparent border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-marix-teal text-[#111111] font-medium placeholder:text-gray-400/40" 
+              />
+            </div>
+
+            <button 
+              onClick={() => { 
+                if(onboardingTempCampus.trim()) {
+                  setUserLocation(onboardingTempCampus.trim());
+                  setShopDetails(p => ({...p, campus: onboardingTempCampus.trim()}));
+                }
+                setShowOnboardingOverlay(false); 
+              }} 
+              className="w-full bg-marix-brown text-white font-black text-sm py-3.5 rounded-xl shadow-md hover:opacity-95 transition-all focus:outline-none cursor-pointer"
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* BECOME A SELLER MODAL */}
+      {showBecomeSellerModal && (
+        <div className="fixed inset-0 z-[250] bg-black/50 backdrop-blur-md flex items-center justify-center p-4 select-none animate-fadeIn">
+          <div className="w-full max-w-md bg-white p-6 rounded-2xl border border-gray-100 shadow-2xl flex flex-col animate-scaleIn">
+            <div className="w-full flex items-center justify-between mb-4">
+              <div className="w-6 h-6 opacity-0"></div>
+              <div className="w-12 h-12 rounded-xl bg-marix-teal/10 text-marix-teal flex items-center justify-center text-2xl"><i className="ph ph-storefront font-bold"></i></div>
+              <button onClick={() => setShowBecomeSellerModal(false)} className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer"><i className="ph ph-x text-sm font-bold"></i></button>
+            </div>
+
+            <h3 className="text-xl font-black text-[#111111] tracking-tight text-center">Become a Seller</h3>
+            <p className="text-xs text-gray-400 font-medium text-center max-w-xs mx-auto mt-1 mb-6">Start selling on Marix in less than a minute.</p>
+
+            <form className="flex flex-col gap-4 text-left" onSubmit={(e) => {
+              e.preventDefault();
+              setShopDetails(sellerTempDetails);
+              if (sellerTempDetails.campus) setUserLocation(sellerTempDetails.campus);
+              
+              setHasCompletedSellerOnboarding(true);
+              setShowBecomeSellerModal(false);
+              
+              if (sellerRegistrationSource === 'profile') {
+                window.dispatchEvent(new CustomEvent('marix_route_to_seller_profile_hub'));
+              } else {
+                setShowCreateModal(true);
+              }
+            }}>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-[#111111] px-0.5">Shop Name *</label>
+                <input type="text" required placeholder="e.g., K-dot Collections" value={sellerTempDetails.shopName} onChange={(e) => setSellerTempDetails({ ...sellerTempDetails, shopName: e.target.value })} className="w-full bg-transparent border border-gray-200 rounded-xl px-3.5 py-3 text-sm focus:outline-none focus:border-marix-teal font-medium" />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-[#111111] px-0.5">Campus *</label>
+                <input type="text" required placeholder="Select your campus" value={sellerTempDetails.campus} onChange={(e) => setSellerTempDetails({ ...sellerTempDetails, campus: e.target.value })} className="w-full bg-transparent border border-gray-200 rounded-xl px-3.5 py-3 text-sm focus:outline-none focus:border-marix-teal font-medium" />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-[#111111] px-0.5">WhatsApp Number *</label>
+                <input type="text" required placeholder="e.g., 234 701 234 5678" value={sellerTempDetails.whatsappNumber} onChange={(e) => setSellerTempDetails({ ...sellerTempDetails, whatsappNumber: e.target.value })} className="w-full bg-transparent border border-gray-200 rounded-xl px-3.5 py-3 text-sm focus:outline-none focus:border-marix-teal font-medium" />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-[#111111] px-0.5">About Your Shop *</label>
+                <textarea required rows={2} placeholder="e.g., Premium campus deals on streetwear trends" value={sellerTempDetails.aboutShop} onChange={(e) => setSellerTempDetails({ ...sellerTempDetails, aboutShop: e.target.value })} className="w-full bg-transparent border border-gray-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:border-marix-teal font-medium resize-none" />
+              </div>
+
+              <button type="submit" className="w-full bg-marix-brown text-white font-black text-sm py-3.5 rounded-xl shadow-md hover:opacity-95 transition-all mt-4 focus:outline-none text-center cursor-pointer">Continue</button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 🛍️ PUBLIC SELLER STOREFRONT MODAL */}
+      {publicSellerData && (
+        <div className="fixed inset-0 z-[220] bg-black/50 backdrop-blur-md flex items-center justify-center p-4 select-none animate-fadeIn">
+          <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl max-h-[88vh] overflow-y-auto relative p-5 md:p-8 animate-scaleIn flex flex-col text-left">
+            <button 
+              onClick={() => setPublicSellerData(null)} 
+              className="absolute top-5 right-5 w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 focus:outline-none cursor-pointer z-10"
+            >
+              <i className="ph ph-x text-base font-bold"></i>
+            </button>
+
+            {/* Merchant Header */}
+            <div className="flex flex-col items-center text-center pb-6 border-b border-gray-100">
+              <div className="w-20 h-20 rounded-full bg-marix-teal text-white font-black flex items-center justify-center text-3xl shadow-md select-none shrink-0 mb-3">
+                {publicSellerData.shopName.charAt(0).toUpperCase()}
+              </div>
+
+              <h2 className="text-xl font-black tracking-tight text-[#111111]">{publicSellerData.shopName}</h2>
+              <div className="inline-flex items-center gap-1 text-[10px] bg-marix-teal/10 text-marix-teal font-black px-2.5 py-0.5 rounded-full mt-1.5 uppercase tracking-wider">
+                <span className="w-1.5 h-1.5 bg-marix-teal rounded-full animate-ping"></span> Active Campus Merchant
+              </div>
+
+              <div className="flex items-center justify-center gap-4 text-xs font-bold text-gray-400 mt-4 select-none">
+                <span className="flex items-center gap-1">
+                  <i className="ph ph-map-pin text-marix-teal"></i> {publicSellerData.campus}
+                </span>
+                <span className="flex items-center gap-1">
+                  <i className="ph ph-calendar text-gray-300"></i> Joined {publicSellerData.joinDate}
+                </span>
+              </div>
+            </div>
+
+            {/* About & WhatsApp CTA */}
+            <div className="py-6 border-b border-gray-100 flex flex-col gap-3">
+              <span className="text-[10px] font-black tracking-wider uppercase text-gray-400">About Store</span>
+              <p className="text-xs md:text-sm text-gray-600 font-medium leading-relaxed">
+                {publicSellerData.aboutShop}
+              </p>
+
+              <button 
+                type="button" 
+                onClick={() => {
+                  const cleanNum = publicSellerData.whatsappNumber ? publicSellerData.whatsappNumber.replace(/\D/g, '') : "2348012345678";
+                  const msg = encodeURIComponent(`Hello ${publicSellerData.shopName}, I found your store on Marix!`);
+                  window.open(`https://wa.me/${cleanNum}?text=${msg}`, '_blank');
+                }}
+                className="w-full mt-2 border border-gray-200 text-gray-700 font-bold text-xs py-3 rounded-xl flex items-center justify-center gap-2 bg-white md:hover:bg-gray-50 focus:outline-none transition-colors cursor-pointer"
+              >
+                <i className="ph ph-whatsapp-logo text-base text-emerald-500 font-bold"></i>
+                <span>Chat on WhatsApp</span>
+              </button>
+            </div>
+
+            {/* Available Listings Grid (Capped at 3) */}
+            <div className="pt-6 flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black tracking-wider uppercase text-gray-400">
+                  Available Listings ({publicSellerData.listings.length})
+                </span>
+
+                {publicSellerData.listings.length > 3 && (
+                  <button
+                    type="button"
+                    onClick={handleSeeAllSellerListings}
+                    className="text-xs font-black text-marix-teal hover:underline focus:outline-none cursor-pointer uppercase tracking-wider"
+                  >
+                    See All
+                  </button>
+                )}
+              </div>
+
+              {publicSellerData.listings.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 w-full pt-1">
+                  {publicSellerData.listings.slice(0, 3).map((p) => {
+                    const primaryImg = p.colorVariants?.find(v => v.isMain) || p.colorVariants?.[0];
+                    const fallbackImg = p.images?.find(img => img.isCover) || p.images?.[0];
+                    const imgSrc = primaryImg ? primaryImg.imageUrl : (fallbackImg ? fallbackImg.imageUrl : (p.image || "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=500&q=80"));
+
+                    return (
+                      <div 
+                        key={p.id}
+                        onClick={() => {
+                          setSelectedProduct(p);
+                          setPublicSellerData(null);
+                        }}
+                        className="w-full bg-white p-1.5 rounded-[16px] border border-gray-100 shadow-sm cursor-pointer hover:scale-[1.01] transition-transform flex flex-col gap-1"
+                      >
+                        <div className="w-full aspect-square rounded-[10px] overflow-hidden bg-marix-cream/40">
+                          <img src={imgSrc} alt={p.productTitle} className="w-full h-full object-cover" />
+                        </div>
+                        <h4 className="text-xs font-semibold text-[#111111] truncate mt-1">{p.productTitle || p.name}</h4>
+                        <span className="text-xs font-black text-marix-teal">{p.price || "₦0"}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="w-full py-12 flex flex-col items-center justify-center text-center bg-gray-50/60 rounded-2xl border border-gray-100 p-6">
+                  <i className="ph ph-package text-4xl text-gray-300 mb-2"></i>
+                  <h4 className="text-xs font-black text-[#111111]">This seller has no active listings available right now.</h4>
+                  <p className="text-[11px] text-gray-400 font-semibold mt-1">Check back later or contact the seller directly on WhatsApp.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

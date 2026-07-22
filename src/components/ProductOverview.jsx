@@ -16,11 +16,15 @@ export default function ProductOverview({
   onNavigateToExplore,
   onNavigateToUploadsTab,
   onNavigateToSavedTab,
+  onNavigateToProfileTab,
+  onNavigateToNotificationsTab,
   onNavigateHome,
   savedProducts = [], 
   onToggleSave, 
   onBack, 
-  onSelectRecommendedProduct 
+  onSelectRecommendedProduct,
+  activeTab = "browse",
+  onViewSellerShop
 }) {
   if (!product) return null;
 
@@ -54,11 +58,11 @@ export default function ProductOverview({
 
   // --- SCROLL PRESERVATION ENGINE ---
   useEffect(() => {
-    const mainFeed = document.querySelector('.homepage-feed-viewport') || document.querySelector('.explore-feed-viewport');
-    if (mainFeed) {
-      sessionStorage.setItem('marix_pre_overview_scroll_pos', mainFeed.scrollTop);
+    const scrollContainer = wrapperRef.current?.parentElement;
+    if (scrollContainer && scrollContainer !== window) {
+      sessionStorage.setItem(`marix_scroll_${activeTab}`, scrollContainer.scrollTop);
     }
-  }, [product]);
+  }, [product, activeTab]);
 
   // Handle active sizes list mapped specifically to the currently selected color variant
   const activeSizesList = useMemo(() => {
@@ -78,7 +82,6 @@ export default function ProductOverview({
     setActiveImageIndex(0);
     setIsDescExpanded(false);
     
-    // Automatically equip the first size option available under this variant payload
     let initialSizes = product.availableSizes || [];
     if (product.colorVariants && product.colorVariants.length > 0 && newDefault) {
       const activeVariantData = product.colorVariants.find(v => v.colorName === newDefault);
@@ -109,17 +112,14 @@ export default function ProductOverview({
     if (product.colorVariants && product.colorVariants.length > 0 && selectedVariant) {
       const activeVariantData = product.colorVariants.find(v => v.colorName === selectedVariant);
       if (activeVariantData) {
-        // 1. Check for specific Option-Based Price configured for the active selection
         if (selectedSize && activeVariantData.optionPrices && activeVariantData.optionPrices[selectedSize]) {
           return `₦${Number(activeVariantData.optionPrices[selectedSize]).toLocaleString()}`;
         }
-        // 2. Check for Simple Price Override configured for the variant
         if (activeVariantData.overridePrice && activeVariantData.customPrice) {
           return activeVariantData.customPrice;
         }
       }
     }
-    // 3. Fallback to base listing price
     return product.price || 'Contact Seller';
   }, [product, selectedVariant, selectedSize]);
 
@@ -127,12 +127,12 @@ export default function ProductOverview({
     onBack();
     requestAnimationFrame(() => {
       setTimeout(() => {
-        const mainFeed = document.querySelector('.homepage-feed-viewport') || document.querySelector('.explore-feed-viewport');
-        const savedPos = sessionStorage.getItem('marix_pre_overview_scroll_pos');
-        if (mainFeed && savedPos) {
-          mainFeed.scrollTop = parseInt(savedPos, 10);
+        const scrollContainer = document.querySelector('.overflow-y-auto');
+        const savedPos = sessionStorage.getItem(`marix_scroll_${activeTab}`) || sessionStorage.getItem('marix_browse_isolated_scroll_pos');
+        if (scrollContainer && savedPos) {
+          scrollContainer.scrollTop = parseInt(savedPos, 10);
         }
-      }, 50);
+      }, 35); 
     });
   };
 
@@ -166,7 +166,6 @@ export default function ProductOverview({
     window.open(`https://wa.me/${cleanNumber}?text=${encodedMessage}`, '_blank');
   };
 
-  // --- CASE-INSENSITIVE CAMPUS RECOMMENDATION SYSTEM ---
   const recommendations = useMemo(() => {
     const shuffleArray = (arr) => {
       const copy = [...arr];
@@ -217,6 +216,10 @@ export default function ProductOverview({
       onNavigateToUploadsTab?.();
     } else if (targetTab === 'saved-mobile') {
       onNavigateToSavedTab?.();
+    } else if (targetTab === 'profile') {
+      onNavigateToProfileTab?.();
+    } else if (targetTab === 'notifications') {
+      onNavigateToNotificationsTab?.();
     } else if (targetTab === 'home' || targetTab === 'browse') {
       onNavigateHome?.();
     }
@@ -225,7 +228,7 @@ export default function ProductOverview({
   return (
     <div 
       ref={wrapperRef}
-      className="w-full h-full overflow-y-auto overflow-x-hidden scrollbar-none bg-marix-cream flex flex-col text-[#111111] animate-fadeIn relative"
+      className="w-full h-full overflow-y-auto overflow-x-hidden scrollbar-none bg-marix-cream flex flex-col text-[#111111] animate-fadeIn relative text-left"
     >
       <style>{`
         .scrollbar-none::-webkit-scrollbar { display: none; }
@@ -238,7 +241,9 @@ export default function ProductOverview({
           isLoggedIn={isLoggedIn}
           setIsLoggedIn={setIsLoggedIn}
           userName={userName}
-          activeTab="browse" 
+          activeTab={activeTab} 
+          onNavigateToNotifications={onNavigateToNotificationsTab}
+          onNavigateToProfile={onNavigateToProfileTab}
           handleTabChange={(tab) => handleNavbarNavigation(tab)} 
           savedCount={savedProducts.length}
           showCreateModal={showCreateModal}
@@ -248,6 +253,9 @@ export default function ProductOverview({
           activeSearchTerm={activeSearchTerm}
           setActiveSearchTerm={setActiveSearchTerm}
           onNavigateToExplore={() => onNavigateToExplore('All', 'All Categories')}
+          onLogoClick={() => {
+            window.dispatchEvent(new CustomEvent('marix_force_home_reset'));
+          }}
         />
       </div>
 
@@ -267,9 +275,9 @@ export default function ProductOverview({
           </span>
         </div>
 
-        <main className="w-full flex-1 flex flex-col gap-8">
+        <main className="w-full max-w-[95%] mx-auto px-2 lg:px-4 flex-1 flex flex-col gap-8">
           
-          <div className="w-full max-w-[95%] mx-auto px-2 lg:px-4 grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12 items-start">
+          <div className="w-full grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12 items-start">
             
             {/* LEFT COLUMN: GALLERY */}
             <div className="md:col-span-7 flex flex-col gap-3 select-none">
@@ -368,7 +376,7 @@ export default function ProductOverview({
                 </div>
               )}
 
-              {/* DYNAMIC SIZE CHIPS (FILTERS LIVE ACCORDING TO CURRENT COLOR VARIANT SELECTIONS) */}
+              {/* DYNAMIC SIZE CHIPS */}
               {activeSizesList && activeSizesList.length > 0 && (
                 <div className="flex flex-col gap-2.5 select-none mt-2 animate-fadeIn">
                   <span className="text-xs font-black tracking-wider uppercase text-gray-400">
@@ -406,10 +414,10 @@ export default function ProductOverview({
                 <span>Chat on WhatsApp</span>
               </button>
 
-              {/* PRODUCT DETAILS WITH READ MORE */}
+              {/* PRODUCT DESCRIPTION */}
               <div className="flex flex-col gap-2 pt-4 border-t border-gray-200/60 mt-2">
                 <span className="text-xs font-black tracking-wider uppercase text-gray-400">
-                  Product Details
+                  Product Description
                 </span>
                 <p className="text-xs md:text-sm text-gray-600 leading-relaxed font-medium transition-all">
                   {displayedDescription}
@@ -429,9 +437,10 @@ export default function ProductOverview({
                 <span className="text-xs font-black tracking-wider uppercase text-gray-400 mb-4 block">
                   Seller Information
                 </span>
-                <div className="bg-white border border-gray-150 shadow-[0_4px_16px_rgba(0,0,0,0.02)] rounded-2xl p-4 flex items-center justify-between gap-3">
+                
+                <div className="bg-white border border-gray-200 shadow-[0_4px_16px_rgba(0,0,0,0.02)] rounded-2xl p-4 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className="w-12 h-12 rounded-full bg-marix-brown text-white flex items-center justify-center text-base font-black shrink-0">
+                    <div className="w-12 h-12 rounded-full bg-marix-teal/10 text-marix-teal flex items-center justify-center text-base font-black shrink-0">
                       {product.shopName?.charAt(0).toUpperCase() || 'S'}
                     </div>
                     <div className="flex flex-col min-w-0 flex-1">
@@ -451,7 +460,12 @@ export default function ProductOverview({
                       </div>
                     </div>
                   </div>
-                  <button className="bg-marix-cream text-[#111111] text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-gray-100 transition-colors focus:outline-none shrink-0 border border-gray-200/50 cursor-pointer flex-shrink-0">
+                  
+                  {/* 🛍️ VIEW SHOP BUTTON BINDING */}
+                  <button 
+                    onClick={() => onViewSellerShop?.(product)}
+                    className="bg-marix-cream text-[#111111] text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-gray-100 transition-colors focus:outline-none shrink-0 border border-gray-200/50 cursor-pointer flex-shrink-0"
+                  >
                     View Shop
                   </button>
                 </div>
@@ -462,7 +476,7 @@ export default function ProductOverview({
 
           {/* RECOMMENDATIONS */}
           {recommendations.length > 0 && (
-            <section className="w-full border-t border-gray-200/60 pt-8 mt-6 text-left select-none pb-8 max-w-[95%] mx-auto px-2 lg:px-4">
+            <section className="w-full border-t border-gray-200/60 pt-8 mt-6 text-left select-none pb-8">
               <h3 className="text-base md:text-lg font-black tracking-tight text-[#111111] mb-5">
                 More from <span className="text-marix-teal font-black">{cleanCampusName}</span>
               </h3>
@@ -515,7 +529,7 @@ export default function ProductOverview({
           )}
 
           {/* FOOTER */}
-          <div className="w-full text-center text-[11px] text-gray-400 font-bold tracking-tight py-6 border-t border-gray-100 bg-white z-30 relative shrink-0">
+          <div className="w-full text-center text-[11px] text-gray-400 font-bold tracking-tight py-6 border-t border-gray-100 bg-white z-30 relative shrink-0 -mx-4 px-4">
             <span>&copy; {new Date().getFullYear()} <span className="text-marix-teal font-bold">Marix</span>. Built for Campus Commerce.</span>
           </div>
 

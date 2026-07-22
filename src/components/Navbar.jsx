@@ -13,19 +13,21 @@ export default function Navbar({
   setShowCreateModal,
   onNavigateToLogin,
   onNavigateToSignup,
+  onLogoClick,
   activeSearchTerm = "",
   setActiveSearchTerm,
-  onNavigateToExplore 
+  onNavigateToExplore,
+  onNavigateToNotifications,
+  onNavigateToProfile
 }) {
   const userInitial = (userName && typeof userName === 'string' && userName.trim().length > 0) 
     ? userName.trim().charAt(0).toUpperCase() 
     : 'M';
     
-  const [unreadNotifications, setUnreadNotifications] = useState(3);
+  const [unreadNotifications, setUnreadNotifications] = useState(1);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [localSearchInput, setLocalSearchInput] = useState(activeSearchTerm);
 
-  // LOCAL BUT STORAGE-SYNCED STATE
   const [recentSearches, setRecentSearches] = useState(() => {
     const cached = localStorage.getItem('marix_recent_searches');
     if (cached) {
@@ -36,20 +38,17 @@ export default function Navbar({
 
   const popularSearches = ['iPhone', 'Sneakers', 'Wrist Watch', 'Backpack', 'Laptop', 'Jersey', 'Headphones', 'Books', 'Makeup', 'PS5'];
 
-  // Static high-level category words to prioritize during broad searches
   const generalizedTerms = [
     "Jeans", "Sneakers", "Shirts", "Perfumes", "Bags", "Hoodies", "Crocs", "Watches", 
     "Heels", "Snacks", "Laptops", "Phones", "Chargers", "Skincare", "Makeup", "Food"
   ];
 
-  // 🚀 ADAPTIVE SUGGESTION ENGINE: Category Grouping vs. Deep Title Matching
   const productSuggestions = useMemo(() => {
     const inputClean = localSearchInput.trim().toLowerCase();
     if (!inputClean) return [];
 
     const productsDB = initialProducts || [];
 
-    // Filter products that match the current query
     const matchingProducts = productsDB.filter(product => {
       const titleLower = (product.productTitle || "").toLowerCase();
       const catLower = (product.category || "").toLowerCase();
@@ -59,16 +58,13 @@ export default function Navbar({
 
     const suggestionsSet = new Set();
 
-    // RULE: If there are many matching products (> 3), summarize into general tags
     if (matchingProducts.length > 3) {
-      // 1. Look for matching pre-defined generalized words first
       generalizedTerms.forEach(term => {
         if (term.toLowerCase().includes(inputClean)) {
           suggestionsSet.add(term);
         }
       });
 
-      // 2. Fall back to matching product categories if no general words match
       if (suggestionsSet.size === 0) {
         matchingProducts.forEach(p => {
           if (p.category) {
@@ -77,7 +73,6 @@ export default function Navbar({
         });
       }
     } else {
-      // DEEP MATCH RULE: If matches are narrow (<= 3), output the specific product titles directly
       matchingProducts.forEach(p => {
         if (p.productTitle) {
           suggestionsSet.add(p.productTitle);
@@ -143,9 +138,39 @@ export default function Navbar({
     if (setActiveSearchTerm) setActiveSearchTerm('');
   };
 
+  const handleLogoClick = () => {
+    if (onLogoClick && typeof onLogoClick === 'function') {
+      onLogoClick();
+    } else if (handleTabChange && typeof handleTabChange === 'function') {
+      // Wipes out regional keys instantly
+      window.sessionStorage.removeItem('marix_deep_nav_source');
+      window.sessionStorage.removeItem('marix_deep_product_source');
+      handleTabChange('browse');
+      
+      // FIRES THE RESET SIGNAL TO APP.JSX TO DROP THE PRODUCT LAYER OVERVIEW!
+      window.dispatchEvent(new CustomEvent('marix_force_home_reset'));
+    }
+  };
+
   const executeTabSwitch = (targetTab) => {
     if (handleTabChange && typeof handleTabChange === 'function') {
       handleTabChange(targetTab);
+    }
+  };
+
+  const handleNotificationsClick = () => {
+    if (onNavigateToNotifications && typeof onNavigateToNotifications === 'function') {
+      onNavigateToNotifications();
+    } else {
+      executeTabSwitch('notifications');
+    }
+  };
+
+  const handleProfileClick = () => {
+    if (onNavigateToProfile && typeof onNavigateToProfile === 'function') {
+      onNavigateToProfile();
+    } else {
+      executeTabSwitch('profile');
     }
   };
 
@@ -170,8 +195,10 @@ export default function Navbar({
       >
         <div className="max-w-[95%] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3.5 md:gap-4">
           
+          {/* UPDATED: Added true flag to pass down explicitly on logo action hits */}
           <div className={`items-center justify-between w-full md:w-auto shrink-0 ${isSearchFocused ? 'hidden md:flex' : 'flex'}`}>
-            <div className="flex items-center cursor-pointer" onClick={() => executeTabSwitch('browse')}>
+            {/* NAVBAR.JSX LOGO LAYER - Update only this click handler container */}
+            <div className="flex items-center cursor-pointer" onClick={handleLogoClick}>
               <img src={marixLogoM} alt="M" style={{ width: '52px', height: '52px', margin: '0 -8px', objectFit: 'contain' }} />
               <span style={{ fontSize: '1.05rem', color: '#452b1f', fontWeight: '700', letterSpacing: '2px', textTransform: 'uppercase' }} className="tracking-tight pt-1">ARIX</span>
             </div>
@@ -187,7 +214,7 @@ export default function Navbar({
                       </span>
                     )}
                   </button>
-                  <button className="relative p-1 text-gray-500 transition-colors focus:outline-none">
+                  <button onClick={handleNotificationsClick} className="relative p-1 text-gray-500 transition-colors focus:outline-none">
                     <i className="ph ph-bell text-xl"></i>
                     {unreadNotifications > 0 && (
                       <span className="absolute top-0 right-0 bg-marix-teal text-white font-bold text-[8px] w-3.5 h-3.5 rounded-full flex items-center justify-center border border-white shadow-sm">
@@ -231,7 +258,7 @@ export default function Navbar({
             {isSearchFocused && (
               <div 
                 onClick={(e) => e.stopPropagation()}
-                className="absolute top-full left-0 right-0 mt-2 bg-marix-cream border border-[#452b1f]/10 shadow-2xl rounded-2xl max-h-[400px] overflow-y-auto scrollbar-none pb-6 z-[10000] animate-slideDown text-left"
+                className="absolute top-full left-0 right-0 mt-2 bg-marix-cream border border border-[#452b1f]/10 shadow-2xl rounded-2xl max-h-[400px] overflow-y-auto scrollbar-none pb-6 z-[10000] animate-slideDown text-left"
               >
                 <div className="w-full px-5 pt-5 select-none">
                   {localSearchInput.trim() ? (
@@ -335,13 +362,20 @@ export default function Navbar({
                   )}
                 </button>
                 
-                <button className="relative p-1 text-gray-500 min-[1025px]:hover:text-marix-teal transition-colors focus:outline-none">
+                <button onClick={handleNotificationsClick} className="relative p-1 text-gray-500 min-[1025px]:hover:text-marix-teal transition-colors focus:outline-none">
                   <i className="ph ph-bell text-xl"></i>
                   {unreadNotifications > 0 && (
                     <span className="absolute top-0 right-0 bg-marix-teal text-white font-bold text-[8px] w-3.5 h-3.5 rounded-full flex items-center justify-center border border-white shadow-sm">
                       {unreadNotifications}
                     </span>
                   )}
+                </button>
+
+                <button 
+                  onClick={handleProfileClick}
+                  className={`p-1 transition-colors focus:outline-none cursor-pointer ${activeTab === 'profile' ? 'text-marix-teal' : 'text-gray-500 min-[1025px]:hover:text-marix-teal'}`}
+                >
+                  <i className="ph ph-user text-xl"></i>
                 </button>
 
                 <div className="flex items-center gap-3">
@@ -351,12 +385,6 @@ export default function Navbar({
                   >
                     <i className="ph ph-plus font-bold"></i><span>Create Listing</span>
                   </button>
-                  <div 
-                    className="w-8 h-8 rounded-xl bg-marix-brown text-white text-xs font-bold flex items-center justify-center shadow-sm cursor-pointer hover:opacity-90 mr-1" 
-                    onClick={() => setIsLoggedIn(false)}
-                  >
-                    {userInitial}
-                  </div>
                 </div>
               </div>
             )}

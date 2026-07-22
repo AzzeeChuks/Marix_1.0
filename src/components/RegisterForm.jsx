@@ -19,12 +19,8 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
     setAuthMode(initialMode);
   }, [initialMode]);
 
-  // 🚀 SAFARI KEYBOARD LAYOUT SNAPPACK:
-  // Forces Safari to drop the entire layout window cleanly back to 0,0 when input focus leaves.
-  // This completely eliminates the sticky scrolled-up white space bug without altering Chrome's rendering height.
   useEffect(() => {
     const handleSafariReset = () => {
-      // Small timeout ensures Safari updates its visual viewport coordinate space first
       setTimeout(() => {
         window.scrollTo({
           top: 0,
@@ -46,7 +42,7 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
     };
   }, [authMode]);
 
-  // Master Rule Engine for Passwords (Shared across both Sign In and Sign Up views)
+  // Master Rule Engine for Passwords
   const isStrictEmailValid = /\S+@\S+\.\S+/.test(formData.email);
   const hasMinLength = formData.password.length >= 8;
   const hasNumber = /\d/.test(formData.password);
@@ -78,7 +74,12 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
       setTimeout(() => {
         setSuccessMessage('');
         if (onSuccessLogin) {
-          onSuccessLogin(authMode === 'signup' ? formData.firstName : formData.email.split('@')[0]); 
+          // 🚀 FIXED: Passes BOTH firstName AND exact email string
+          const resolvedName = authMode === 'signup' 
+            ? formData.firstName.trim() 
+            : formData.email.split('@')[0];
+          
+          onSuccessLogin(resolvedName, formData.email.trim()); 
         }
       }, 500);
 
@@ -101,7 +102,7 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
         </div>
       )}
 
-      {/* Outer Layout Matrix wrapper to handle structural positioning */}
+      {/* Outer Layout Matrix wrapper */}
       <div className="w-full flex flex-col flex-1">
         
         {/* Brand Header */}
@@ -122,7 +123,7 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
           </span>
         </header>
 
-        {/* ⬅️ UPDATED NAVIGATION: Perfectly synchronized back button design */}
+        {/* Back Button */}
         <div className="w-full max-w-6xl mx-auto text-left shrink-0 mb-6 select-none">
           <button 
             type="button"
@@ -150,7 +151,7 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
           {/* Content Card Wrapper */}
           <div className="w-full max-w-[420px] bg-white rounded-xl shadow-xl border border-gray-200/90 px-6 py-8 md:px-8 relative transition-all duration-300 overflow-hidden">
             
-            {/* Isolated loader overlay */}
+            {/* Loader overlay */}
             {isLoading && (
               <div className="absolute inset-0 bg-white/70 backdrop-blur-[1px] rounded-xl z-40 flex items-center justify-center transition-all">
                 <div className="flex flex-col items-center gap-3">
@@ -204,7 +205,7 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
               <div className="flex-grow border-t border-gray-200"></div>
             </div>
 
-            {/* Form wrapper */}
+            {/* Form */}
             <form onSubmit={handleSubmit} className="flex flex-col gap-3.5 select-text transition-all duration-300">
               
               {authMode === 'signup' && (
@@ -310,7 +311,6 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
         </div>
       </div>
 
-      {/* Footer System Baseline */}
       <footer className="w-full text-center text-[11px] text-gray-400 font-bold py-6 border-t border-gray-100 max-w-6xl mx-auto mt-auto shrink-0 select-none">
         &copy; {new Date().getFullYear()} <span className="text-marix-teal font-bold">Marix</span>. Built for Campus Commerce.
       </footer>
