@@ -72,16 +72,17 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
       }
 
       setTimeout(() => {
-        setSuccessMessage('');
-        if (onSuccessLogin) {
-          // 🚀 FIXED: Passes BOTH firstName AND exact email string
-          const resolvedName = authMode === 'signup' 
-            ? formData.firstName.trim() 
-            : formData.email.split('@')[0];
-          
-          onSuccessLogin(resolvedName, formData.email.trim()); 
-        }
-      }, 500);
+      setSuccessMessage('');
+      if (onSuccessLogin) {
+        const resolvedName = authMode === 'signup' 
+          ? formData.firstName.trim() 
+          : formData.email.split('@')[0];
+        
+        // 🚀 FIXED: Explicitly pass boolean flag as 3rd parameter!
+        const isSignupFlag = authMode === 'signup';
+        onSuccessLogin(resolvedName, formData.email.trim(), isSignupFlag); 
+      }
+    }, 500);
 
     }, 500); 
   };

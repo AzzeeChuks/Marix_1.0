@@ -117,7 +117,6 @@ export default function App() {
     });
   };
 
-  // 🚀 ONLY REAL PRODUCTS ADDED TO RECENTLY VIEWED (NO EXPLORE FEEDS/PLACEHOLDERS)
   const handleProductCardClick = (clickedProduct) => {
     if (!clickedProduct || (!clickedProduct.productTitle && !clickedProduct.name)) return;
 
@@ -131,10 +130,13 @@ export default function App() {
     });
   };
 
+  // LOGIN vs SIGNUP ONBOARDING MODAL ROUTING
   const handleLoginSuccess = (firstName, email, isNewSignup = false) => {
     const finalName = firstName || 'Student';
     const finalEmail = email || 'student@campus.edu';
     
+    const isSignup = isNewSignup || currentView === 'auth-signup';
+
     setUserName(finalName);
     setUserEmail(finalEmail);
     setIsLoggedIn(true);
@@ -142,22 +144,15 @@ export default function App() {
     setActiveTab('browse');
     setActiveSearchTerm('');
     
-    if (isNewSignup) {
-      setNotifications(prev => [
-        {
-          id: Date.now(),
-          title: "Welcome to Marix! 🎉",
-          message: `Hi ${finalName}, thanks for joining Marix! Start discovering campus deals near you.`,
-          createdAt: new Date().toISOString(),
-          read: false
-        },
-        ...prev
-      ]);
-
+    if (isSignup) {
+      setShowOnboardingOverlay(false);
+      setShowWelcomeModal(false);
       setTimeout(() => {
         setShowWelcomeModal(true);
       }, 2000);
     } else {
+      setShowWelcomeModal(false);
+      setShowOnboardingOverlay(false);
       if (!userLocation) {
         setTimeout(() => {
           setShowOnboardingOverlay(true);
@@ -185,7 +180,8 @@ export default function App() {
       ...newCard,
       shopName: editingProductData ? (editingProductData.shopName || newCard.shopName) : (shopDetails.shopName || userName || 'Store'),
       campus: editingProductData ? (editingProductData.campus || newCard.campus) : (shopDetails.campus || userLocation || 'Campus'),
-      whatsappNumber: editingProductData ? (editingProductData.whatsappNumber || newCard.whatsappNumber) : (shopDetails.whatsappNumber || '')
+      whatsappNumber: editingProductData ? (editingProductData.whatsappNumber || newCard.whatsappNumber) : (shopDetails.whatsappNumber || ''),
+      aboutShop: shopDetails.aboutShop || ''
     };
 
     if (editingProductData) {
@@ -254,8 +250,10 @@ export default function App() {
   };
 
   const handleHomepageTabBackClick = (targetTab) => {
+    setSelectedProduct(null);
+    setPublicSellerData(null);
+    
     if (targetTab === 'logo-home-reset') {
-      setSelectedProduct(null); 
       setCurrentView('home');
       setActiveTab('browse');
       return;
@@ -275,12 +273,14 @@ export default function App() {
       (p.whatsappNumber && whatsappNumber && p.whatsappNumber === whatsappNumber)
     );
 
+    const dynamicAbout = product.aboutShop || shopDetails.aboutShop || "Welcome to my store! Browse through our listed items or chat directly on WhatsApp for pre-orders.";
+
     setPublicSellerData({
       shopName,
       campus,
       whatsappNumber,
       joinDate,
-      aboutShop: product.aboutShop || "Welcome to my store! Browse through our listed items or chat directly on WhatsApp for pre-orders.",
+      aboutShop: dynamicAbout,
       listings: sellerListings
     });
   };
@@ -294,14 +294,13 @@ export default function App() {
   };
 
   return (
-    /* 🚀 RESTORED ORIGINAL TAB SCROLL ARCHITECTURE (INDIVIDUAL SCROLL MEMORY) */
     <div className="fixed inset-0 bg-marix-cream text-[#111111] flex flex-col overflow-hidden selection:bg-marix-teal/20">
       
       <div className="w-full flex-1 flex flex-col relative overflow-hidden">
         
         {/* PRODUCT OVERVIEW CONTAINER */}
         <div className={`absolute inset-0 overflow-y-auto bg-marix-cream z-[99] shadow-2xl ${
-          (selectedProduct && activeTab !== 'profile' && activeTab !== 'notifications') ? '' : 'hidden'
+          selectedProduct ? '' : 'hidden'
         }`}>
           {selectedProduct && (
             <ProductOverview 
@@ -310,8 +309,8 @@ export default function App() {
               activeSearchTerm={activeSearchTerm} setActiveSearchTerm={setActiveSearchTerm} onNavigateToExplore={routeToExploreWithContext}
               onNavigateToUploadsTab={() => { setCurrentView('home'); setActiveTab('uploads'); setSelectedProduct(null); }}
               onNavigateToSavedTab={() => { setCurrentView('home'); setActiveTab('saved-mobile'); setSelectedProduct(null); }}
-              onNavigateToProfileTab={() => { setCurrentView('home'); setActiveTab('profile'); }}
-              onNavigateToNotificationsTab={() => { setCurrentView('home'); setActiveTab('notifications'); }}
+              onNavigateToProfileTab={() => { setCurrentView('home'); setActiveTab('profile'); setSelectedProduct(null); }}
+              onNavigateToNotificationsTab={() => { setCurrentView('home'); setActiveTab('notifications'); setSelectedProduct(null); }}
               onNavigateHome={() => { setSelectedProduct(null); setCurrentView('home'); setActiveTab('browse'); }}
               savedProducts={savedProducts} onToggleSave={handleToggleSaveProduct} onBack={() => setSelectedProduct(null)} 
               onSelectRecommendedProduct={handleProductCardClick} activeTab={activeTab}
@@ -320,7 +319,7 @@ export default function App() {
           )}
         </div>
         
-        {/* CORE HOMEPAGE VIEW (KEEPS SEPARATE INTERNAL SCROLL POSITIONS FOR EVERY TAB) */}
+        {/* CORE HOMEPAGE VIEW */}
         <div className={`absolute inset-0 flex flex-col ${currentView === 'home' ? '' : 'hidden'}`}>
           <Homepage 
             products={products} isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} userName={userName} userEmail={userEmail} onSignOut={handleSignOut} 
@@ -336,7 +335,8 @@ export default function App() {
             shopDetails={shopDetails} setShopDetails={setShopDetails} setHasCompletedSellerOnboarding={setHasCompletedSellerOnboarding}
             userLocation={userLocation} setUserLocation={setUserLocation} onUpdateUserName={setUserName}
             onOpenCreateListingModal={() => setShowCreateModal(true)}
-            recentlyViewed={recentlyViewed.filter(p => p && (p.productTitle || p.name))} // 🚀 EXCLUDE FEED ITEMS
+            recentlyViewed={recentlyViewed.filter(p => p && (p.productTitle || p.name))}
+            activeUploadsCount={userUploads.length}
           />
         </div>
         
@@ -401,7 +401,7 @@ export default function App() {
         </div>
       )}
 
-      {/* 🚀 SIGNUP WELCOME MODAL (NO iPHONE AUTO-ZOOM WITH text-base md:text-sm) */}
+      {/* SIGNUP WELCOME MODAL */}
       {showWelcomeModal && (
         <div className="fixed inset-0 z-[250] bg-black/50 backdrop-blur-md flex items-center justify-center p-4 select-none animate-fadeIn">
           <div className="w-full max-w-md bg-white p-6 rounded-2xl border border-gray-100 shadow-2xl text-center flex flex-col items-center animate-scaleIn relative">
@@ -425,7 +425,7 @@ export default function App() {
               <label className="text-xs font-bold text-[#111111] px-0.5">Your Campus Hub</label>
               <input 
                 type="text" 
-                placeholder="e.g., ABSU, Uturu" 
+                placeholder="e.g., Absu, Uturu" 
                 value={onboardingTempCampus} 
                 onChange={(e) => setOnboardingTempCampus(e.target.value)} 
                 className="w-full bg-transparent border border-gray-200 rounded-xl px-4 py-3 text-base md:text-sm focus:outline-none focus:border-marix-teal text-[#111111] font-medium placeholder:text-gray-400/40" 
@@ -448,7 +448,7 @@ export default function App() {
         </div>
       )}
 
-      {/* 🚀 LOGIN RETURNING OVERLAY (NO iPHONE AUTO-ZOOM WITH text-base md:text-sm) */}
+      {/* LOGIN RETURNING OVERLAY */}
       {showOnboardingOverlay && (
         <div className="fixed inset-0 z-[250] bg-black/50 backdrop-blur-md flex items-center justify-center p-4 select-none animate-fadeIn">
           <div className="w-full max-w-md bg-white p-6 rounded-2xl border border-gray-100 shadow-2xl text-center flex flex-col items-center animate-scaleIn relative">
@@ -472,7 +472,7 @@ export default function App() {
               <label className="text-xs font-bold text-[#111111] px-0.5">Campus Location</label>
               <input 
                 type="text" 
-                placeholder="e.g., ABSU, Uturu" 
+                placeholder="e.g., Absu, Uturu" 
                 value={onboardingTempCampus} 
                 onChange={(e) => setOnboardingTempCampus(e.target.value)} 
                 className="w-full bg-transparent border border-gray-200 rounded-xl px-4 py-3 text-base md:text-sm focus:outline-none focus:border-marix-teal text-[#111111] font-medium placeholder:text-gray-400/40" 
@@ -495,7 +495,7 @@ export default function App() {
         </div>
       )}
 
-      {/* 🚀 BECOME A SELLER MODAL (NO iPHONE AUTO-ZOOM WITH text-base md:text-sm) */}
+      {/* BECOME A SELLER MODAL */}
       {showBecomeSellerModal && (
         <div className="fixed inset-0 z-[250] bg-black/50 backdrop-blur-md flex items-center justify-center p-4 select-none animate-fadeIn">
           <div className="w-full max-w-md bg-white p-6 rounded-2xl border border-gray-100 shadow-2xl flex flex-col animate-scaleIn">
@@ -548,29 +548,29 @@ export default function App() {
         </div>
       )}
 
-      {/* 🛍️ PUBLIC SELLER STOREFRONT MODAL (UP TO 6 PRODUCTS WITH OVERFLOW SCROLL) */}
+      {/* PUBLIC SELLER STOREFRONT MODAL */}
       {publicSellerData && (
-        <div className="fixed inset-0 z-[220] bg-black/50 backdrop-blur-md flex items-center justify-center p-4 select-none animate-fadeIn">
-          <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl max-h-[88vh] overflow-y-auto relative p-5 md:p-8 animate-scaleIn flex flex-col text-left">
+        <div className="fixed inset-0 z-[220] bg-black/50 backdrop-blur-md flex items-center justify-center p-4 md:p-6 select-none animate-fadeIn">
+          <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl max-h-[80vh] md:max-h-[85vh] overflow-y-auto relative p-5 md:p-8 animate-scaleIn flex flex-col text-left">
             <button 
               onClick={() => setPublicSellerData(null)} 
-              className="absolute top-5 right-5 w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 focus:outline-none cursor-pointer z-10"
+              className="absolute top-4 right-4 md:top-5 md:right-5 w-8 h-8 md:w-9 md:h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 focus:outline-none cursor-pointer z-10"
             >
-              <i className="ph ph-x text-base font-bold"></i>
+              <i className="ph ph-x text-sm md:text-base font-bold"></i>
             </button>
 
             {/* Merchant Header */}
-            <div className="flex flex-col items-center text-center pb-6 border-b border-gray-100">
-              <div className="w-20 h-20 rounded-full bg-marix-teal text-white font-black flex items-center justify-center text-3xl shadow-md select-none shrink-0 mb-3">
+            <div className="flex flex-col items-center text-center pb-5 border-b border-gray-100">
+              <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-marix-teal text-white font-black flex items-center justify-center text-2xl md:text-3xl shadow-md select-none shrink-0 mb-2.5">
                 {publicSellerData.shopName.charAt(0).toUpperCase()}
               </div>
 
-              <h2 className="text-xl font-black tracking-tight text-[#111111]">{publicSellerData.shopName}</h2>
-              <div className="inline-flex items-center gap-1 text-[10px] bg-marix-teal/10 text-marix-teal font-black px-2.5 py-0.5 rounded-full mt-1.5 uppercase tracking-wider">
+              <h2 className="text-lg md:text-xl font-black tracking-tight text-[#111111]">{publicSellerData.shopName}</h2>
+              <div className="inline-flex items-center gap-1 text-[10px] bg-marix-teal/10 text-marix-teal font-black px-2.5 py-0.5 rounded-full mt-1 uppercase tracking-wider">
                 <span className="w-1.5 h-1.5 bg-marix-teal rounded-full animate-ping"></span> Active Campus Merchant
               </div>
 
-              <div className="flex items-center justify-center gap-4 text-xs font-bold text-gray-400 mt-4 select-none">
+              <div className="flex items-center justify-center gap-3 md:gap-4 text-[11px] md:text-xs font-bold text-gray-400 mt-3 select-none">
                 <span className="flex items-center gap-1">
                   <i className="ph ph-map-pin text-marix-teal"></i> {publicSellerData.campus}
                 </span>
@@ -581,7 +581,7 @@ export default function App() {
             </div>
 
             {/* About & WhatsApp CTA */}
-            <div className="py-6 border-b border-gray-100 flex flex-col gap-3">
+            <div className="py-4 md:py-5 border-b border-gray-100 flex flex-col gap-2.5">
               <span className="text-[10px] font-black tracking-wider uppercase text-gray-400">About Store</span>
               <p className="text-xs md:text-sm text-gray-600 font-medium leading-relaxed">
                 {publicSellerData.aboutShop}
@@ -594,15 +594,15 @@ export default function App() {
                   const msg = encodeURIComponent(`Hello ${publicSellerData.shopName}, I found your store on Marix!`);
                   window.open(`https://wa.me/${cleanNum}?text=${msg}`, '_blank');
                 }}
-                className="w-full mt-2 border border-gray-200 text-gray-700 font-bold text-xs py-3 rounded-xl flex items-center justify-center gap-2 bg-white md:hover:bg-gray-50 focus:outline-none transition-colors cursor-pointer"
+                className="w-full mt-1 border border-gray-200 text-gray-700 font-bold text-xs py-2.5 md:py-3 rounded-xl flex items-center justify-center gap-2 bg-white md:hover:bg-gray-50 focus:outline-none transition-colors cursor-pointer"
               >
                 <i className="ph ph-whatsapp-logo text-base text-emerald-500 font-bold"></i>
                 <span>Chat on WhatsApp</span>
               </button>
             </div>
 
-            {/* 🚀 Available Listings Grid (Shows up to 6 products in smooth overflow scroll) */}
-            <div className="pt-6 flex flex-col gap-4">
+            {/* Available Listings Row */}
+            <div className="pt-4 md:pt-5 flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-black tracking-wider uppercase text-gray-400">
                   Available Listings ({publicSellerData.listings.length})
@@ -620,37 +620,35 @@ export default function App() {
               </div>
 
               {publicSellerData.listings.length > 0 ? (
-                <div className="max-h-[320px] overflow-y-auto pr-1">
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 w-full pt-1">
-                    {publicSellerData.listings.slice(0, 6).map((p) => {
-                      const primaryImg = p.colorVariants?.find(v => v.isMain) || p.colorVariants?.[0];
-                      const fallbackImg = p.images?.find(img => img.isCover) || p.images?.[0];
-                      const imgSrc = primaryImg ? primaryImg.imageUrl : (fallbackImg ? fallbackImg.imageUrl : (p.image || "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=500&q=80"));
+                <div className="w-full overflow-x-auto pb-2 flex gap-3 snap-x snap-mandatory">
+                  {publicSellerData.listings.slice(0, 6).map((p) => {
+                    const primaryImg = p.colorVariants?.find(v => v.isMain) || p.colorVariants?.[0];
+                    const fallbackImg = p.images?.find(img => img.isCover) || p.images?.[0];
+                    const imgSrc = primaryImg ? primaryImg.imageUrl : (fallbackImg ? fallbackImg.imageUrl : (p.image || "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=500&q=80"));
 
-                      return (
-                        <div 
-                          key={p.id}
-                          onClick={() => {
-                            setSelectedProduct(p);
-                            setPublicSellerData(null);
-                          }}
-                          className="w-full bg-white p-1.5 rounded-[16px] border border-gray-100 shadow-sm cursor-pointer hover:scale-[1.01] transition-transform flex flex-col gap-1"
-                        >
-                          <div className="w-full aspect-square rounded-[10px] overflow-hidden bg-marix-cream/40">
-                            <img src={imgSrc} alt={p.productTitle} className="w-full h-full object-cover" />
-                          </div>
-                          <h4 className="text-xs font-semibold text-[#111111] truncate mt-1">{p.productTitle || p.name}</h4>
-                          <span className="text-xs font-black text-marix-teal">{p.price || "₦0"}</span>
+                    return (
+                      <div 
+                        key={p.id}
+                        onClick={() => {
+                          setSelectedProduct(p);
+                          setPublicSellerData(null);
+                        }}
+                        className="w-[125px] sm:w-[145px] shrink-0 snap-start bg-white p-2 rounded-[16px] border border-gray-100 shadow-sm cursor-pointer hover:scale-[1.02] transition-transform flex flex-col gap-1"
+                      >
+                        <div className="w-full aspect-square rounded-[10px] overflow-hidden bg-marix-cream/40">
+                          <img src={imgSrc} alt={p.productTitle} className="w-full h-full object-cover" />
                         </div>
-                      );
-                    })}
-                  </div>
+                        <h4 className="text-xs font-semibold text-[#111111] truncate mt-1">{p.productTitle || p.name}</h4>
+                        <span className="text-xs font-black text-marix-teal">{p.price || "₦0"}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
-                <div className="w-full py-12 flex flex-col items-center justify-center text-center bg-gray-50/60 rounded-2xl border border-gray-100 p-6">
-                  <i className="ph ph-package text-4xl text-gray-300 mb-2"></i>
+                <div className="w-full py-6 flex flex-col items-center justify-center text-center bg-gray-50/60 rounded-2xl border border-gray-100 p-5">
+                  <i className="ph ph-package text-2xl text-gray-300 mb-1"></i>
                   <h4 className="text-xs font-black text-[#111111]">This seller has no active listings available right now.</h4>
-                  <p className="text-[11px] text-gray-400 font-semibold mt-1">Check back later or contact the seller directly on WhatsApp.</p>
+                  <p className="text-[10px] text-gray-400 font-semibold mt-0.5">Check back later or contact the seller directly on WhatsApp.</p>
                 </div>
               )}
             </div>

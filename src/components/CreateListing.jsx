@@ -38,7 +38,6 @@ export default function CreateListing({ onProductCreated, onCancel, editInitialD
     "Other"
   ];
 
-  // 🚀 BLOCK 1: EDIT HYDRATION PIPELINE (Pre-fills existing product data)
   useEffect(() => {
     if (editInitialData) {
       const cleanPrice = (val) => {
@@ -106,7 +105,6 @@ export default function CreateListing({ onProductCreated, onCancel, editInitialD
     };
   }, []);
 
-  // 🚀 BLOCK 2: DEFAULT CATEGORY SPECIFICATIONS
   useEffect(() => {
     if (editInitialData) return;
     
@@ -118,6 +116,8 @@ export default function CreateListing({ onProductCreated, onCancel, editInitialD
       defaultSpecs = ['42', '43', '44'];
     } else if (cat === 'Food & Snacks') {
       defaultSpecs = ['Regular', 'Full Pack'];
+    } else if (cat === 'Beauty') {
+      defaultSpecs = ['50ml', '100ml'];
     }
 
     setGlobalSpecs(defaultSpecs);
@@ -166,6 +166,14 @@ export default function CreateListing({ onProductCreated, onCancel, editInitialD
         colorPlaceholder: 'e.g., Space Gray, Sierra Blue'
       };
     }
+    if (cat === 'Beauty') {
+      return {
+        specLabel: 'Volume / Size',
+        specPlaceholder: 'e.g., 50ml, 100g, 3.4 oz',
+        colorLabel: 'Shade / Scent / Variant',
+        colorPlaceholder: 'e.g., Vanilla Scent, Shade 02, Rose Oil'
+      };
+    }
     if (cat === 'Food & Snacks') {
       return {
         specLabel: 'Portion Size',
@@ -184,17 +192,14 @@ export default function CreateListing({ onProductCreated, onCancel, editInitialD
 
   const labels = getDynamicLabels();
 
-  // 🚀 STRICT VARIANT VALIDATION
   const areVariantsValid = variantsList.length > 0 && variantsList.every(v => v.name.trim() !== '');
 
-  // 🚀 CHECK IF AT LEAST ONE OPTION PRICE IS ENTERED (FOR OPTION PRICING CATEGORIES)
   const hasAtLeastOneOptionPrice = useMemo(() => {
     return variantsList.some(v => 
       v.optionPrices && Object.values(v.optionPrices).some(val => val && String(val).trim() !== '')
     );
   }, [variantsList]);
 
-  // 🚀 DYNAMIC PRICE REQUIREMENT LOGIC
   const isPriceValid = isOptionPricingCategory
     ? (basicInfo.price.trim() !== '' || hasAtLeastOneOptionPrice)
     : basicInfo.price.trim() !== '';
@@ -478,7 +483,6 @@ export default function CreateListing({ onProductCreated, onCancel, editInitialD
     }, 1200);
   };
 
-  // 🚀 CLEAN 1PX FOCUS (No ring layers anywhere)
   const inputStyles = "w-full border border-gray-200 rounded-xl px-3 py-2 text-base md:text-sm focus:outline-none focus:border-marix-teal text-[#111111] font-medium transition-colors placeholder:text-gray-400/70";
   const selectStyles = "w-full border border-gray-200 rounded-xl px-3 py-2 text-base md:text-sm focus:outline-none focus:border-marix-teal font-medium appearance-none text-[#111111] bg-white cursor-pointer transition-colors";
 
@@ -622,7 +626,6 @@ export default function CreateListing({ onProductCreated, onCancel, editInitialD
                         )}
                       </div>
                     ) : (
-                      /* 🚀 OPTION PRICING INPUTS SHOWN ONLY FOR OPTION CATEGORIES */
                       <div className="grid grid-cols-2 gap-2 pt-1">
                         {variant.enabledSpecs.map((sizeOption) => (
                           <div key={sizeOption} className="flex flex-col gap-0.5">
@@ -634,7 +637,7 @@ export default function CreateListing({ onProductCreated, onCancel, editInitialD
                     )}
                   </div>
                 ))}
-                <button type="button" onClick={handleAddVariantOption} className="w-fit border border-dashed border-marix-teal/30 text-marix-teal px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1 cursor-pointer"><i className="ph ph-plus"></i><span>Add Color Option</span></button>
+                <button type="button" onClick={handleAddVariantOption} className="w-fit border border-dashed border-marix-teal/30 text-marix-teal px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1 cursor-pointer"><i className="ph ph-plus"></i><span>Add Variant Option</span></button>
               </div>
             </div>
 

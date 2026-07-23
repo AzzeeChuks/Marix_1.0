@@ -12,6 +12,7 @@ export default function Profile({
   setForcedView,
   onBecomeSellerTrigger,
   shopDetails,
+  activeUploadsCount = 0,
   setShopDetails,
   userLocation,
   setUserLocation,
@@ -421,13 +422,6 @@ export default function Profile({
                 <p className="text-xs text-gray-400 max-w-xs leading-relaxed font-semibold mt-1 mb-5">
                   Products you view on the feed or explore page will show up here.
                 </p>
-                <button 
-                  type="button"
-                  onClick={() => onNavigateTab?.('browse')}
-                  className="bg-marix-brown text-white font-black text-xs px-5 py-2.5 rounded-xl shadow-md hover:opacity-95 transition-opacity cursor-pointer"
-                >
-                  Explore Feed
-                </button>
               </div>
             )}
           </div>
@@ -466,7 +460,6 @@ export default function Profile({
                 {resolvedAboutText}
               </p>
               
-              {/* 🚀 RESTORED ORIGINAL WHITE CARD STYLE WHATSAPP BUTTON (NO HOVER ON MOBILE) */}
               <button 
                 type="button" 
                 onClick={() => {
@@ -480,6 +473,7 @@ export default function Profile({
               </button>
             </div>
 
+            {/* SELLER STATS CARD */}
             <div className="bg-white border border-gray-200/70 p-4 rounded-2xl shadow-sm flex items-center justify-between mt-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-marix-teal/5 text-marix-teal flex items-center justify-center text-lg shrink-0">
@@ -490,27 +484,53 @@ export default function Profile({
                   <span className="text-[10px] text-gray-400 font-bold">Items viewable on campus feed</span>
                 </div>
               </div>
-              <span className="text-xl font-black text-[#111111] pr-1">0</span>
+              {/* 🚀 Dynamic Active Listings Count */}
+              <span className="text-xl font-black text-[#111111] pr-1">
+                {activeUploadsCount || 0}
+              </span>
             </div>
 
-            <div className="w-full py-12 flex flex-col items-center justify-center text-center select-none mt-4">
-              <div className="w-24 h-24 flex items-center justify-center opacity-40 mb-3">
-                <i className="ph ph-package text-6xl text-marix-teal font-light"></i>
+            {/* 🚀 DYNAMIC MERCHANT STORE LISTING CHECK */}
+            {activeUploadsCount > 0 ? (
+              <div className="w-full bg-white border border-gray-200/70 p-6 rounded-2xl shadow-sm flex flex-col items-center text-center select-none mt-4">
+                <div className="w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl mb-2.5">
+                  <i className="ph ph-check-circle font-bold"></i>
+                </div>
+                <h4 className="text-sm font-black text-[#111111]">
+                  You have {activeUploadsCount} active {activeUploadsCount === 1 ? 'listing' : 'listings'} live on campus.
+                </h4>
+                <p className="text-xs text-gray-400 max-w-xs leading-relaxed font-semibold mt-1 mb-5">
+                  Your products are currently active and discoverable by students across your campus network.
+                </p>
+                <button 
+                  type="button"
+                  onClick={() => onNavigateTab?.('uploads')}
+                  className="bg-marix-brown text-white font-black text-xs px-6 py-3 rounded-xl shadow-md hover:opacity-95 active:scale-95 transition-all focus:outline-none flex items-center gap-2 cursor-pointer"
+                >
+                  <i className="ph ph-package font-bold"></i>
+                  <span>Manage Listings in Uploads</span>
+                </button>
               </div>
-              <h4 className="text-base font-black text-[#111111] tracking-tight">You haven't listed any products yet.</h4>
-              <p className="text-xs text-gray-400 max-w-xs leading-relaxed font-semibold mt-1 mb-6">
-                Upload your first product and start reaching active student buyers across your campus hub network.
-              </p>
-              
-              <button 
-                type="button"
-                onClick={onOpenCreateListingModal}
-                className="bg-marix-brown text-white font-black text-xs px-6 py-3 rounded-xl shadow-md hover:opacity-95 active:scale-95 transition-all focus:outline-none flex items-center gap-2 cursor-pointer"
-              >
-                <i className="ph ph-plus font-black"></i>
-                <span>Create First Listing</span>
-              </button>
-            </div>
+            ) : (
+              <div className="w-full py-12 flex flex-col items-center justify-center text-center select-none mt-4">
+                <div className="w-24 h-24 flex items-center justify-center opacity-40 mb-3">
+                  <i className="ph ph-package text-6xl text-marix-teal font-light"></i>
+                </div>
+                <h4 className="text-base font-black text-[#111111]">You haven't listed any products yet.</h4>
+                <p className="text-xs text-gray-400 max-w-xs leading-relaxed font-semibold mt-1 mb-6">
+                  Upload your first product and start reaching active student buyers across your campus hub network.
+                </p>
+                
+                <button 
+                  type="button"
+                  onClick={onOpenCreateListingModal}
+                  className="bg-marix-brown text-white font-black text-xs px-6 py-3 rounded-xl shadow-md hover:opacity-95 active:scale-95 transition-all focus:outline-none flex items-center gap-2 cursor-pointer"
+                >
+                  <i className="ph ph-plus font-black"></i>
+                  <span>Create First Listing</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -673,7 +693,7 @@ export default function Profile({
                 <label className="text-xs font-bold text-[#111111] px-0.5">Campus Hub Location</label>
                 <input 
                   type="text"
-                  placeholder="e.g., ABSU, Uturu"
+                  placeholder="e.g., Absu, Uturu"
                   value={profileForm.campus}
                   onChange={(e) => setProfileForm({ ...profileForm, campus: e.target.value })}
                   className="w-full bg-transparent border border-gray-200 rounded-xl px-3 py-2.5 text-base md:text-sm focus:outline-none focus:border-marix-teal text-[#111111] font-medium placeholder:text-gray-400/50"
@@ -746,7 +766,7 @@ export default function Profile({
                   placeholder="Describe the problem in detail..."
                   value={reportDescription}
                   onChange={(e) => setReportDescription(e.target.value)}
-                  className="w-full bg-white border border-gray-200 rounded-xl p-3.5 text-xs font-medium focus:outline-none focus:border-marix-teal text-[#111111] resize-none placeholder:text-gray-400"
+                  className="w-full bg-white border border-gray-200 rounded-xl p-3.5 text-base md:text-sm font-medium focus:outline-none focus:border-marix-teal text-[#111111] resize-none placeholder:text-gray-400"
                 />
                 <span className="absolute bottom-2.5 right-3 text-[10px] font-bold text-gray-400 select-none">
                   {reportDescription.length}/500
@@ -788,9 +808,10 @@ export default function Profile({
 
               <div className="flex flex-col items-center gap-2 mt-auto mb-6">
                 <button 
-                  type="submit"
+                  type="button"
+                  onClick={handleReportSubmit}
                   disabled={!reportIssueType || !reportDescription.trim()}
-                  className={`w-full py-3.5 rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer ${reportIssueType && reportDescription.trim() ? 'bg-marix-teal text-white hover:opacity-95' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+                  className={`w-full py-3.5 rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer ${reportIssueType && reportDescription.trim() ? 'bg-marix-brown text-white hover:opacity-95' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
                 >
                   Submit Report
                 </button>
@@ -841,10 +862,13 @@ export default function Profile({
                 </div>
               </div>
 
+              {/* 🚀 DYNAMIC ANALYTICS ACTIVE LISTINGS TRACKING */}
               <div className="bg-white border border-gray-200/70 p-4 rounded-2xl shadow-sm flex items-center justify-between gap-2">
                 <div className="flex flex-col gap-y-0.5">
                   <span className="text-[10px] md:text-xs font-bold text-gray-400">Active Listings</span>
-                  <span className="text-xl md:text-2xl font-black text-[#111111] tracking-tight">0</span>
+                  <span className="text-xl md:text-2xl font-black text-[#111111] tracking-tight">
+                    {activeUploadsCount || 0}
+                  </span>
                 </div>
                 <div className="w-9 h-9 rounded-xl bg-marix-teal/5 text-marix-teal flex items-center justify-center shrink-0">
                   <i className="ph ph-package text-lg font-bold"></i>

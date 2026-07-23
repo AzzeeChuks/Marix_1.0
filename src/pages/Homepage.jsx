@@ -7,7 +7,8 @@ import Uploads from '../components/Uploads';
 export default function Homepage({ 
   products = [], 
   isLoggedIn, 
-  setIsLoggedIn, 
+  setIsLoggedIn,
+  activeUploadsCount, 
   userName,
   userEmail,
   showCreateModal,
@@ -438,6 +439,7 @@ export default function Homepage({
       isSeller={hasCompletedSellerOnboarding}
       onBecomeSellerTrigger={onBecomeSellerTrigger}
       shopDetails={shopDetails}
+      activeUploadsCount={activeUploadsCount}
       setShopDetails={setShopDetails}
       onOpenCreateListingModal={onOpenCreateListingModal}
       
