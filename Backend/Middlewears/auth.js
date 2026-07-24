@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
+const User = require('../Models/User');
 
-const protect = (req, res, next) => {
+// 1. Verify User Session Token & attach user profile
+const protect = async (req, res, next) => {
   let token;
 
   // Check for token in Authorization Header (Bearer Token style)
@@ -10,11 +12,15 @@ const protect = (req, res, next) => {
 
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      
-      // Attach the user ID to the request object
-      req.user = decoded.id; 
-      
-      next();
+
+      // Attach the full user record (excluding sensitive fields) to req.user
+      req.user = await User.findById(decoded.id).select('-password');
+
+      if (!req.user) {
+        return res.status(401).json({ message: 'User not found' });
+      }
+
+      return next();
     } catch (error) {
       return res.status(401).json({ message: 'Not authorized, token failed' });
     }
@@ -25,4 +31,14 @@ const protect = (req, res, next) => {
   }
 };
 
-module.exports = protect;
+// 2. Spec Requirement: Block Unverified Users from Write Operations
+const requireVerified = (req, res, next) => {
+  if (!req.user || !req.user.isVerified) {
+    return res.status(403).json({ 
+      message: 'Email verification required to perform this action.' 
+    });
+  }
+  next();
+};
+
+module.exports = { protect, requireVerified };
