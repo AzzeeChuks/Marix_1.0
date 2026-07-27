@@ -319,6 +319,12 @@ export default function CreateListing({ onProductCreated, onCancel, editInitialD
   };
 
   const handleImagePoolUpload = async (e) => {
+    // 🚀 EDIT MODE PHOTO LOCK (Prevent recycling images indefinitely)
+    if (editInitialData) {
+      alert("Photos cannot be added when editing an existing listing. You can reassign or remove existing photos below.");
+      return;
+    }
+
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
@@ -649,7 +655,13 @@ export default function CreateListing({ onProductCreated, onCancel, editInitialD
                 <span className="text-[10px] font-black text-marix-teal">{uploadedImages.length}/5 Uploaded</span>
               </div>
               <div className="relative overflow-hidden rounded-xl mb-3">
-                {uploadedImages.length < 5 ? (
+                {/* 🚀 EDIT MODE PHOTO LOCK DISPLAY */}
+                {editInitialData ? (
+                  <div className="w-full bg-gray-100 p-3 text-center rounded-xl text-gray-500 text-xs font-bold border border-gray-200">
+                    <i className="ph ph-lock text-sm mr-1.5 text-marix-teal"></i>
+                    Existing photos locked in Edit Mode. Reassign or delete photos below.
+                  </div>
+                ) : uploadedImages.length < 5 ? (
                   <label className="border border-dashed border-gray-200 bg-gray-50/30 rounded-xl p-5 flex flex-col items-center justify-center cursor-pointer text-center min-h-[90px]">
                     <i className="ph ph-image text-xl text-gray-400"></i>
                     <span className="text-xs font-bold text-gray-500 mt-1">Select Images to Upload</span>

@@ -1,6 +1,23 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Navbar from './Navbar';
 
+const formatWhatsAppNumber = (rawPhone = '') => {
+  if (!rawPhone) return '2348012345678';
+  let digits = rawPhone.replace(/\D/g, '');
+  if (digits.startsWith('0')) {
+    digits = '234' + digits.substring(1);
+  } else if (!digits.startsWith('234') && digits.length === 10) {
+    digits = '234' + digits;
+  }
+  return digits || '2348012345678';
+};
+
+const extractPrimaryCampus = (rawLocation = '') => {
+  if (!rawLocation) return 'Campus';
+  const clean = rawLocation.trim().split(/[,/-]/)[0].trim();
+  return clean || 'Campus';
+};
+
 export default function ProductOverview({ 
   product, 
   allProducts = [], 
@@ -30,7 +47,6 @@ export default function ProductOverview({
 
   const wrapperRef = useRef(null);
 
-  // --- EARLY ADOPTER ENGINE (LOCAL STORAGE) ---
   const [userRegistrationIndex, setUserRegistrationIndex] = useState(null);
 
   useEffect(() => {
@@ -45,7 +61,6 @@ export default function ProductOverview({
 
   const isEarlySeller = userRegistrationIndex !== null && userRegistrationIndex <= 50;
 
-  // Extract initial layout arrays safely
   const hasExtendedGallery = product.images && product.images.length > 0;
   const uniqueVariantNames = product.variants || (product.colorVariants ? product.colorVariants.map(v => v.colorName) : []);
   
@@ -56,7 +71,6 @@ export default function ProductOverview({
   const [selectedSize, setSelectedSize] = useState(null);
   const [isDescExpanded, setIsDescExpanded] = useState(false);
 
-  // --- SCROLL PRESERVATION ENGINE ---
   useEffect(() => {
     const scrollContainer = wrapperRef.current?.parentElement;
     if (scrollContainer && scrollContainer !== window) {
@@ -64,7 +78,6 @@ export default function ProductOverview({
     }
   }, [product, activeTab]);
 
-  // Handle active sizes list mapped specifically to the currently selected color variant
   const activeSizesList = useMemo(() => {
     if (product.colorVariants && product.colorVariants.length > 0 && selectedVariant) {
       const activeVariantData = product.colorVariants.find(v => v.colorName === selectedVariant);
@@ -75,7 +88,6 @@ export default function ProductOverview({
     return product.availableSizes || [];
   }, [product, selectedVariant]);
 
-  // Sync component state cleanly whenever the product changes
   useEffect(() => {
     const newDefault = uniqueVariantNames.length > 0 ? uniqueVariantNames[0] : null;
     setSelectedVariant(newDefault);
@@ -96,7 +108,6 @@ export default function ProductOverview({
     }
   }, [product, uniqueVariantNames]);
 
-  // Auto-select first available option when user swaps color variants
   useEffect(() => {
     if (activeSizesList.length > 0) {
       if (!activeSizesList.includes(selectedSize)) {
@@ -107,7 +118,6 @@ export default function ProductOverview({
     }
   }, [selectedVariant, activeSizesList]);
 
-  // --- DYNAMIC PRICE EVALUATION ENGINE ---
   const displayedPrice = useMemo(() => {
     if (product.colorVariants && product.colorVariants.length > 0 && selectedVariant) {
       const activeVariantData = product.colorVariants.find(v => v.colorName === selectedVariant);
@@ -136,7 +146,6 @@ export default function ProductOverview({
     });
   };
 
-  // Gallery resolution logic based on variant assignment
   let displayImages = [];
   if (hasExtendedGallery) {
     displayImages = product.images.filter(img => img.variantName === selectedVariant);
@@ -158,7 +167,7 @@ export default function ProductOverview({
   });
 
   const handleWhatsAppChat = () => {
-    const cleanNumber = product.whatsappNumber ? product.whatsappNumber.replace(/\D/g, '') : "2348012345678";
+    const cleanNumber = formatWhatsAppNumber(product.whatsappNumber);
     const variantDetail = selectedVariant ? `\n- Variant: ${selectedVariant}` : "";
     const sizeDetail = selectedSize ? `\n- Option/Size: ${selectedSize}` : "";
     const message = `Hello, I saw your listing for "${product.productTitle}" (${displayedPrice}) on Marix.${variantDetail}${sizeDetail}\n\nIs this item still available?`;
@@ -166,6 +175,7 @@ export default function ProductOverview({
     window.open(`https://wa.me/${cleanNumber}?text=${encodedMessage}`, '_blank');
   };
 
+  // 🚀 FUZZY CAMPUS MATCHING RECOMMENDATIONS ENGINE
   const recommendations = useMemo(() => {
     const shuffleArray = (arr) => {
       const copy = [...arr];
@@ -176,11 +186,12 @@ export default function ProductOverview({
       return copy;
     };
 
-    const currentCampusClean = (product.campus || '').trim().toLowerCase();
+    const targetCampusPrimary = extractPrimaryCampus(product.campus).toLowerCase();
 
     const sameCampusPool = allProducts.filter(item => {
-      const itemCampusClean = (item.campus || '').trim().toLowerCase();
-      return item.id !== product.id && itemCampusClean === currentCampusClean;
+      if (item.id === product.id) return false;
+      const itemCampusPrimary = extractPrimaryCampus(item.campus).toLowerCase();
+      return itemCampusPrimary.includes(targetCampusPrimary) || targetCampusPrimary.includes(itemCampusPrimary);
     });
 
     const sameCategoryAndCampus = shuffleArray(sameCampusPool.filter(item => item.category === product.category));
@@ -199,8 +210,7 @@ export default function ProductOverview({
   }, [product, allProducts]);
 
   const isLiked = savedProducts.some(p => p.id === product.id);
-  const rawCampus = product.campus || 'Campus';
-  const cleanCampusName = rawCampus.split(',')[0].trim().toUpperCase();
+  const cleanCampusName = extractPrimaryCampus(product.campus).toUpperCase();
 
   const descriptionText = product.description || '';
   const descriptionWords = descriptionText.split(/\s+/);
@@ -461,7 +471,6 @@ export default function ProductOverview({
                     </div>
                   </div>
                   
-                  {/* 🛍️ VIEW SHOP BUTTON BINDING */}
                   <button 
                     onClick={() => onViewSellerShop?.(product)}
                     className="bg-marix-cream text-[#111111] text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-gray-100 transition-colors focus:outline-none shrink-0 border border-gray-200/50 cursor-pointer flex-shrink-0"
@@ -486,7 +495,7 @@ export default function ProductOverview({
                   const primaryImg = rec.colorVariants?.find(v => v.isMain) || rec.colorVariants?.[0];
                   const fallbackImg = rec.images?.find(img => img.isCover) || rec.images?.[0];
                   const finalTargetSrc = primaryImg ? primaryImg.imageUrl : (fallbackImg ? fallbackImg.imageUrl : "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800&q=80");
-                  const recCampus = rec.campus ? rec.campus.split(',')[0].trim() : 'Campus';
+                  const recCampus = extractPrimaryCampus(rec.campus);
                   const isRecLiked = savedProducts.some(p => p.id === rec.id);
 
                   return (

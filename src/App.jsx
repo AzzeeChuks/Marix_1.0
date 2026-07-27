@@ -10,6 +10,25 @@ import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import { initialProducts } from './data/products';
 
+// 🚀 HELPER 1: SMART CAMPUS EXTRACTOR (Extracts primary term like "Absu" or "Abuja")
+export const extractPrimaryCampus = (rawLocation = '') => {
+  if (!rawLocation) return 'Campus';
+  const clean = rawLocation.trim().split(/[,/-]/)[0].trim();
+  return clean || 'Campus';
+};
+
+// 🚀 HELPER 2: UNIVERSAL WHATSAPP PHONE FORMATTER (Strips spaces, handles 070... -> 23470...)
+export const formatWhatsAppNumber = (rawPhone = '') => {
+  if (!rawPhone) return '2348012345678';
+  let digits = rawPhone.replace(/\D/g, ''); // Strips all spaces, dashes, symbols
+  if (digits.startsWith('0')) {
+    digits = '234' + digits.substring(1);
+  } else if (!digits.startsWith('234') && digits.length === 10) {
+    digits = '234' + digits;
+  }
+  return digits || '2348012345678';
+};
+
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentView, setCurrentView] = useState('home'); 
@@ -130,7 +149,6 @@ export default function App() {
     });
   };
 
-  // LOGIN vs SIGNUP ONBOARDING MODAL ROUTING
   const handleLoginSuccess = (firstName, email, isNewSignup = false) => {
     const finalName = firstName || 'Student';
     const finalEmail = email || 'student@campus.edu';
@@ -315,6 +333,7 @@ export default function App() {
               savedProducts={savedProducts} onToggleSave={handleToggleSaveProduct} onBack={() => setSelectedProduct(null)} 
               onSelectRecommendedProduct={handleProductCardClick} activeTab={activeTab}
               onViewSellerShop={handleOpenPublicSellerProfile}
+              userLocation={userLocation}
             />
           )}
         </div>
@@ -435,8 +454,9 @@ export default function App() {
             <button 
               onClick={() => { 
                 if(onboardingTempCampus.trim()) {
-                  setUserLocation(onboardingTempCampus.trim());
-                  setShopDetails(p => ({...p, campus: onboardingTempCampus.trim()}));
+                  const cleaned = extractPrimaryCampus(onboardingTempCampus);
+                  setUserLocation(cleaned);
+                  setShopDetails(p => ({...p, campus: cleaned}));
                 }
                 setShowWelcomeModal(false); 
               }} 
@@ -482,8 +502,9 @@ export default function App() {
             <button 
               onClick={() => { 
                 if(onboardingTempCampus.trim()) {
-                  setUserLocation(onboardingTempCampus.trim());
-                  setShopDetails(p => ({...p, campus: onboardingTempCampus.trim()}));
+                  const cleaned = extractPrimaryCampus(onboardingTempCampus);
+                  setUserLocation(cleaned);
+                  setShopDetails(p => ({...p, campus: cleaned}));
                 }
                 setShowOnboardingOverlay(false); 
               }} 
@@ -510,8 +531,13 @@ export default function App() {
 
             <form className="flex flex-col gap-4 text-left" onSubmit={(e) => {
               e.preventDefault();
-              setShopDetails(sellerTempDetails);
-              if (sellerTempDetails.campus) setUserLocation(sellerTempDetails.campus);
+              const formatted = {
+                ...sellerTempDetails,
+                campus: extractPrimaryCampus(sellerTempDetails.campus),
+                whatsappNumber: formatWhatsAppNumber(sellerTempDetails.whatsappNumber)
+              };
+              setShopDetails(formatted);
+              if (formatted.campus) setUserLocation(formatted.campus);
               
               setHasCompletedSellerOnboarding(true);
               setShowBecomeSellerModal(false);
@@ -523,7 +549,7 @@ export default function App() {
               }
             }}>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-[#111111] px-0.5">Shop Name *</label>
+                <label className="text-xs font-bold text-[#111111] px-0.5">Buisness Name *</label>
                 <input type="text" required placeholder="e.g., K-dot Collections" value={sellerTempDetails.shopName} onChange={(e) => setSellerTempDetails({ ...sellerTempDetails, shopName: e.target.value })} className="w-full bg-transparent border border-gray-200 rounded-xl px-3.5 py-3 text-base md:text-sm focus:outline-none focus:border-marix-teal font-medium" />
               </div>
 
@@ -538,7 +564,7 @@ export default function App() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-[#111111] px-0.5">About Your Shop *</label>
+                <label className="text-xs font-bold text-[#111111] px-0.5">About Your Business *</label>
                 <textarea required rows={2} placeholder="e.g., Premium campus deals on streetwear trends" value={sellerTempDetails.aboutShop} onChange={(e) => setSellerTempDetails({ ...sellerTempDetails, aboutShop: e.target.value })} className="w-full bg-transparent border border-gray-200 rounded-xl px-3.5 py-2 text-base md:text-sm focus:outline-none focus:border-marix-teal font-medium resize-none" />
               </div>
 
@@ -590,7 +616,7 @@ export default function App() {
               <button 
                 type="button" 
                 onClick={() => {
-                  const cleanNum = publicSellerData.whatsappNumber ? publicSellerData.whatsappNumber.replace(/\D/g, '') : "2348012345678";
+                  const cleanNum = formatWhatsAppNumber(publicSellerData.whatsappNumber);
                   const msg = encodeURIComponent(`Hello ${publicSellerData.shopName}, I found your store on Marix!`);
                   window.open(`https://wa.me/${cleanNum}?text=${msg}`, '_blank');
                 }}

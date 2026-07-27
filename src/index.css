@@ -10,3 +10,17 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
 }
+
+input, textarea, select, button {
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
+input:focus, 
+input:focus-visible, 
+input:active, 
+input:focus-within {
+  outline: none !important;
+  outline-style: none !important;
+  box-shadow: none !important;
+}

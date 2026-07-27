@@ -1,5 +1,23 @@
 import React, { useEffect, useState } from 'react';
 
+// Helper for WhatsApp link formatting
+const formatWhatsAppNumber = (rawPhone = '') => {
+  if (!rawPhone) return '2348012345678';
+  let digits = rawPhone.replace(/\D/g, '');
+  if (digits.startsWith('0')) {
+    digits = '234' + digits.substring(1);
+  } else if (!digits.startsWith('234') && digits.length === 10) {
+    digits = '234' + digits;
+  }
+  return digits || '2348012345678';
+};
+
+const extractPrimaryCampus = (rawLocation = '') => {
+  if (!rawLocation) return 'Campus';
+  const clean = rawLocation.trim().split(/[,/-]/)[0].trim();
+  return clean || 'Campus';
+};
+
 export default function Profile({
   userName = "Student",
   userEmail = "",
@@ -29,8 +47,22 @@ export default function Profile({
   const formattedJoinDate = joinDate || new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
   const [showPasswordMasks, setShowPasswordMasks] = useState({ current: false, next: false, confirm: false });
-  const [profileForm, setProfileForm] = useState({ firstName: userName, campus: userLocation || campusLocation || '' });
   
+  // DRAFT STATE FOR PROFILE EDITING
+  const [profileForm, setProfileForm] = useState({ 
+    firstName: userName, 
+    campus: userLocation || campusLocation || '' 
+  });
+  
+  // EDIT SHOP INFO MODAL & DRAFT STATE
+  const [showEditShopModal, setShowEditShopModal] = useState(false);
+  const [shopEditDraft, setShopEditDraft] = useState({
+    shopName: '',
+    campus: '',
+    whatsappNumber: '',
+    aboutShop: ''
+  });
+
   // Password States
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -53,7 +85,7 @@ export default function Profile({
   const isPasswordValid = hasEightChars && hasOneNumber;
   const passwordsMatch = confirmPassword.length > 0 && confirmPassword === newPassword;
 
-  // 🚀 FORCE SCROLL TO TOP WHEN ANY PROFILE SUB-PAGE IS SELECTED
+  // FORCE SCROLL TO TOP WHEN ANY PROFILE SUB-PAGE IS SELECTED
   useEffect(() => {
     const container = document.querySelector('.scrollbar-none') || window;
     if (container) {
@@ -73,6 +105,7 @@ export default function Profile({
     return () => window.removeEventListener('marix_route_to_seller_profile_hub', handleContextRedirect);
   }, [setCurrentView]);
 
+  // Sync Draft State with incoming props when profile updates
   useEffect(() => {
     setProfileForm({ firstName: userName, campus: userLocation || campusLocation || '' });
   }, [userName, campusLocation, userLocation]);
@@ -104,16 +137,49 @@ export default function Profile({
 
   const handleSaveProfileChanges = (e) => {
     e.preventDefault();
+    const cleanCampus = extractPrimaryCampus(profileForm.campus);
+
     if (profileForm.firstName.trim() && onUpdateUserName) {
       onUpdateUserName(profileForm.firstName.trim());
     }
     if (setUserLocation) {
-      setUserLocation(profileForm.campus);
+      setUserLocation(cleanCampus);
     }
     if (setShopDetails && shopDetails) {
-      setShopDetails({ ...shopDetails, campus: profileForm.campus });
+      setShopDetails({ ...shopDetails, campus: cleanCampus });
     }
     setCurrentView('main');
+  };
+
+  const handleOpenEditShopModal = () => {
+    setShopEditDraft({
+      shopName: shopDetails?.shopName || resolvedShopName,
+      campus: shopDetails?.campus || resolvedCampus,
+      whatsappNumber: shopDetails?.whatsappNumber || '',
+      aboutShop: shopDetails?.aboutShop || ''
+    });
+    setShowEditShopModal(true);
+  };
+
+  const handleSaveShopDetails = (e) => {
+    e.preventDefault();
+    const formattedCampus = extractPrimaryCampus(shopEditDraft.campus);
+    const formattedPhone = formatWhatsAppNumber(shopEditDraft.whatsappNumber);
+
+    const updated = {
+      ...shopEditDraft,
+      campus: formattedCampus,
+      whatsappNumber: formattedPhone
+    };
+
+    if (setShopDetails) {
+      setShopDetails(updated);
+    }
+    if (setUserLocation && formattedCampus) {
+      setUserLocation(formattedCampus);
+    }
+
+    setShowEditShopModal(false);
   };
 
   const handlePasswordUpdate = (e) => {
@@ -146,13 +212,15 @@ export default function Profile({
     }, 1500);
   };
 
-  // 🚀 CONSISTENT FULL-WIDTH SUB-SCREEN HEADER ALIGNMENT
+  // CONSISTENT SUB-SCREEN HEADER
   const SubScreenHeader = ({ title }) => (
     <div className="w-full flex items-center justify-between pb-3 mb-4 select-none relative max-w-[95%] mx-auto px-1 md:px-4 pt-1 md:pt-4">
       <button 
         type="button"
         onClick={() => {
           setCurrentView('main');
+          // Cleanly discard uncommitted profile drafts
+          setProfileForm({ firstName: userName, campus: userLocation || campusLocation || '' });
           setNewPassword('');
           setCurrentPassword('');
           setConfirmPassword('');
@@ -435,7 +503,18 @@ export default function Profile({
 
           <div className="max-w-2xl mx-auto w-full px-1 md:px-4 pb-12 flex flex-col">
             <div className="flex flex-col items-center text-center pb-6 mt-1 relative w-full">
-              <div className="w-20 h-20 rounded-full bg-marix-teal text-white font-black flex items-center justify-center text-3xl shadow-md select-none shrink-0">
+              
+              {/* EDIT SHOP INFO TRIGGER */}
+              <button
+                type="button"
+                onClick={handleOpenEditShopModal}
+                className="bg-marix-teal/5 absolute top-0 right-1 px-3 py-1.5 rounded-xl border border-gray-200 flex items-center gap-1.5 text-xs font-bold text-marix-teal hover:bg-marix-teal/10 transition-colors focus:outline-none cursor-pointer shadow-sm"
+              >
+                <i className="ph ph-pencil-simple text-sm"></i>
+                <span>Edit Info</span>
+              </button>
+
+              <div className="w-20 h-20 rounded-full bg-marix-teal text-white font-black flex items-center justify-center text-3xl shadow-md select-none shrink-0 mt-4 md:mt-0">
                 {resolvedShopName.charAt(0).toUpperCase()}
               </div>
               
@@ -455,7 +534,7 @@ export default function Profile({
             </div>
 
             <div className="bg-white border border-gray-200/70 p-4 rounded-2xl shadow-sm flex flex-col gap-2 text-left mt-2">
-              <h4 className="text-xs font-black tracking-wider uppercase text-gray-400">About Shop</h4>
+              <h4 className="text-xs font-black tracking-wider uppercase text-gray-400">About Business</h4>
               <p className="text-xs md:text-sm text-gray-600 font-medium leading-relaxed">
                 {resolvedAboutText}
               </p>
@@ -463,8 +542,8 @@ export default function Profile({
               <button 
                 type="button" 
                 onClick={() => {
-                  const num = shopDetails?.whatsappNumber ? shopDetails.whatsappNumber.replace(/\D/g, '') : "2348012345678";
-                  window.open(`https://wa.me/${num}?text=${encodeURIComponent(`Hello ${resolvedShopName}, I found your store on Marix!`)}`, '_blank');
+                  const cleanNum = formatWhatsAppNumber(shopDetails?.whatsappNumber);
+                  window.open(`https://wa.me/${cleanNum}?text=${encodeURIComponent(`Hello ${resolvedShopName}, I found your store on Marix!`)}`, '_blank');
                 }}
                 className="w-full mt-2 border border-gray-200 text-gray-700 font-bold text-xs py-3 rounded-xl flex items-center justify-center gap-2 bg-white md:hover:bg-gray-50 focus:outline-none transition-colors cursor-pointer"
               >
@@ -484,13 +563,12 @@ export default function Profile({
                   <span className="text-[10px] text-gray-400 font-bold">Items viewable on campus feed</span>
                 </div>
               </div>
-              {/* 🚀 Dynamic Active Listings Count */}
               <span className="text-xl font-black text-[#111111] pr-1">
                 {activeUploadsCount || 0}
               </span>
             </div>
 
-            {/* 🚀 DYNAMIC MERCHANT STORE LISTING CHECK */}
+            {/* DYNAMIC MERCHANT STORE LISTING CHECK */}
             {activeUploadsCount > 0 ? (
               <div className="w-full bg-white border border-gray-200/70 p-6 rounded-2xl shadow-sm flex flex-col items-center text-center select-none mt-4">
                 <div className="w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl mb-2.5">
@@ -862,7 +940,6 @@ export default function Profile({
                 </div>
               </div>
 
-              {/* 🚀 DYNAMIC ANALYTICS ACTIVE LISTINGS TRACKING */}
               <div className="bg-white border border-gray-200/70 p-4 rounded-2xl shadow-sm flex items-center justify-between gap-2">
                 <div className="flex flex-col gap-y-0.5">
                   <span className="text-[10px] md:text-xs font-bold text-gray-400">Active Listings</span>
@@ -897,6 +974,46 @@ export default function Profile({
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EDIT SHOP DETAILS */}
+      {showEditShopModal && (
+        <div className="fixed inset-0 z-[250] bg-black/50 backdrop-blur-md flex items-center justify-center p-4 select-none animate-fadeIn">
+          <div className="w-full max-w-md bg-white p-6 rounded-2xl border border-gray-100 shadow-2xl flex flex-col animate-scaleIn">
+            <div className="w-full flex items-center justify-between mb-4">
+              <div className="w-6 h-6 opacity-0"></div>
+              <div className="w-12 h-12 rounded-xl bg-marix-teal/10 text-marix-teal flex items-center justify-center text-2xl"><i className="ph ph-storefront font-bold"></i></div>
+              <button onClick={() => setShowEditShopModal(false)} className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer"><i className="ph ph-x text-sm font-bold"></i></button>
+            </div>
+
+            <h3 className="text-xl font-black text-[#111111] tracking-tight text-center">Edit Business Details</h3>
+            <p className="text-xs text-gray-400 font-medium text-center max-w-xs mx-auto mt-1 mb-6">Update your storefront information visible to campus entrepreneurs.</p>
+
+            <form className="flex flex-col gap-4 text-left" onSubmit={handleSaveShopDetails}>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-[#111111] px-0.5">Business Name *</label>
+                <input type="text" required placeholder="e.g., K-dot Collections" value={shopEditDraft.shopName} onChange={(e) => setShopEditDraft({ ...shopEditDraft, shopName: e.target.value })} className="w-full bg-transparent border border-gray-200 rounded-xl px-3.5 py-3 text-base md:text-sm focus:outline-none focus:border-marix-teal font-medium" />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-[#111111] px-0.5">Campus Location *</label>
+                <input type="text" required placeholder="e.g., Absu, Uturu" value={shopEditDraft.campus} onChange={(e) => setShopEditDraft({ ...shopEditDraft, campus: e.target.value })} className="w-full bg-transparent border border-gray-200 rounded-xl px-3.5 py-3 text-base md:text-sm focus:outline-none focus:border-marix-teal font-medium" />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-[#111111] px-0.5">WhatsApp Number *</label>
+                <input type="text" required placeholder="e.g., 234 701 234 5678" value={shopEditDraft.whatsappNumber} onChange={(e) => setShopEditDraft({ ...shopEditDraft, whatsappNumber: e.target.value })} className="w-full bg-transparent border border-gray-200 rounded-xl px-3.5 py-3 text-base md:text-sm focus:outline-none focus:border-marix-teal font-medium" />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-[#111111] px-0.5">About Your Business *</label>
+                <textarea required rows={3} placeholder="Describe your store offerings..." value={shopEditDraft.aboutShop} onChange={(e) => setShopEditDraft({ ...shopEditDraft, aboutShop: e.target.value })} className="w-full bg-transparent border border-gray-200 rounded-xl px-3.5 py-2 text-base md:text-sm focus:outline-none focus:border-marix-teal font-medium resize-none" />
+              </div>
+
+              <button type="submit" className="w-full bg-marix-brown text-white font-black text-sm py-3.5 rounded-xl shadow-md hover:opacity-95 transition-all mt-3 focus:outline-none text-center cursor-pointer">Save Details</button>
+            </form>
           </div>
         </div>
       )}

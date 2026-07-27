@@ -1,4 +1,4 @@
-import React, { useState, useLayoutEffect, useRef } from 'react';
+import React, { useState, useLayoutEffect, useEffect, useRef } from 'react';
 import Navbar from '../components/Navbar';
 import Profile from '../components/Profile';
 import Notifications from '../components/Notifications';
@@ -48,6 +48,21 @@ export default function Homepage({
   const scrollContainerRef = useRef(null);
   const [profileSubView, setProfileSubView] = useState('main');
   const [productToDelete, setProductToDelete] = useState(null);
+
+  // 🚀 ISOLATED SEARCH STATE FOR SAVED ITEMS TAB ONLY
+  const [savedSearchQuery, setSavedSearchQuery] = useState('');
+
+  // 🚀 PREVENT AUTO-FOCUSING & OUTLINE RE-APPEARANCE ON APP/TAB SWITCH
+  useEffect(() => {
+    const handleBlurOnWindowSwitch = () => {
+      if (document.activeElement && document.activeElement.tagName === 'INPUT') {
+        document.activeElement.blur();
+      }
+    };
+
+    window.addEventListener('blur', handleBlurOnWindowSwitch);
+    return () => window.removeEventListener('blur', handleBlurOnWindowSwitch);
+  }, []);
 
   const handleTabChange = (newTab) => {
     if (!newTab) return;
@@ -121,6 +136,15 @@ export default function Homepage({
     setProductToDelete(null);
   };
 
+  // 🚀 FILTER SAVED PRODUCTS IN REAL-TIME
+  const filteredSavedProducts = savedProducts.filter((product) => {
+    if (!savedSearchQuery.trim()) return true;
+    const term = savedSearchQuery.toLowerCase().trim();
+    const matchTitle = (product.productTitle || product.name || '').toLowerCase().includes(term);
+    const matchDesc = (product.description || '').toLowerCase().includes(term);
+    return matchTitle || matchDesc;
+  });
+
   const categories = [
     { name: 'Fashion', iconClass: 'ph-t-shirt' },
     { name: 'Footwears', iconClass: 'ph-sneaker' },
@@ -155,6 +179,11 @@ export default function Homepage({
         <style>{`
           .scrollbar-none::-webkit-scrollbar { display: none; }
           .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+          /* Global fix to ensure native black outlines never flash on focus */
+          input:focus, textarea:focus, select:focus, button:focus {
+            outline: none !important;
+            -webkit-tap-highlight-color: transparent;
+          }
         `}</style>
         
         <div className="w-full flex-1 flex flex-col">
@@ -195,10 +224,10 @@ export default function Homepage({
                       Find amazing products from trusted campus sellers. Chat directly on WhatsApp. It's that easy.
                     </div>
                     <div className="flex items-center gap-3 mt-1.5">
-                      <button onClick={() => onNavigateToExplore('All', 'All Categories')} className="bg-marix-brown text-white font-bold text-xs md:text-sm px-5 py-3 rounded-xl shadow-md hover:opacity-95 transition-opacity flex items-center gap-2 focus:outline-none">
+                      <button onClick={() => onNavigateToExplore('All', 'All Categories')} className="bg-marix-brown text-white font-bold text-xs md:text-sm px-5 py-3 rounded-xl shadow-md hover:opacity-95 transition-opacity flex items-center gap-2 focus:outline-none cursor-pointer">
                         Explore Products <span>→</span>
                       </button>
-                      <button onClick={() => setShowCreateModal(true)} className="bg-white border border-gray-200 text-[#111111] font-bold text-xs md:text-sm px-5 py-3 rounded-xl shadow-sm hover:bg-gray-50 transition-colors focus:outline-none">
+                      <button onClick={() => setShowCreateModal(true)} className="bg-white border border-gray-200 text-[#111111] font-bold text-xs md:text-sm px-5 py-3 rounded-xl shadow-sm hover:bg-gray-50 transition-colors focus:outline-none cursor-pointer">
                         Start Selling
                       </button>
                     </div>
@@ -346,15 +375,51 @@ export default function Homepage({
               </>
             )}
 
-            {/* VIEW B: SAVED ITEMS */}
+            {/* VIEW B: SAVED ITEMS TAB */}
             {activeTab === 'saved-mobile' && (
               <section className="w-full max-w-[95%] mx-auto px-2 lg:px-4 pt-6 pb-6 flex-1 text-left relative min-h-[55vh]">
-                <div className="border-b border-gray-200/60 pb-4 mb-6 select-none flex items-center justify-between relative z-10">
+                
+                {/* SAVED ITEMS HEADER & COUNTER */}
+                <div className="border-b border-gray-200/60 pb-4 mb-5 select-none flex items-center justify-between relative z-10">
                   <div className="flex flex-col text-left">
-                    <h2 className="text-xl md:text-2xl font-black tracking-tight text-[#111111]">Your Saved Items</h2>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-xl md:text-2xl font-black tracking-tight text-[#111111]">Your Saved Items</h2>
+                      <span className="text-xs font-black bg-marix-teal/10 text-marix-teal px-2.5 py-0.5 rounded-full">
+                        {savedProducts.length} {savedProducts.length === 1 ? 'product saved' : 'products saved'}
+                      </span>
+                    </div>
                     <p className="text-xs text-gray-400 font-medium mt-0.5">Track your favorite bookmarked campus discoveries.</p>
                   </div>
                 </div>
+
+                {/* 🚀 FIXED SAVED ITEMS SEARCH INPUT */}
+{savedProducts.length > 0 && (
+  <div className="w-full mb-6 relative z-10">
+    <div className="relative flex items-center w-full max-w-md">
+      <i className="ph ph-magnifying-glass absolute left-3.5 text-gray-400 text-base font-bold"></i>
+      <input 
+        type="text"
+        placeholder="Search saved items..."
+        value={savedSearchQuery}
+        onChange={(e) => setSavedSearchQuery(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') e.target.blur();
+        }}
+        className="w-full bg-white border border-gray-200/80 rounded-xl pl-10 pr-9 py-2.5 text-base md:text-sm text-[#111111] font-medium placeholder:text-gray-400/60 outline-none focus:outline-none focus:ring-0 focus:border-marix-teal shadow-none transition-colors"
+        style={{ outline: 'none', WebkitTapHighlightColor: 'transparent' }}
+      />
+      {savedSearchQuery && (
+        <button 
+          type="button" 
+          onClick={() => setSavedSearchQuery('')}
+          className="absolute right-3 text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer p-0.5"
+        >
+          <i className="ph ph-x-circle text-base font-bold"></i>
+        </button>
+      )}
+    </div>
+  </div>
+)}
 
                 {savedProducts.length === 0 ? (
                   <div className="w-full py-20 flex flex-col items-center justify-center text-center select-none z-10">
@@ -365,14 +430,26 @@ export default function Homepage({
                     <p className="text-xs text-gray-500 max-w-xs leading-relaxed font-medium mt-1 mb-5">
                       Tap the heart icon on cards while browsing to save products.
                     </p>
-                    <button onClick={() => handleTabChange('browse')} className="bg-marix-brown hover:bg-marix-brown/95 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all active:scale-95 focus:outline-none">
+                    <button onClick={() => handleTabChange('browse')} className="bg-marix-brown hover:bg-marix-brown/95 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all active:scale-95 focus:outline-none cursor-pointer">
                       Explore Products
+                    </button>
+                  </div>
+                ) : filteredSavedProducts.length === 0 ? (
+                  <div className="w-full py-12 bg-white border border-gray-200/60 rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-sm max-w-md mx-auto z-10">
+                    <i className="ph ph-magnifying-glass-plus text-3xl text-gray-300 mb-2"></i>
+                    <h4 className="text-sm font-black text-[#111111]">No matching saved items</h4>
+                    <p className="text-xs text-gray-400 font-medium mt-1 mb-4">No saved products matched "{savedSearchQuery}".</p>
+                    <button 
+                      onClick={() => setSavedSearchQuery('')}
+                      className="text-xs font-bold text-marix-teal hover:underline focus:outline-none cursor-pointer"
+                    >
+                      Clear search
                     </button>
                   </div>
                 ) : (
                   <div className="relative z-10">
                     <div className="grid grid-cols-2 min-[600px]:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-5">
-                      {savedProducts.map((product) => {
+                      {filteredSavedProducts.map((product) => {
                         const primaryImg = product.colorVariants?.find(v => v.isMain) || product.colorVariants?.[0];
                         const fallbackImg = product.images?.find(img => img.isCover) || product.images?.[0];
                         const finalTargetSrc = primaryImg ? primaryImg.imageUrl : (fallbackImg ? fallbackImg.imageUrl : "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=500&q=80");
@@ -401,7 +478,6 @@ export default function Homepage({
                 <Uploads 
                   userUploads={userUploads}
                   onEditTrigger={(prod) => {
-                    // 🚀 Set the edit data FIRST, then show modal directly
                     if (typeof setEditingProductData === 'function') {
                       setEditingProductData(prod);
                     }
@@ -424,33 +500,31 @@ export default function Homepage({
             )}
 
             {/* VIEW E: PROFILE PANEL */}
-{activeTab === 'profile' && (
-  <section className="w-full max-w-[95%] mx-auto px-2 lg:px-4 pt-6 pb-16 flex-1 text-left relative">
-    <Profile 
-      userName={userName}
-      userEmail={userEmail}
-      userLocation={userLocation}
-      setUserLocation={setUserLocation}
-      onUpdateUserName={onUpdateUserName}
-      onNavigateTab={(targetTab) => handleTabChange(targetTab)}
-      onLogOut={onSignOut}
-      forcedView={profileSubView}
-      setForcedView={setProfileSubView}
-      isSeller={hasCompletedSellerOnboarding}
-      onBecomeSellerTrigger={onBecomeSellerTrigger}
-      shopDetails={shopDetails}
-      activeUploadsCount={activeUploadsCount}
-      setShopDetails={setShopDetails}
-      onOpenCreateListingModal={onOpenCreateListingModal}
-      
-      /* 🚀 RECENTLY VIEWED CRITICAL PROPS */
-      recentlyViewed={recentlyViewed} 
-      onProductCardClick={onProductCardClick}
-      savedProducts={savedProducts}
-      onToggleSave={setSavedProducts}
-    />
-  </section>
-)}
+            {activeTab === 'profile' && (
+              <section className="w-full max-w-[95%] mx-auto px-2 lg:px-4 pt-6 pb-16 flex-1 text-left relative">
+                <Profile 
+                  userName={userName}
+                  userEmail={userEmail}
+                  userLocation={userLocation}
+                  setUserLocation={setUserLocation}
+                  onUpdateUserName={onUpdateUserName}
+                  onNavigateTab={(targetTab) => handleTabChange(targetTab)}
+                  onLogOut={onSignOut}
+                  forcedView={profileSubView}
+                  setForcedView={setProfileSubView}
+                  isSeller={hasCompletedSellerOnboarding}
+                  onBecomeSellerTrigger={onBecomeSellerTrigger}
+                  shopDetails={shopDetails}
+                  activeUploadsCount={activeUploadsCount}
+                  setShopDetails={setShopDetails}
+                  onOpenCreateListingModal={onOpenCreateListingModal}
+                  recentlyViewed={recentlyViewed} 
+                  onProductCardClick={onProductCardClick}
+                  savedProducts={savedProducts}
+                  onToggleSave={setSavedProducts}
+                />
+              </section>
+            )}
 
           </div>
         </div>
@@ -512,19 +586,19 @@ export default function Homepage({
       {/* Mobile Bottom Navigation Layout Bars */}
       {isLoggedIn && (
         <div className={`md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 pt-1 z-50 flex items-center justify-around select-none shadow-[0_-4px_12px_rgba(0,0,0,0.05)] pb-[calc(env(safe-area-inset-bottom)+8px)] transition-transform duration-300 ${isAtAbsoluteBottom ? 'translate-y-full' : 'translate-y-0'}`}>
-          <button onClick={() => handleTabChange('browse')} className={`flex flex-col items-center gap-0.5 py-1 focus:outline-none ${activeTab === 'browse' ? 'text-marix-teal' : 'text-gray-400'}`}>
+          <button onClick={() => handleTabChange('browse')} className={`flex flex-col items-center gap-0.5 py-1 focus:outline-none cursor-pointer ${activeTab === 'browse' ? 'text-marix-teal' : 'text-gray-400'}`}>
             <i className="ph ph-house text-xl"></i><span className="text-[10px] font-bold">Home</span>
           </button>
-          <button onClick={() => onNavigateToExplore('All', 'All Categories')} className="flex flex-col items-center gap-0.5 py-1 text-gray-400 focus:outline-none">
+          <button onClick={() => onNavigateToExplore('All', 'All Categories')} className="flex flex-col items-center gap-0.5 py-1 text-gray-400 focus:outline-none cursor-pointer">
             <i className="ph ph-squares-four text-xl"></i><span className="text-[10px] font-bold">Browse</span>
           </button>
-          <button onClick={() => setShowCreateModal(!showCreateModal)} className="w-11 h-11 rounded-full bg-marix-brown text-white flex items-center justify-center shadow-md active:scale-90 transition-transform duration-300 -translate-y-2.5 border-4 border-marix-cream focus:outline-none z-50">
+          <button onClick={() => setShowCreateModal(!showCreateModal)} className="w-11 h-11 rounded-full bg-marix-brown text-white flex items-center justify-center shadow-md active:scale-90 transition-transform duration-300 -translate-y-2.5 border-4 border-marix-cream focus:outline-none cursor-pointer z-50">
             <div className={`transition-transform duration-300 transform flex items-center justify-center ${showCreateModal ? 'rotate-90 scale-110' : 'rotate-0'}`}><i className="ph font-black text-xl ph-plus"></i></div>
           </button>
-          <button onClick={() => handleTabChange('uploads')} className={`flex flex-col items-center gap-0.5 py-1 focus:outline-none ${activeTab === 'uploads' ? 'text-marix-teal' : 'text-gray-400'}`}>
+          <button onClick={() => handleTabChange('uploads')} className={`flex flex-col items-center gap-0.5 py-1 focus:outline-none cursor-pointer ${activeTab === 'uploads' ? 'text-marix-teal' : 'text-gray-400'}`}>
             <i className="ph ph-tray text-xl"></i><span className="text-[10px] font-bold">Uploads</span>
           </button>
-          <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center gap-0.5 py-1 focus:outline-none ${activeTab === 'profile' ? 'text-marix-teal' : 'text-gray-400'}`}>
+          <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center gap-0.5 py-1 focus:outline-none cursor-pointer ${activeTab === 'profile' ? 'text-marix-teal' : 'text-gray-400'}`}>
             <i className="ph ph-user text-xl"></i><span className="text-[10px] font-bold">Profile</span>
           </button>
         </div>
@@ -582,7 +656,6 @@ function VolcanoCard({ product, targetImageSrc, savedProducts = [], onToggleSave
   return (
     <div 
       onClick={() => {
-        // 🚀 RESTORED CLICK INTERCEPT FOR PRODUCT OVERVIEW
         if (!isManageMode && onProductClick) onProductClick(product);
       }} 
       className={`w-full relative transition-transform duration-200 flex flex-col gap-y-1 select-none group bg-white p-1.5 rounded-[18px] border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] text-left ${isManageMode ? 'cursor-default' : 'cursor-pointer hover:scale-[1.01] active:scale-[0.99]'}`}

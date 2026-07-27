@@ -29,18 +29,28 @@ function formatTimeAgo(timeInput) {
   return past.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-export default function Notifications({ onBack, notifications = [], firstLetter = 'M' }) {
+export default function Notifications({ 
+  onBack, 
+  notifications = [], 
+  firstLetter = 'M',
+  onDeleteNotification,
+  onMarkAllAsRead,
+  onMarkAsRead
+}) {
+  const hasUnread = notifications.some(n => n.read === false || n.isRead === false);
+
   return (
     <div 
-      className="w-full max-w-[95%] mx-auto flex flex-col text-[#111111] px-2 lg:px-4 pt-6 text-left"
+      className="w-full max-w-[95%] mx-auto flex flex-col text-[#111111] px-2 lg:px-4 pt-6 text-left animate-fadeIn"
       style={{ fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}
     >
       
       {/* HEADER ROW */}
       <div className="w-full flex items-center justify-between pb-4 mb-2 select-none relative">
         <button 
+          type="button"
           onClick={onBack}
-          className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-white border border-gray-200/60 flex items-center justify-center text-gray-600 hover:text-marix-teal transition-all focus:outline-none cursor-pointer shadow-sm"
+          className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-white border border-gray-200/60 flex items-center justify-center text-gray-600 hover:text-marix-teal transition-all focus:outline-none cursor-pointer shadow-sm z-10"
         >
           <i className="ph ph-arrow-left text-xl font-bold"></i>
         </button>
@@ -67,21 +77,41 @@ export default function Notifications({ onBack, notifications = [], firstLetter 
               </p>
             </div>
           ) : (
-            /* DYNAMIC NOTIFICATIONS LIST (SHRINKS NATURALLY) */
+            /* DYNAMIC NOTIFICATIONS LIST */
             <div className="flex flex-col gap-3 w-full">
-              <div className="flex items-center justify-between px-1 select-none pb-1 border-b border-gray-100">
-                <span className="text-[10px] font-black tracking-wider uppercase text-gray-400">Activity Log</span>
-                <span className="text-[10px] font-bold text-gray-400">{notifications.length} Total</span>
+              <div className="flex items-center justify-between px-1 select-none pb-2 border-b border-gray-100">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black tracking-wider uppercase text-gray-400">Activity Log</span>
+                  <span className="text-[10px] font-bold text-marix-teal bg-marix-teal/10 px-2 py-0.5 rounded-full">
+                    {notifications.length} Total
+                  </span>
+                </div>
+
+                {hasUnread && onMarkAllAsRead && (
+                  <button 
+                    type="button"
+                    onClick={onMarkAllAsRead}
+                    className="text-[10px] font-bold text-marix-teal hover:underline focus:outline-none cursor-pointer"
+                  >
+                    Mark all as read
+                  </button>
+                )}
               </div>
               
               {notifications.map(notif => {
                 const formattedTime = formatTimeAgo(notif.createdAt || notif.time);
-                
+                const isUnread = notif.read === false || notif.isRead === false;
+
                 return (
                   <div 
                     key={notif.id} 
-                    className={`w-full p-3 sm:p-4 rounded-xl flex items-start gap-3 relative transition-all border ${
-                      notif.read === false 
+                    onClick={() => {
+                      if (isUnread && onMarkAsRead) {
+                        onMarkAsRead(notif.id);
+                      }
+                    }}
+                    className={`w-full p-3 sm:p-4 rounded-xl flex items-start gap-3 relative transition-all border cursor-pointer group ${
+                      isUnread 
                         ? 'bg-marix-teal/5 border-marix-teal/20' 
                         : 'bg-marix-cream/30 border-gray-100 hover:border-gray-200/80'
                     }`}
@@ -92,7 +122,7 @@ export default function Notifications({ onBack, notifications = [], firstLetter 
 
                     <div className="flex flex-col gap-1 flex-1 min-w-0 text-left">
                       <div className="flex items-baseline justify-between gap-2 w-full">
-                        <h4 className="text-xs font-black text-[#111111] truncate max-w-[180px] sm:max-w-xs">
+                        <h4 className="text-xs font-black text-[#111111] truncate max-w-[170px] sm:max-w-xs">
                           {notif.title}
                         </h4>
                         
@@ -100,13 +130,29 @@ export default function Notifications({ onBack, notifications = [], firstLetter 
                           <span className="text-[9px] font-bold text-gray-400 whitespace-nowrap">
                             {formattedTime}
                           </span>
-                          {notif.read === false && (
+                          
+                          {isUnread && (
                             <span className="w-2 h-2 rounded-full bg-marix-teal shrink-0 animate-pulse"></span>
                           )}
+
+                          {/* DELETE NOTIFICATION ICON */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (onDeleteNotification) {
+                                onDeleteNotification(notif.id);
+                              }
+                            }}
+                            className="ml-1 text-gray-300 hover:text-red-500 focus:outline-none cursor-pointer transition-colors p-0.5"
+                            title="Delete notification"
+                          >
+                            <i className="ph ph-x text-xs font-bold"></i>
+                          </button>
                         </div>
                       </div>
 
-                      <p className="text-[11px] sm:text-xs text-gray-600 leading-relaxed font-medium break-words">
+                      <p className="text-[11px] sm:text-xs text-gray-600 leading-relaxed font-medium break-words pr-2">
                         {notif.message}
                       </p>
                     </div>
