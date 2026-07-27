@@ -6,7 +6,7 @@ require('dotenv').config();
 const connectDB = require('./Utilities/db');
 
 // Import Controllers / Middleware
-const protect = require('./Middlewears/auth');
+const { protect, requireVerified } = require('./Middlewears/auth');
 const authRoutes = require('./Router/routeAuths');
 
 const app = express();

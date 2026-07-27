@@ -2,12 +2,11 @@ const User = require('../Models/User');
 const crypto = require('crypto');
 const generateToken = require('../Utilities/Utility');
 const sendEmail = require('../Utilities/sendEmail');
-const bcrypt = require('bcryptjs');
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
 exports.registerUser = async (req, res) => {
-  const { username, email, password } = req.body;
+  const { fullName, email, password } = req.body;
 
   try {
     // Check if user already exists
@@ -17,11 +16,12 @@ exports.registerUser = async (req, res) => {
     }
 
     // Create user (password gets hashed automatically via mongoose hook)
-    const user = await User.create({ username, email, password });
+    const user = await User.create({ fullName, email, password });
 
     res.status(201).json({
       message: 'User registered successfully',
-      token: generateToken(user._id)
+      token: generateToken(user._id),
+      user
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -41,14 +41,15 @@ exports.loginUser = async (req, res) => {
     }
 
     // Check if password matches
-    const isMatch = await user.matchPassword(password);
+    const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
     res.status(200).json({
       message: 'Login successful',
-      token: generateToken(user._id)
+      token: generateToken(user._id),
+      user
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -61,23 +62,18 @@ exports.forgotPassword = async (req, res) => {
     const user = await User.findOne({ email: req.body.email });
     if (!user) return res.status(404).json({ message: 'No user found with that email.' });
 
-    // Generate a random unhashed token
-    const resetToken = crypto.randomBytes(32).toString('hex');
-
-    // Hash token and save to database with a 10-minute expiry window
-    user.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-    user.passwordResetExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
-
+    // Generate a reset token and persist the hashed token on the model
+    const resetToken = user.generatePasswordResetToken();
     await user.save({ validateBeforeSave: false });
 
     // Send it via email
     const resetUrl = `${req.protocol}://${req.get('host')}/api/auth/reset-password/${resetToken}`;
-    const message = `Forgot your password? Submit a PATCH request with your new password to:\n\n${resetUrl}\n\nIf you didn't forget your password, please ignore this email!`;
+    const message = `Forgot your password? Submit a PATCH or POST request with your new password to:\n\n${resetUrl}\n\nIf you didn't forget your password, please ignore this email!`;
 
     try {
       await sendEmail({
         email: user.email,
-        subject: 'Your password reset token (valid for 10 min)',
+        subject: 'Your password reset token (valid for 1 hour)',
         message,
       });
       res.status(200).json({ message: 'Token sent to email!' });
@@ -121,10 +117,24 @@ exports.resetPassword = async (req, res) => {
 
     await user.save();
 
-    // 5. Send back a success response (or automatically sign them in with a JWT)
+    // 5. Send back a success response
     res.status(200).json({ message: 'Password reset successful! You can now log in.' });
 
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get Current User Profile (Session Restoration for App.jsx)
+// @route   GET /api/auth/me
+exports.getMe = async (req, res) => {
+  try {
+    // req.user is populated by the 'protect' middleware
+    res.status(200).json({
+      success: true,
+      user: req.user
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error fetching profile' });
   }
 };
