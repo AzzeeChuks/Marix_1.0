@@ -149,7 +149,7 @@ export default function Privacy({
         <div className="block md:hidden pb-4 text-left">
           <button 
             onClick={onNavigateHome} 
-            className="w-10 h-10 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center text-gray-600 focus:outline-none active:scale-95 transition-transform cursor-pointer"
+            className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center text-gray-600 hover:text-marix-teal hover:border-marix-teal transition-all focus:outline-none cursor-pointer"
           >
             <i className="ph ph-arrow-left text-base font-bold"></i>
           </button>

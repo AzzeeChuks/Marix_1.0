@@ -48,7 +48,7 @@ export default function Profile({
 
   const [showPasswordMasks, setShowPasswordMasks] = useState({ current: false, next: false, confirm: false });
   
-  // DRAFT STATE FOR PROFILE EDITING
+  // DRAFT STATE FOR PROFILE EDITING (Raw string saved)
   const [profileForm, setProfileForm] = useState({ 
     firstName: userName, 
     campus: userLocation || campusLocation || '' 
@@ -135,18 +135,19 @@ export default function Profile({
     return true;
   }).slice(0, 12);
 
+  // 🚀 FIX #1: Keep exact user raw input on profile edit
   const handleSaveProfileChanges = (e) => {
     e.preventDefault();
-    const cleanCampus = extractPrimaryCampus(profileForm.campus);
+    const rawCampus = profileForm.campus ? profileForm.campus.trim() : '';
 
     if (profileForm.firstName.trim() && onUpdateUserName) {
       onUpdateUserName(profileForm.firstName.trim());
     }
     if (setUserLocation) {
-      setUserLocation(cleanCampus);
+      setUserLocation(rawCampus);
     }
     if (setShopDetails && shopDetails) {
-      setShopDetails({ ...shopDetails, campus: cleanCampus });
+      setShopDetails({ ...shopDetails, campus: rawCampus });
     }
     setCurrentView('main');
   };
@@ -161,22 +162,23 @@ export default function Profile({
     setShowEditShopModal(true);
   };
 
+  // 🚀 FIX #2: Keep exact user raw input on shop edit
   const handleSaveShopDetails = (e) => {
     e.preventDefault();
-    const formattedCampus = extractPrimaryCampus(shopEditDraft.campus);
+    const rawCampus = shopEditDraft.campus ? shopEditDraft.campus.trim() : '';
     const formattedPhone = formatWhatsAppNumber(shopEditDraft.whatsappNumber);
 
     const updated = {
       ...shopEditDraft,
-      campus: formattedCampus,
+      campus: rawCampus,
       whatsappNumber: formattedPhone
     };
 
     if (setShopDetails) {
       setShopDetails(updated);
     }
-    if (setUserLocation && formattedCampus) {
-      setUserLocation(formattedCampus);
+    if (setUserLocation && rawCampus) {
+      setUserLocation(rawCampus);
     }
 
     setShowEditShopModal(false);
@@ -424,7 +426,7 @@ export default function Profile({
                   const finalTargetSrc = primaryImgObj ? primaryImgObj.imageUrl : (fallbackImg ? fallbackImg.imageUrl : (product.image || "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=500&q=80"));
 
                   const isLiked = savedProducts && Array.isArray(savedProducts) ? savedProducts.some(p => p.id === product.id) : false;
-                  const cleanCampusName = product.campus ? product.campus.split(',')[0].trim() : (userLocation || 'Campus');
+                  const cleanCampusName = extractPrimaryCampus(product.campus || userLocation || 'Campus');
 
                   return (
                     <div 

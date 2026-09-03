@@ -7,13 +7,23 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
-  
+
   const [formData, setFormData] = useState({
     firstName: '',
     email: '',
     password: '',
     confirmPassword: ''
   });
+
+  // 🚀 ISOLATED BODY SCROLL LOCK ONLY WHILE REGISTER/AUTH FORM IS MOUNTED
+  useEffect(() => {
+    const originalOverflow = window.getComputedStyle(document.body).overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = originalOverflow || 'auto';
+    };
+  }, []);
 
   useEffect(() => {
     setAuthMode(initialMode);
@@ -62,7 +72,7 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
 
     setTimeout(() => {
       setIsLoading(false);
-      
+
       if (authMode === 'signup') {
         const cleanFirstName = formData.firstName.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
         const randomDigits = Math.floor(1000 + Math.random() * 9000);
@@ -71,31 +81,32 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
         setSuccessMessage('Signed in successfully!');
       }
 
+      // 🚀 EXTENDED TOAST TIMEOUT (2.5 seconds so user can comfortably read their username)
       setTimeout(() => {
-      setSuccessMessage('');
-      if (onSuccessLogin) {
-        const resolvedName = authMode === 'signup' 
-          ? formData.firstName.trim() 
-          : formData.email.split('@')[0];
-        
-        // 🚀 FIXED: Explicitly pass boolean flag as 3rd parameter!
-        const isSignupFlag = authMode === 'signup';
-        onSuccessLogin(resolvedName, formData.email.trim(), isSignupFlag); 
-      }
-    }, 500);
+        setSuccessMessage('');
+        if (onSuccessLogin) {
+          const resolvedName = authMode === 'signup' 
+            ? formData.firstName.trim() 
+            : formData.email.split('@')[0];
 
-    }, 500); 
+          const isSignupFlag = authMode === 'signup';
+          onSuccessLogin(resolvedName, formData.email.trim(), isSignupFlag); 
+        }
+      }, 1500);
+
+    }, 2000); 
   };
 
   return (
+    /* 🚀 FIXED INSET VIEWPORT WRAPPER - PREVENTS SAFARI BACKGROUND PULL-UP */
     <div 
-      className="w-full min-h-screen bg-marix-cream text-[#111111] px-4 py-6 md:p-6 flex flex-col justify-between select-none"
+      className="fixed inset-0 z-[150] overflow-y-auto overflow-x-hidden bg-marix-cream text-[#111111] px-4 py-6 md:p-6 flex flex-col justify-between select-none"
       style={{ fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}
     >
-      
+
       {/* Toast Overlays */}
       {successMessage && (
-        <div className="fixed top-4 left-4 right-4 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 z-50 max-w-sm bg-marix-teal text-white px-4 py-3 rounded-xl shadow-xl font-medium text-xs md:text-sm flex items-start gap-2.5 break-words animate-fadeIn">
+        <div className="fixed top-4 left-4 right-4 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 z-[200] max-w-sm bg-marix-teal text-white px-4 py-3 rounded-xl shadow-xl font-medium text-xs md:text-sm flex items-start gap-2.5 break-words animate-fadeIn">
           <span className="shrink-0">✨</span>
           <div className="flex-1 min-w-0">
             {successMessage}
@@ -105,7 +116,7 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
 
       {/* Outer Layout Matrix wrapper */}
       <div className="w-full flex flex-col flex-1">
-        
+
         {/* Brand Header */}
         <header className="w-full max-w-6xl mx-auto flex justify-between items-center py-2 shrink-0 select-none mb-6">
           <div className="flex items-center cursor-pointer" onClick={onCancel}>
@@ -134,10 +145,10 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
             <i className="ph ph-arrow-left text-lg font-bold"></i>
           </button>
         </div>
-        
+
         {/* Central Card Forms Module */}
         <div className="w-full flex flex-col items-center justify-center flex-1 my-auto pb-12">
-          
+
           <div className="text-center mb-6 max-w-[420px]">
             <h2 className="text-2xl md:text-3xl font-black tracking-tight text-[#111111] mb-2 transition-all duration-150">
               {authMode === 'signup' ? 'Create your account' : 'Welcome back'}
@@ -151,7 +162,7 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
 
           {/* Content Card Wrapper */}
           <div className="w-full max-w-[420px] bg-white rounded-xl shadow-xl border border-gray-200/90 px-6 py-8 md:px-8 relative transition-all duration-300 overflow-hidden">
-            
+
             {/* Loader overlay */}
             {isLoading && (
               <div className="absolute inset-0 bg-white/70 backdrop-blur-[1px] rounded-xl z-40 flex items-center justify-center transition-all">
@@ -208,7 +219,7 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="flex flex-col gap-3.5 select-text transition-all duration-300">
-              
+
               {authMode === 'signup' && (
                 <div className="flex flex-col gap-1 text-left animate-fadeIn">
                   <label className="text-[11px] font-bold tracking-wider uppercase text-[#111111]/70">First Name</label>
@@ -249,7 +260,7 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
                     required
                     className="w-full bg-white border border-gray-200 rounded-xl pl-4 pr-11 py-2.5 text-base md:text-sm focus:outline-none focus:border-marix-teal transition-colors text-[#111111]"
                   />
-                  
+
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
@@ -258,7 +269,7 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
                     <i className={`ph ${showPassword ? 'ph-eye-slash' : 'ph-eye'} text-base`}></i>
                   </button>
                 </div>
-                
+
                 {authMode === 'login' && (
                   <div className="text-right mt-1 select-none">
                     <span className="text-[11px] font-bold text-marix-teal underline cursor-pointer hover:opacity-80 transition-opacity">
@@ -266,7 +277,7 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
                     </span>
                   </div>
                 )}
-                
+
                 {formData.password && (
                   <div className="flex gap-3 mt-1 px-0.5 select-none animate-fadeIn">
                     <span className={`text-[10px] flex items-center gap-1 ${hasMinLength ? 'text-marix-teal font-medium' : 'text-red-500 opacity-80'}`}>

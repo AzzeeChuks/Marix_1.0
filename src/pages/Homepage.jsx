@@ -313,7 +313,7 @@ export default function Homepage({
                 </section>
 
                 {/* Featured Products */}
-                <section className="w-full max-w-[95%] mx-auto px-2 lg:px-4 py-6 text-left">
+                <section className="w-full max-w-[95%] mx-auto px-2 lg:px-4 pt-10 text-left">
                   <div className="flex justify-between items-center w-full mb-5 select-none">
                     <h3 className="text-base md:text-lg font-black tracking-tight text-[#111111]">Featured Products</h3>
                     <span className="text-[11px] font-bold text-gray-400 cursor-pointer md:hover:text-marix-teal transition-colors" onClick={() => onNavigateToExplore('Featured', 'All Categories')}>See All</span>
@@ -334,7 +334,7 @@ export default function Homepage({
                 </section>
 
                 {/* Categories */}
-                <section className="w-full max-w-[95%] mx-auto px-2 lg:px-4 py-6 text-left">
+                <section className="w-full max-w-[95%] mx-auto px-2 lg:px-4 pt-10 text-left">
                   <h3 className="text-base md:text-lg font-black tracking-tight text-[#111111] mb-4 select-none">Explore by Category</h3>
                   <div className="grid grid-cols-4 min-[1025px]:grid-cols-8 gap-2.5 md:gap-3 select-none">
                     {categories.map((cat, i) => (
@@ -353,7 +353,7 @@ export default function Homepage({
                 </section>
 
                 {/* Trending Feed */}
-                <section className="w-full max-w-[95%] mx-auto px-2 lg:px-4 py-6 text-left pb-24 md:pb-12">
+                <section className="w-full max-w-[95%] mx-auto px-2 lg:px-4 pt-12 text-left pb-24 md:pb-12">
                   <div className="flex justify-between items-center w-full mb-5 select-none">
                     <h3 className="text-base md:text-lg font-black tracking-tight text-[#111111]">Trending This Week 🔥</h3>
                     <span className="text-[11px] font-bold text-gray-400 cursor-pointer md:hover:text-marix-teal transition-colors" onClick={() => onNavigateToExplore('Trending', 'All Categories')}>See All</span>
@@ -393,33 +393,33 @@ export default function Homepage({
                 </div>
 
                 {/* 🚀 FIXED SAVED ITEMS SEARCH INPUT */}
-{savedProducts.length > 0 && (
-  <div className="w-full mb-6 relative z-10">
-    <div className="relative flex items-center w-full max-w-md">
-      <i className="ph ph-magnifying-glass absolute left-3.5 text-gray-400 text-base font-bold"></i>
-      <input 
-        type="text"
-        placeholder="Search saved items..."
-        value={savedSearchQuery}
-        onChange={(e) => setSavedSearchQuery(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') e.target.blur();
-        }}
-        className="w-full bg-white border border-gray-200/80 rounded-xl pl-10 pr-9 py-2.5 text-base md:text-sm text-[#111111] font-medium placeholder:text-gray-400/60 outline-none focus:outline-none focus:ring-0 focus:border-marix-teal shadow-none transition-colors"
-        style={{ outline: 'none', WebkitTapHighlightColor: 'transparent' }}
-      />
-      {savedSearchQuery && (
-        <button 
-          type="button" 
-          onClick={() => setSavedSearchQuery('')}
-          className="absolute right-3 text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer p-0.5"
-        >
-          <i className="ph ph-x-circle text-base font-bold"></i>
-        </button>
-      )}
-    </div>
-  </div>
-)}
+                {savedProducts.length > 0 && (
+                  <div className="w-full mb-6 relative z-10">
+                    <div className="relative flex items-center w-full max-w-md">
+                      <i className="ph ph-magnifying-glass absolute left-3.5 text-gray-400 text-base font-bold"></i>
+                      <input 
+                        type="text"
+                        placeholder="Search saved items..."
+                        value={savedSearchQuery}
+                        onChange={(e) => setSavedSearchQuery(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') e.target.blur();
+                        }}
+                        className="w-full bg-white border border-gray-200/80 rounded-xl pl-10 pr-9 py-2.5 text-base md:text-sm text-[#111111] font-medium placeholder:text-gray-400/60 outline-none focus:outline-none focus:ring-0 focus:border-marix-teal shadow-none transition-colors"
+                        style={{ outline: 'none', WebkitTapHighlightColor: 'transparent' }}
+                      />
+                      {savedSearchQuery && (
+                        <button 
+                          type="button" 
+                          onClick={() => setSavedSearchQuery('')}
+                          className="absolute right-3 text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer p-0.5"
+                        >
+                          <i className="ph ph-x-circle text-base font-bold"></i>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {savedProducts.length === 0 ? (
                   <div className="w-full py-20 flex flex-col items-center justify-center text-center select-none z-10">
@@ -542,9 +542,8 @@ export default function Homepage({
                 <div className="col-span-1 md:col-span-2 flex flex-col gap-3">
                   <h4 className="text-xs font-black tracking-wider text-gray-400 uppercase">Explore</h4>
                   <ul className="flex flex-col gap-2 text-xs font-bold text-gray-600">
-                    <li className="hover:text-marix-teal cursor-pointer transition-colors" onClick={() => handleTabChange('browse')}>Products</li>
-                    <li className="hover:text-marix-teal cursor-pointer transition-colors" onClick={() => onNavigateToExplore('All', 'All Categories')}>Categories</li>
-                    <li className="hover:text-marix-teal cursor-pointer transition-colors" onClick={() => onNavigateToView('about')}>How it Works</li>
+                    <li className="hover:text-marix-teal cursor-pointer transition-colors" onClick={() => onNavigateToExplore('All', 'All Categories')}>Products</li>
+                    <li className="hover:text-marix-teal cursor-pointer transition-colors" onClick={() => onNavigateToView('how-it-works')}>How it Works</li>
                   </ul>
                 </div>
                 <div className="col-span-1 md:col-span-2 flex flex-col gap-3">
