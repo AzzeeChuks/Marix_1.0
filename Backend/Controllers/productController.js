@@ -221,3 +221,45 @@ exports.getSearchRecommendations = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Increment product page views
+// @route   POST /api/products/:id/track-view
+// @access  Public
+exports.trackView = async (req, res) => {
+  try {
+    const product = await Product.findByIdAndUpdate(
+      req.params.id,
+      { $inc: { viewCount: 1 } },
+      { new: true }
+    );
+
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    res.status(200).json({ success: true, viewCount: product.viewCount });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Increment WhatsApp click count
+// @route   POST /api/products/:id/track-whatsapp
+// @access  Public
+exports.trackWhatsapp = async (req, res) => {
+  try {
+    const product = await Product.findByIdAndUpdate(
+      req.params.id,
+      { $inc: { whatsappClicks: 1 } },
+      { new: true }
+    );
+
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    res.status(200).json({ success: true, whatsappClicks: product.whatsappClicks });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

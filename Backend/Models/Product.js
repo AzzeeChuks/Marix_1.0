@@ -14,38 +14,37 @@ const productSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    trim: true,
   },
   campus: {
     type: String,
     required: true,
-    trim: true,
   },
   price: {
     type: Number,
     required: true,
-    min: 0,
   },
-  images: [{
-    type: String, // Array of image URL strings
-  }],
   description: {
     type: String,
-    trim: true,
+    default: '',
   },
+  images: [{
+    type: String,
+  }],
   status: {
     type: String,
-    enum: ['active', 'sold', 'hidden'],
+    enum: ['active', 'sold'],
     default: 'active',
   },
   viewCount: {
     type: Number,
     default: 0,
   },
+  whatsappClicks: {
+    type: Number,
+    default: 0,
+  },
 }, { timestamps: true });
 
-// Create indexes for fast filtering and regex text search in MongoDB
-productSchema.index({ productTitle: 'text', description: 'text' });
-productSchema.index({ campus: 1, category: 1, price: 1, status: 1 });
+productSchema.index({ productTitle: 'text' });
 
 module.exports = mongoose.model('Product', productSchema);

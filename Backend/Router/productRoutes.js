@@ -6,6 +6,8 @@ const {
   getCampusRecommendations,
   getSearchRecommendations,
   createProduct,
+  trackView,
+  trackWhatsapp,
 } = require('../Controllers/productController');
 const { protect } = require('../Middlewears/auth');
 
@@ -17,6 +19,10 @@ router.get('/search-recommendations', getSearchRecommendations);
 
 // Create product (Protected)
 router.post('/', protect, createProduct);
+
+// Interaction Trackers
+router.post('/:id/track-view', trackView);
+router.post('/:id/track-whatsapp', trackWhatsapp);
 
 // Dynamic ID routes
 router.get('/:id', getProductById);

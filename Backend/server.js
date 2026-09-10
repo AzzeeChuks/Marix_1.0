@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
 const notificationRoutes = require('./Router/notificationRoute');
@@ -21,12 +22,32 @@ connectDB();
 app.use(cors());
 app.use(express.json());
 
+// Express middleware for serving uploaded static files
+app.use('/uploads', express.static(path.join(__dirname, '/uploads')));
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/upload', require('./Router/uploadRoutes'));
+app.use('/api/support', require('./Router/supportRoute'));
+app.use('/api/seller', require('./Router/sellerRoute'));
 app.get('/api/auth/dashboard', protect, (req, res) => {
   res.json({ message: `Access granted! User ID: ${req.user}` });
+});
+
+// Temporary programmatic index drop
+mongoose.connection.once('open', async () => {
+  try {
+    await mongoose.connection.collection('users').dropIndex('username_1');
+    console.log('Successfully dropped stale username_1 index!');
+  } catch (err) {
+    if (err.code === 27 || err.message.includes('index not found')) {
+      console.log('username_1 index already removed or does not exist.');
+    } else {
+      console.error('Error dropping index:', err.message);
+    }
+  }
 });
 
 // 2. Serve Static Frontend Build Assets
