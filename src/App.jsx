@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import AuthForm from './components/RegisterForm';
 import CreateListing from './components/CreateListing';
 import Homepage from './pages/Homepage';
-import ProductListings from './pages/ProductListings'; 
-import ProductOverview from './components/ProductOverview'; 
+import ProductListings from './pages/ProductListings';
+import ProductOverview from './components/ProductOverview';
+import HowItWorks from './pages/HowItWorks';
 import About from './pages/About';
 import Faq from './pages/Faq';
 import Privacy from './pages/Privacy';
@@ -31,20 +32,20 @@ export const formatWhatsAppNumber = (rawPhone = '') => {
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [currentView, setCurrentView] = useState('home'); 
+  const [currentView, setCurrentView] = useState('home');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  
+
   const [products, setProducts] = useState(initialProducts || []);
   const [userUploads, setUserUploads] = useState([]);
-  
+
   const [activeTab, setActiveTab] = useState('browse');
-  const [previousTab, setPreviousTab] = useState('browse'); 
-  
+  const [previousTab, setPreviousTab] = useState('browse');
+
   // CENTRAL DYNAMIC USER STATES
   const [userName, setUserName] = useState('Student');
   const [userEmail, setUserEmail] = useState('');
   const [userLocation, setUserLocation] = useState('');
-  
+
   const [activeSearchTerm, setActiveSearchTerm] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
 
@@ -78,18 +79,18 @@ export default function App() {
   // SEPARATED ONBOARDING OVERLAY STATES
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [showOnboardingOverlay, setShowOnboardingOverlay] = useState(false);
-  
+
   const [showBecomeSellerModal, setShowBecomeSellerModal] = useState(false);
   const [sellerRegistrationSource, setSellerRegistrationSource] = useState('dock');
 
   // Dynamic Notification List
   const [notifications, setNotifications] = useState([
-    { 
-      id: 1, 
-      title: "Welcome to Marix! 🎉", 
-      message: "Thanks for joining Marix. Discover amazing products on your campus and start connecting!", 
-      createdAt: new Date().toISOString(), 
-      read: false 
+    {
+      id: 1,
+      title: "Welcome to Marix! 🎉",
+      message: "Thanks for joining Marix. Discover amazing products on your campus and start connecting!",
+      createdAt: new Date().toISOString(),
+      read: false
     }
   ]);
 
@@ -109,7 +110,7 @@ export default function App() {
       setCurrentView('home');
       setActiveTab('browse');
     };
-    
+
     window.addEventListener('marix_force_home_reset', handleGlobalHomeReset);
     return () => window.removeEventListener('marix_force_home_reset', handleGlobalHomeReset);
   }, []);
@@ -152,7 +153,7 @@ export default function App() {
   const handleLoginSuccess = (firstName, email, isNewSignup = false) => {
     const finalName = firstName || 'Student';
     const finalEmail = email || 'student@campus.edu';
-    
+
     const isSignup = isNewSignup || currentView === 'auth-signup';
 
     setUserName(finalName);
@@ -161,7 +162,7 @@ export default function App() {
     setCurrentView('home');
     setActiveTab('browse');
     setActiveSearchTerm('');
-    
+
     if (isSignup) {
       setShowOnboardingOverlay(false);
       setShowWelcomeModal(false);
@@ -186,7 +187,7 @@ export default function App() {
     setCurrentView('home');
     setActiveTab('browse');
     setActiveSearchTerm('');
-    setSelectedProduct(null); 
+    setSelectedProduct(null);
     setPublicSellerData(null);
     setHasCompletedSellerOnboarding(false);
     setUserLocation('');
@@ -211,8 +212,8 @@ export default function App() {
       setUserUploads(prev => [augmentedCard, ...prev]);
     }
 
-    setShowCreateModal(false); 
-    setEditingProductData(null); 
+    setShowCreateModal(false);
+    setEditingProductData(null);
     setSelectedProduct(null);
     setCurrentView('home');
     setActiveTab('uploads');
@@ -264,13 +265,13 @@ export default function App() {
     setExploreViewMode(viewMode);
     setExploreCategoryFilter(category);
     setCurrentView('explore');
-    setSelectedProduct(null); 
+    setSelectedProduct(null);
   };
 
   const handleHomepageTabBackClick = (targetTab) => {
     setSelectedProduct(null);
     setPublicSellerData(null);
-    
+
     if (targetTab === 'logo-home-reset') {
       setCurrentView('home');
       setActiveTab('browse');
@@ -285,9 +286,9 @@ export default function App() {
     const campus = product.campus || userLocation || 'Campus';
     const whatsappNumber = product.whatsappNumber || '';
     const joinDate = product.joinDate || "July 2026";
-    
-    const sellerListings = products.filter(p => 
-      (p.shopName && p.shopName.toLowerCase() === shopName.toLowerCase()) || 
+
+    const sellerListings = products.filter(p =>
+      (p.shopName && p.shopName.toLowerCase() === shopName.toLowerCase()) ||
       (p.whatsappNumber && whatsappNumber && p.whatsappNumber === whatsappNumber)
     );
 
@@ -313,15 +314,15 @@ export default function App() {
 
   return (
     <div className="fixed inset-0 bg-marix-cream text-[#111111] flex flex-col overflow-hidden selection:bg-marix-teal/20">
-      
+
       <div className="w-full flex-1 flex flex-col relative overflow-hidden">
-        
+
         {/* PRODUCT OVERVIEW CONTAINER */}
         <div className={`absolute inset-0 overflow-y-auto bg-marix-cream z-[99] shadow-2xl ${
           selectedProduct ? '' : 'hidden'
         }`}>
           {selectedProduct && (
-            <ProductOverview 
+            <ProductOverview
               product={selectedProduct} allProducts={products} isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} userName={userName}
               showCreateModal={showCreateModal} setShowCreateModal={handleCreateActionIntercept} onNavigateToLogin={() => setCurrentView('auth-login')} onNavigateToSignup={() => setCurrentView('auth-signup')}
               activeSearchTerm={activeSearchTerm} setActiveSearchTerm={setActiveSearchTerm} onNavigateToExplore={routeToExploreWithContext}
@@ -330,23 +331,23 @@ export default function App() {
               onNavigateToProfileTab={() => { setCurrentView('home'); setActiveTab('profile'); setSelectedProduct(null); }}
               onNavigateToNotificationsTab={() => { setCurrentView('home'); setActiveTab('notifications'); setSelectedProduct(null); }}
               onNavigateHome={() => { setSelectedProduct(null); setCurrentView('home'); setActiveTab('browse'); }}
-              savedProducts={savedProducts} onToggleSave={handleToggleSaveProduct} onBack={() => setSelectedProduct(null)} 
+              savedProducts={savedProducts} onToggleSave={handleToggleSaveProduct} onBack={() => setSelectedProduct(null)}
               onSelectRecommendedProduct={handleProductCardClick} activeTab={activeTab}
               onViewSellerShop={handleOpenPublicSellerProfile}
               userLocation={userLocation}
             />
           )}
         </div>
-        
+
         {/* CORE HOMEPAGE VIEW */}
         <div className={`absolute inset-0 flex flex-col ${currentView === 'home' ? '' : 'hidden'}`}>
-          <Homepage 
-            products={products} isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} userName={userName} userEmail={userEmail} onSignOut={handleSignOut} 
+          <Homepage
+            products={products} isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} userName={userName} userEmail={userEmail} onSignOut={handleSignOut}
             showCreateModal={showCreateModal} setShowCreateModal={handleCreateActionIntercept} activeTab={activeTab} setActiveTab={handleHomepageTabBackClick}  
             userUploads={userUploads} savedProducts={savedProducts} setSavedProducts={handleToggleSaveProduct}     
-            onNavigateToLogin={() => setCurrentView('auth-login')} onNavigateToSignup={() => setCurrentView('auth-signup')} 
+            onNavigateToLogin={() => setCurrentView('auth-login')} onNavigateToSignup={() => setCurrentView('auth-signup')}
             onNavigateToExplore={routeToExploreWithContext} activeSearchTerm={activeSearchTerm} setActiveSearchTerm={setActiveSearchTerm}
-            onNavigateToView={(view) => setCurrentView(view)} onProductCardClick={handleProductCardClick} 
+            onNavigateToView={(view) => setCurrentView(view)} onProductCardClick={handleProductCardClick}
             notifications={notifications} onClearNotificationsCount={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))}
             historyFallbackTab={previousTab} editingProductData={editingProductData} setEditingProductData={handleEditInitActionIntercept}
             onProductDeleted={handleProductDelete}
@@ -358,40 +359,49 @@ export default function App() {
             activeUploadsCount={userUploads.length}
           />
         </div>
-        
+
         {/* EXPLORE PAGE VIEW */}
         <div className={`absolute inset-0 overflow-y-auto flex flex-col animate-fadeIn ${currentView === 'explore' ? '' : 'hidden'}`}>
-          <ProductListings 
+          <ProductListings
             allProducts={products} isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} userName={userName}
             onNavigateHome={() => { setCurrentView('home'); setActiveTab('browse'); }} savedProducts={savedProducts} setSavedProducts={handleToggleSaveProduct}
             showCreateModal={showCreateModal} setShowCreateModal={handleCreateActionIntercept} onNavigateToLogin={() => setCurrentView('auth-login')} onNavigateToSignup={() => setCurrentView('auth-signup')}
             onNavigateToUploadsTab={() => { setCurrentView('home'); setActiveTab('uploads'); }} onNavigateToSavedTab={() => { setCurrentView('home'); setActiveTab('saved-mobile'); }}
             onNavigateToProfileTab={() => { setCurrentView('home'); setActiveTab('profile'); }} onNavigateToNotificationsTab={() => { setCurrentView('home'); setActiveTab('notifications'); }}
             activeSearchTerm={activeSearchTerm} setActiveSearchTerm={setActiveSearchTerm} viewMode={exploreViewMode} setViewMode={setExploreViewMode}
-            initialCategory={exploreCategoryFilter} onProductCardClick={handleProductCardClick} 
+            initialCategory={exploreCategoryFilter} onProductCardClick={handleProductCardClick}
           />
         </div>
-        
+
         {/* AUTH FORMS */}
         {(currentView === 'auth-login' || currentView === 'auth-signup') && (
           <div className="fixed inset-0 overflow-y-auto bg-marix-cream z-50">
-            <AuthForm 
-              initialMode={currentView === 'auth-login' ? 'login' : 'signup'} 
+            <AuthForm
+              initialMode={currentView === 'auth-login' ? 'login' : 'signup'}
               onSuccessLogin={(name, email, isSignupFromForm) => {
                 const isSignup = typeof isSignupFromForm === 'boolean' ? isSignupFromForm : currentView === 'auth-signup';
                 handleLoginSuccess(name, email, isSignup);
-              }} 
-              onCancel={() => setCurrentView('home')} 
+              }}
+              onCancel={() => setCurrentView('home')}
             />
           </div>
         )}
 
-        {/* STATIC PAGES CONTAINER */}
-        {['about', 'faq', 'privacy', 'terms'].map((staticView) => {
-          const Comp = staticView === 'about' ? About : staticView === 'faq' ? Faq : staticView === 'privacy' ? Privacy : Terms;
+        {/* STATIC PAGES CONTAINER (INCLUDES HOW IT WORKS) */}
+        {['about', 'faq', 'privacy', 'terms', 'how-it-works'].map((staticView) => {
+          const Comp = staticView === 'about' 
+            ? About 
+            : staticView === 'faq' 
+            ? Faq 
+            : staticView === 'privacy' 
+            ? Privacy 
+            : staticView === 'terms' 
+            ? Terms 
+            : HowItWorks;
+
           return (
             <div key={staticView} className={`absolute inset-0 overflow-y-auto bg-marix-cream z-40 text-left ${currentView === staticView ? '' : 'hidden'}`}>
-              <Comp 
+              <Comp
                 onNavigateHome={() => { setCurrentView('home'); setActiveTab('browse'); }} isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} userName={userName}
                 onNavigateToLogin={() => setCurrentView('auth-login')} onNavigateToSignup={() => setCurrentView('auth-signup')} savedCount={savedProducts.length}
                 onNavigateToSaved={() => { setCurrentView('home'); setActiveTab('saved-mobile'); }} onNavigateToUploads={() => { setCurrentView('home'); setActiveTab('uploads'); }}
@@ -408,13 +418,13 @@ export default function App() {
       {showCreateModal && (
         <div className="fixed inset-0 z-[200] bg-[#111111]/40 backdrop-blur-[4px] flex items-center justify-center p-4 select-none animate-fadeIn">
           <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto relative p-1 animate-scaleIn">
-            <CreateListing 
-              editInitialData={editingProductData} 
-              onProductCreated={handleNewProduct} 
-              onCancel={() => { 
-                setShowCreateModal(false); 
-                setEditingProductData(null); 
-              }} 
+            <CreateListing
+              editInitialData={editingProductData}
+              onProductCreated={handleNewProduct}
+              onCancel={() => {
+                setShowCreateModal(false);
+                setEditingProductData(null);
+              }}
             />
           </div>
         </div>
@@ -442,24 +452,24 @@ export default function App() {
 
             <div className="w-full text-left flex flex-col gap-1.5 mb-6">
               <label className="text-xs font-bold text-[#111111] px-0.5">Your Campus Hub</label>
-              <input 
-                type="text" 
-                placeholder="e.g., Absu, Uturu" 
-                value={onboardingTempCampus} 
-                onChange={(e) => setOnboardingTempCampus(e.target.value)} 
-                className="w-full bg-transparent border border-gray-200 rounded-xl px-4 py-3 text-base md:text-sm focus:outline-none focus:border-marix-teal text-[#111111] font-medium placeholder:text-gray-400/40" 
+              <input
+                type="text"
+                placeholder="e.g., Absu, Uturu"
+                value={onboardingTempCampus}
+                onChange={(e) => setOnboardingTempCampus(e.target.value)}
+                className="w-full bg-transparent border border-gray-200 rounded-xl px-4 py-3 text-base md:text-sm focus:outline-none focus:border-marix-teal text-[#111111] font-medium placeholder:text-gray-400/40"
               />
             </div>
 
-            <button 
-              onClick={() => { 
-                if(onboardingTempCampus.trim()) {
-                  const cleaned = extractPrimaryCampus(onboardingTempCampus);
-                  setUserLocation(cleaned);
-                  setShopDetails(p => ({...p, campus: cleaned}));
+            <button
+              onClick={() => {
+                if (onboardingTempCampus.trim()) {
+                  const rawInput = onboardingTempCampus.trim();
+                  setUserLocation(rawInput);
+                  setShopDetails(p => ({ ...p, campus: rawInput }));
                 }
-                setShowWelcomeModal(false); 
-              }} 
+                setShowWelcomeModal(false);
+              }}
               className="w-full bg-marix-brown text-white font-black text-sm py-3.5 rounded-xl shadow-md hover:opacity-95 transition-all focus:outline-none cursor-pointer"
             >
               Get Started
@@ -490,24 +500,24 @@ export default function App() {
 
             <div className="w-full text-left flex flex-col gap-1.5 mb-6">
               <label className="text-xs font-bold text-[#111111] px-0.5">Campus Location</label>
-              <input 
-                type="text" 
-                placeholder="e.g., Absu, Uturu" 
-                value={onboardingTempCampus} 
-                onChange={(e) => setOnboardingTempCampus(e.target.value)} 
-                className="w-full bg-transparent border border-gray-200 rounded-xl px-4 py-3 text-base md:text-sm focus:outline-none focus:border-marix-teal text-[#111111] font-medium placeholder:text-gray-400/40" 
+              <input
+                type="text"
+                placeholder="e.g., Absu, Uturu"
+                value={onboardingTempCampus}
+                onChange={(e) => setOnboardingTempCampus(e.target.value)}
+                className="w-full bg-transparent border border-gray-200 rounded-xl px-4 py-3 text-base md:text-sm focus:outline-none focus:border-marix-teal text-[#111111] font-medium placeholder:text-gray-400/40"
               />
             </div>
 
-            <button 
-              onClick={() => { 
-                if(onboardingTempCampus.trim()) {
-                  const cleaned = extractPrimaryCampus(onboardingTempCampus);
-                  setUserLocation(cleaned);
-                  setShopDetails(p => ({...p, campus: cleaned}));
+            <button
+              onClick={() => {
+                if (onboardingTempCampus.trim()) {
+                  const rawInput = onboardingTempCampus.trim();
+                  setUserLocation(rawInput);
+                  setShopDetails(p => ({ ...p, campus: rawInput }));
                 }
-                setShowOnboardingOverlay(false); 
-              }} 
+                setShowOnboardingOverlay(false);
+              }}
               className="w-full bg-marix-brown text-white font-black text-sm py-3.5 rounded-xl shadow-md hover:opacity-95 transition-all focus:outline-none cursor-pointer"
             >
               Continue
@@ -533,15 +543,15 @@ export default function App() {
               e.preventDefault();
               const formatted = {
                 ...sellerTempDetails,
-                campus: extractPrimaryCampus(sellerTempDetails.campus),
+                campus: sellerTempDetails.campus.trim(),
                 whatsappNumber: formatWhatsAppNumber(sellerTempDetails.whatsappNumber)
               };
               setShopDetails(formatted);
               if (formatted.campus) setUserLocation(formatted.campus);
-              
+
               setHasCompletedSellerOnboarding(true);
               setShowBecomeSellerModal(false);
-              
+
               if (sellerRegistrationSource === 'profile') {
                 window.dispatchEvent(new CustomEvent('marix_route_to_seller_profile_hub'));
               } else {
@@ -549,7 +559,7 @@ export default function App() {
               }
             }}>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-[#111111] px-0.5">Buisness Name *</label>
+                <label className="text-xs font-bold text-[#111111] px-0.5">Business Name *</label>
                 <input type="text" required placeholder="e.g., K-dot Collections" value={sellerTempDetails.shopName} onChange={(e) => setSellerTempDetails({ ...sellerTempDetails, shopName: e.target.value })} className="w-full bg-transparent border border-gray-200 rounded-xl px-3.5 py-3 text-base md:text-sm focus:outline-none focus:border-marix-teal font-medium" />
               </div>
 
@@ -578,8 +588,8 @@ export default function App() {
       {publicSellerData && (
         <div className="fixed inset-0 z-[220] bg-black/50 backdrop-blur-md flex items-center justify-center p-4 md:p-6 select-none animate-fadeIn">
           <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl max-h-[80vh] md:max-h-[85vh] overflow-y-auto relative p-5 md:p-8 animate-scaleIn flex flex-col text-left">
-            <button 
-              onClick={() => setPublicSellerData(null)} 
+            <button
+              onClick={() => setPublicSellerData(null)}
               className="absolute top-4 right-4 md:top-5 md:right-5 w-8 h-8 md:w-9 md:h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 focus:outline-none cursor-pointer z-10"
             >
               <i className="ph ph-x text-sm md:text-base font-bold"></i>
@@ -592,6 +602,7 @@ export default function App() {
               </div>
 
               <h2 className="text-lg md:text-xl font-black tracking-tight text-[#111111]">{publicSellerData.shopName}</h2>
+
               <div className="inline-flex items-center gap-1 text-[10px] bg-marix-teal/10 text-marix-teal font-black px-2.5 py-0.5 rounded-full mt-1 uppercase tracking-wider">
                 <span className="w-1.5 h-1.5 bg-marix-teal rounded-full animate-ping"></span> Active Campus Merchant
               </div>
@@ -613,8 +624,8 @@ export default function App() {
                 {publicSellerData.aboutShop}
               </p>
 
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => {
                   const cleanNum = formatWhatsAppNumber(publicSellerData.whatsappNumber);
                   const msg = encodeURIComponent(`Hello ${publicSellerData.shopName}, I found your store on Marix!`);
@@ -653,7 +664,7 @@ export default function App() {
                     const imgSrc = primaryImg ? primaryImg.imageUrl : (fallbackImg ? fallbackImg.imageUrl : (p.image || "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=500&q=80"));
 
                     return (
-                      <div 
+                      <div
                         key={p.id}
                         onClick={() => {
                           setSelectedProduct(p);
@@ -664,6 +675,7 @@ export default function App() {
                         <div className="w-full aspect-square rounded-[10px] overflow-hidden bg-marix-cream/40">
                           <img src={imgSrc} alt={p.productTitle} className="w-full h-full object-cover" />
                         </div>
+
                         <h4 className="text-xs font-semibold text-[#111111] truncate mt-1">{p.productTitle || p.name}</h4>
                         <span className="text-xs font-black text-marix-teal">{p.price || "₦0"}</span>
                       </div>
