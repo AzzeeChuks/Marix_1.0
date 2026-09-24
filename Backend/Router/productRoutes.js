@@ -6,6 +6,8 @@ const {
   getCampusRecommendations,
   getSearchRecommendations,
   createProduct,
+  updateProduct,
+  deleteProduct,
   trackView,
   trackWhatsapp,
 } = require('../Controllers/productController');
@@ -19,6 +21,10 @@ router.get('/search-recommendations', getSearchRecommendations);
 
 // Create product (Protected)
 router.post('/', protect, createProduct);
+
+// Seller-owned product updates/deletes
+router.put('/:id', protect, updateProduct);
+router.delete('/:id', protect, deleteProduct);
 
 // Interaction Trackers
 router.post('/:id/track-view', trackView);

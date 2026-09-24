@@ -3,7 +3,7 @@ const IssueReport = require('../Models/IssueReport');
 // @desc    Submit a support/issue report
 // @route   POST /api/support/report
 // @access  Private
-exports.createIssueReport = async (req, res) => {
+exports.createIssueReport = async (req, res, next) => {
   try {
     const { issueType, description, screenshotUrl } = req.body;
 
@@ -23,6 +23,6 @@ exports.createIssueReport = async (req, res) => {
       data: report,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return next(error);
   }
 };

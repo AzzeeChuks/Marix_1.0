@@ -1,55 +1,42 @@
 const Product = require('../Models/Product');
+const Order = require('../Models/Order');
 
-// @desc    Get seller analytics dashboard payload
+// @desc    Get seller dashboard analytics
 // @route   GET /api/seller/analytics
 // @access  Private (Merchant/Seller)
-exports.getSellerAnalytics = async (req, res) => {
+exports.getSellerAnalytics = async (req, res, next) => {
   try {
     const sellerId = req.user._id;
 
-    // Fetch all active listings for the seller
-    const sellerProducts = await Product.find({
-      sellerId,
-      status: 'active',
-    }).select('productTitle viewCount whatsappClicks status');
+    // Count total products listed by this seller
+    const totalProducts = await Product.countDocuments({ seller: sellerId });
 
-    const activeListingsCount = sellerProducts.length;
+    // Fetch orders containing products from this seller
+    const orders = await Order.find({ 'orderItems.seller': sellerId });
 
-    // Calculate totals
-    const totalProductViews = sellerProducts.reduce((acc, item) => acc + item.viewCount, 0);
-    const totalWhatsappClicks = sellerProducts.reduce((acc, item) => acc + item.whatsappClicks, 0);
+    const totalOrders = orders.length;
 
-    // Identify highest and lowest viewed products
-    let highestViewedProduct = null;
-    let lowestViewedProduct = null;
-
-    if (sellerProducts.length > 0) {
-      const sortedByViews = [...sellerProducts].sort((a, b) => b.viewCount - a.viewCount);
-
-      const topProduct = sortedByViews[0];
-      highestViewedProduct = {
-        id: topProduct._id,
-        title: topProduct.productTitle,
-        views: topProduct.viewCount,
-      };
-
-      const bottomProduct = sortedByViews[sortedByViews.length - 1];
-      lowestViewedProduct = {
-        id: bottomProduct._id,
-        title: bottomProduct.productTitle,
-        views: bottomProduct.viewCount,
-      };
-    }
+    // Calculate revenue for this seller's products only
+    const totalRevenue = orders.reduce((acc, order) => {
+      const sellerItems = order.orderItems.filter(
+        (item) => item.seller.toString() === sellerId.toString()
+      );
+      const sellerItemTotal = sellerItems.reduce(
+        (itemAcc, item) => itemAcc + (item.price * (item.quantity || 1)),
+        0
+      );
+      return acc + sellerItemTotal;
+    }, 0);
 
     res.status(200).json({
       success: true,
-      activeListingsCount,
-      totalProductViews,
-      totalWhatsappClicks,
-      highestViewedProduct,
-      lowestViewedProduct,
+      analytics: {
+        totalProducts,
+        totalOrders,
+        totalRevenue,
+      },
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return next(error);
   }
 };

@@ -4,6 +4,10 @@ const cors = require('cors');
 const path = require('path');
 const notificationRoutes = require('./Router/notificationRoute');
 const productRoutes = require('./Router/productRoutes');
+const savedProductRoutes = require('./Router/savedProductRoute');
+const recentSearchRoutes = require('./Router/recentSearchRoute');
+const statsRoutes = require('./Router/statsRoute');
+const productEventRoutes = require('./Router/productEventRoute');
 require('dotenv').config();
 
 // Import Database Connection
@@ -29,11 +33,22 @@ app.use('/uploads', express.static(path.join(__dirname, '/uploads')));
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/saved-products', savedProductRoutes);
+app.use('/api/searches', recentSearchRoutes);
+app.use('/api/stats', statsRoutes);
+app.use('/api/events', productEventRoutes);
 app.use('/api/upload', require('./Router/uploadRoutes'));
 app.use('/api/support', require('./Router/supportRoute'));
 app.use('/api/seller', require('./Router/sellerRoute'));
-app.get('/api/auth/dashboard', protect, (req, res) => {
-  res.json({ message: `Access granted! User ID: ${req.user}` });
+
+// Auth Dashboard Test Route
+app.get('/api/auth/dashboard', protect, (req, res, next) => {
+  res.json({ message: `Access granted! User ID: ${req.user._id}` });
+});
+
+// Session Logout Route
+app.post('/api/auth/logout', (req, res, next) => {
+  res.status(200).json({ success: true, message: 'Logged out successfully' });
 });
 
 // Temporary programmatic index drop
@@ -54,7 +69,7 @@ mongoose.connection.once('open', async () => {
 app.use(express.static(path.join(__dirname, '../dist')));
 
 // 3. SPA Fallback: Serve index.html for any unhandled routes
-app.get('*', (req, res) => {
+app.get('*', (req, res, next) => {
   res.sendFile(path.resolve(__dirname, '../dist', 'index.html'));
 });
 

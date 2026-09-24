@@ -5,7 +5,7 @@ const sendEmail = require('../Utilities/sendEmail');
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
-exports.registerUser = async (req, res) => {
+exports.registerUser = async (req, res, next) => {
   const { fullName, email, password } = req.body;
 
   try {
@@ -24,13 +24,13 @@ exports.registerUser = async (req, res) => {
       user
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
 // @desc    Login user & get token
 // @route   POST /api/auth/login
-exports.loginUser = async (req, res) => {
+exports.loginUser = async (req, res, next) => {
   const { email, password } = req.body;
 
   try {
@@ -52,12 +52,12 @@ exports.loginUser = async (req, res) => {
       user
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
 // @desc    Forgot Password - Send Reset Link
-exports.forgotPassword = async (req, res) => {
+exports.forgotPassword = async (req, res, next) => {
   try {
     const user = await User.findOne({ email: req.body.email });
     if (!user) return res.status(404).json({ message: 'No user found with that email.' });
@@ -84,12 +84,12 @@ exports.forgotPassword = async (req, res) => {
       return res.status(500).json({ message: 'There was an error sending the email. Try again later.' });
     }
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
 // @desc    Reset Password using token
-exports.resetPassword = async (req, res) => {
+exports.resetPassword = async (req, res, next) => {
   try {
     // 1. Hash the token from the URL parameters to match what is stored in the DB
     const hashedToken = crypto
@@ -121,13 +121,13 @@ exports.resetPassword = async (req, res) => {
     res.status(200).json({ message: 'Password reset successful! You can now log in.' });
 
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
 // @desc    Get Current User Profile (Session Restoration for App.jsx)
 // @route   GET /api/auth/me
-exports.getMe = async (req, res) => {
+exports.getMe = async (req, res, next) => {
   try {
     // req.user is populated by the 'protect' middleware
     res.status(200).json({
@@ -135,6 +135,6 @@ exports.getMe = async (req, res) => {
       user: req.user
     });
   } catch (error) {
-    res.status(500).json({ message: 'Server error fetching profile' });
+    return next(error);
   }
 };

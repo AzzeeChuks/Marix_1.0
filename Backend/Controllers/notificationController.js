@@ -1,30 +1,30 @@
-const Notification = require("../Models/Notification.js")
+const Notification = require('../Models/Notification');
 
-// @desc    Get user notifications sorted by newest first
+// @desc    Get logged-in user notifications
 // @route   GET /api/notifications
 // @access  Private
-exports.getUserNotifications = async (req, res) => {
+exports.getUserNotifications = async (req, res, next) => {
   try {
-    const notifications = await Notification.find({ userId: req.user._id })
+    const notifications = await Notification.find({ user: req.user._id })
       .sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
       count: notifications.length,
-      notifications,
+      data: notifications,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return next(error);
   }
 };
 
-// @desc    Mark all unread notifications as read (triggered when viewing /notifications)
+// @desc    Mark unread notifications as read
 // @route   PUT /api/notifications/mark-read
 // @access  Private
-exports.markNotificationsAsRead = async (req, res) => {
+exports.markNotificationsRead = async (req, res, next) => {
   try {
     await Notification.updateMany(
-      { userId: req.user._id, isRead: false },
+      { user: req.user._id, isRead: false },
       { $set: { isRead: true } }
     );
 
@@ -33,6 +33,6 @@ exports.markNotificationsAsRead = async (req, res) => {
       message: 'All notifications marked as read',
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return next(error);
   }
 };

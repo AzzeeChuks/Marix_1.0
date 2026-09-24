@@ -2,12 +2,13 @@ const express = require('express');
 const router = express.Router();
 const {
   getUserNotifications,
-  markNotificationsAsRead,
-} = require('../Controllers/notificationController.js');
-const { protect } = require('../Middlewears/auth.js');
+  markNotificationsRead,
+} = require('../Controllers/notificationController');
+const { protect } = require('../Middlewears/auth');
 
-// All notification routes require an authenticated session
-router.get('/', protect, getUserNotifications);
-router.put('/mark-read', protect, markNotificationsAsRead);
+router.use(protect); // All notification routes require authentication
+
+router.get('/', getUserNotifications);
+router.put('/mark-read', markNotificationsRead);
 
 module.exports = router;
