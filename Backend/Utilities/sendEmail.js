@@ -1,41 +1,23 @@
-// Required environment variables: EMAIL_USER, EMAIL_PASS, EMAIL_SERVICE.
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const sendEmail = async (options) => {
   try {
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false, // Use STARTTLS instead of port 465 SSL to avoid Render port blocks
-      family: 4,     // Force IPv4 to prevent ENETUNREACH errors on cloud containers
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 10000,
-      tls: {
-        rejectUnauthorized: false,
-      },
+    const { data, error } = await resend.emails.send({
+      from: 'Marix Store <onboarding@resend.dev>', // Default sender for testing
+      to: [options.email],
+      subject: options.subject,
+      html: options.html || `<p>${options.message}</p>`,
     });
 
-    const mailOptions = {
-      from: `Marix Store <${process.env.EMAIL_USER}>`,
-      to: options.email,
-      subject: options.subject,
-      text: options.message,
-    };
-
-    if (options.html) {
-      mailOptions.html = options.html;
+    if (error) {
+      console.error(`Email delivery failed: ${error.message}`);
+      throw new Error('Email could not be sent. Please check your mail configurations.');
     }
 
-    const info = await transporter.sendMail(mailOptions);
-    return { success: true, info };
-
+    return { success: true, data };
   } catch (error) {
-    // This stops the app from crashing and bubbles the error up to your controller
     console.error(`Email delivery failed: ${error.message}`);
     throw new Error('Email could not be sent. Please check your mail configurations.');
   }
