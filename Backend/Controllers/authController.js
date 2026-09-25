@@ -18,6 +18,24 @@ exports.registerUser = async (req, res, next) => {
     // Create user (password gets hashed automatically via mongoose hook)
     const user = await User.create({ fullName, email, password });
 
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: 'Welcome to Marix Store!',
+        message: `Welcome to Marix Store, ${user.fullName}!`,
+        html: `
+          <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #253238;">
+            <h2 style="color: #1f6f78;">Welcome to Marix Store, ${user.fullName}!</h2>
+            <p>Thank you for creating your account with us.</p>
+            <p>We are glad to have you here. You can now explore listings and connect with the Marix community.</p>
+            <p style="margin-top: 24px;">The Marix Store Team</p>
+          </div>
+        `,
+      });
+    } catch (emailErr) {
+      console.error('Welcome email failed to send:', emailErr.message);
+    }
+
     res.status(201).json({
       message: 'User registered successfully',
       token: generateToken(user._id),

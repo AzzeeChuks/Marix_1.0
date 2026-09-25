@@ -1,22 +1,29 @@
+// Required environment variables: EMAIL_USER, EMAIL_PASS, EMAIL_SERVICE.
 const nodemailer = require('nodemailer');
 
 const sendEmail = async (options) => {
   try {
     const transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST,
-      port: process.env.EMAIL_PORT,
+      service: process.env.EMAIL_SERVICE || 'gmail',
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000,
     });
 
     const mailOptions = {
-      from: `Marix Support <noreply@marix.com>`,
+      from: `Marix Store <${process.env.EMAIL_USER}>`,
       to: options.email,
       subject: options.subject,
       text: options.message,
     };
+
+    if (options.html) {
+      mailOptions.html = options.html;
+    }
 
     const info = await transporter.sendMail(mailOptions);
     return { success: true, info };

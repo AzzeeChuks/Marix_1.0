@@ -5,12 +5,14 @@ const ProductEvent = require('../Models/ProductEvent');
 // @access  Public
 exports.logProductEvent = async (req, res, next) => {
   try {
-    const { productId, eventType, ipAddress } = req.body;
+    const { productId, eventType, ipAddress: bodyIpAddress } = req.body;
+    const forwardedIpAddress = req.headers['x-forwarded-for']
+      ?.split(',')[0]
+      .trim();
+    const ipAddress = bodyIpAddress || forwardedIpAddress || req.ip || req.socket.remoteAddress;
 
-    if (!productId || !eventType || !ipAddress) {
-      return res.status(400).json({
-        message: 'productId, eventType, and ipAddress are required',
-      });
+    if (!productId || !eventType) {
+      return res.status(400).json({ message: 'productId and eventType are required' });
     }
 
     const event = await ProductEvent.create({
