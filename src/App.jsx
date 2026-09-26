@@ -32,6 +32,7 @@ export const formatWhatsAppNumber = (rawPhone = '') => {
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [currentView, setCurrentView] = useState('home');
   const [showCreateModal, setShowCreateModal] = useState(false);
 
@@ -105,12 +106,15 @@ export default function App() {
   }, [savedProducts]);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
     let isCurrent = true;
 
     const restoreSession = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setIsCheckingAuth(false);
+        return;
+      }
+
       try {
         const response = await fetch(`${apiBaseUrl}/api/auth/me`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -143,6 +147,10 @@ export default function App() {
           setUserEmail('');
           setUserLocation('');
           setIsLoggedIn(false);
+        }
+      } finally {
+        if (isCurrent) {
+          setIsCheckingAuth(false);
         }
       }
     };
@@ -365,6 +373,14 @@ export default function App() {
       setPublicSellerData(null);
     }
   };
+
+  if (isCheckingAuth) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-marix-cream" role="status" aria-label="Checking your session">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-marix-teal/20 border-t-marix-teal" />
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-marix-cream text-[#111111] flex flex-col overflow-hidden selection:bg-marix-teal/20">
