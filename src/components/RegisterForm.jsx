@@ -92,7 +92,7 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
       }
 
       if (data.token) {
-        localStorage.setItem('marix_token', data.token);
+        localStorage.setItem('token', data.token);
       }
 
       const resolvedName = data.user?.fullName || formData.firstName.trim() || formData.email.split('@')[0];

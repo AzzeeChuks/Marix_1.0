@@ -45,6 +45,7 @@ export default function App() {
   const [userName, setUserName] = useState('Student');
   const [userEmail, setUserEmail] = useState('');
   const [userLocation, setUserLocation] = useState('');
+  const apiBaseUrl = (import.meta.env.VITE_API_URL || 'https://marix-store-api.onrender.com').replace(/\/$/, '');
 
   const [activeSearchTerm, setActiveSearchTerm] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -102,6 +103,56 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('marix_saved_items', JSON.stringify(savedProducts));
   }, [savedProducts]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    let isCurrent = true;
+
+    const restoreSession = async () => {
+      try {
+        const response = await fetch(`${apiBaseUrl}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+          credentials: 'include',
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok || !data.user) {
+          throw new Error(data.message || 'Session is no longer valid');
+        }
+
+        if (!isCurrent) return;
+
+        const user = data.user;
+        setUserName(user.fullName || 'Student');
+        setUserEmail(user.email || '');
+        setUserLocation(user.campusLocation || '');
+        setShopDetails({
+          shopName: user.shopName || '',
+          campus: user.campusLocation || '',
+          whatsappNumber: user.whatsappNumber || '',
+          aboutShop: user.aboutShop || '',
+        });
+        setHasCompletedSellerOnboarding(Boolean(user.isSeller));
+        setIsLoggedIn(true);
+      } catch (error) {
+        localStorage.removeItem('token');
+        if (isCurrent) {
+          setUserName('Student');
+          setUserEmail('');
+          setUserLocation('');
+          setIsLoggedIn(false);
+        }
+      }
+    };
+
+    restoreSession();
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [apiBaseUrl]);
 
   useEffect(() => {
     const handleGlobalHomeReset = () => {
@@ -181,7 +232,8 @@ export default function App() {
   };
 
   const handleSignOut = () => {
-    setUserName('');
+    localStorage.removeItem('token');
+    setUserName('Student');
     setUserEmail('');
     setIsLoggedIn(false);
     setCurrentView('home');
@@ -192,6 +244,8 @@ export default function App() {
     setHasCompletedSellerOnboarding(false);
     setUserLocation('');
     setShopDetails({ shopName: '', campus: '', whatsappNumber: '', aboutShop: '' });
+    setShowWelcomeModal(false);
+    setShowOnboardingOverlay(false);
   };
 
   const handleNewProduct = (newCard) => {
