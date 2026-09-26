@@ -7,6 +7,7 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -66,31 +67,58 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setErrorMessage('');
 
-    setTimeout(() => {
-      setIsLoading(false);
+    if (authMode === 'signup') {
+      try {
+        const apiBaseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '');
+        const response = await fetch(`${apiBaseUrl}/api/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fullName: formData.firstName.trim(),
+            email: formData.email.trim(),
+            password: formData.password,
+          }),
+        });
+        const data = await response.json().catch(() => ({}));
 
-      if (authMode === 'signup') {
+        if (!response.ok) {
+          throw new Error(data.message || 'Unable to create your account. Please try again.');
+        }
+
         const cleanFirstName = formData.firstName.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
         const randomDigits = Math.floor(1000 + Math.random() * 9000);
         setSuccessMessage(`Account created! Welcome, @${cleanFirstName}_${randomDigits}`);
-      } else {
-        setSuccessMessage('Signed in successfully!');
+
+        setTimeout(() => {
+          setSuccessMessage('');
+          if (onSuccessLogin) {
+            onSuccessLogin(formData.firstName.trim(), formData.email.trim(), true);
+          }
+        }, 1500);
+      } catch (error) {
+        setErrorMessage(error.message || 'Unable to create your account. Please try again.');
+      } finally {
+        setIsLoading(false);
       }
+
+      return;
+    }
+
+    setTimeout(() => {
+      setIsLoading(false);
+      setSuccessMessage('Signed in successfully!');
 
       // 🚀 EXTENDED TOAST TIMEOUT (2.5 seconds so user can comfortably read their username)
       setTimeout(() => {
         setSuccessMessage('');
         if (onSuccessLogin) {
-          const resolvedName = authMode === 'signup' 
-            ? formData.firstName.trim() 
-            : formData.email.split('@')[0];
-
-          const isSignupFlag = authMode === 'signup';
-          onSuccessLogin(resolvedName, formData.email.trim(), isSignupFlag); 
+          const resolvedName = formData.email.split('@')[0];
+          onSuccessLogin(resolvedName, formData.email.trim(), false);
         }
       }, 1500);
 
@@ -105,11 +133,11 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
     >
 
       {/* Toast Overlays */}
-      {successMessage && (
-        <div className="fixed top-4 left-4 right-4 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 z-[200] max-w-sm bg-marix-teal text-white px-4 py-3 rounded-xl shadow-xl font-medium text-xs md:text-sm flex items-start gap-2.5 break-words animate-fadeIn">
+      {(successMessage || errorMessage) && (
+        <div className={`fixed top-4 left-4 right-4 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 z-[200] max-w-sm ${errorMessage ? 'bg-red-700' : 'bg-marix-teal'} text-white px-4 py-3 rounded-xl shadow-xl font-medium text-xs md:text-sm flex items-start gap-2.5 break-words animate-fadeIn`}>
           <span className="shrink-0">✨</span>
           <div className="flex-1 min-w-0">
-            {successMessage}
+            {errorMessage || successMessage}
           </div>
         </div>
       )}
