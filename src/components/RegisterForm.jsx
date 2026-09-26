@@ -71,58 +71,52 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
     e.preventDefault();
     setIsLoading(true);
     setErrorMessage('');
+    const isSignup = authMode === 'signup';
+    const apiBaseUrl = (import.meta.env.VITE_API_URL || 'https://marix-store-api.onrender.com').replace(/\/$/, '');
 
-    if (authMode === 'signup') {
-      try {
-        const apiBaseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '');
-        const response = await fetch(`${apiBaseUrl}/api/auth/register`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            fullName: formData.firstName.trim(),
-            email: formData.email.trim(),
-            password: formData.password,
-          }),
-        });
-        const data = await response.json().catch(() => ({}));
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/auth/${isSignup ? 'register' : 'login'}`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...(isSignup && { fullName: formData.firstName.trim() }),
+          email: formData.email.trim(),
+          password: formData.password,
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
 
-        if (!response.ok) {
-          throw new Error(data.message || 'Unable to create your account. Please try again.');
-        }
+      if (!response.ok) {
+        throw new Error(data.message || `Unable to ${isSignup ? 'create your account' : 'sign in'}. Please try again.`);
+      }
 
+      if (data.token) {
+        localStorage.setItem('marix_token', data.token);
+      }
+
+      const resolvedName = data.user?.fullName || formData.firstName.trim() || formData.email.split('@')[0];
+      const resolvedEmail = data.user?.email || formData.email.trim();
+
+      if (isSignup) {
         const cleanFirstName = formData.firstName.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
         const randomDigits = Math.floor(1000 + Math.random() * 9000);
         setSuccessMessage(`Account created! Welcome, @${cleanFirstName}_${randomDigits}`);
-
-        setTimeout(() => {
-          setSuccessMessage('');
-          if (onSuccessLogin) {
-            onSuccessLogin(formData.firstName.trim(), formData.email.trim(), true);
-          }
-        }, 1500);
-      } catch (error) {
-        setErrorMessage(error.message || 'Unable to create your account. Please try again.');
-      } finally {
-        setIsLoading(false);
+      } else {
+        setSuccessMessage('Signed in successfully!');
       }
 
-      return;
-    }
-
-    setTimeout(() => {
-      setIsLoading(false);
-      setSuccessMessage('Signed in successfully!');
-
-      // 🚀 EXTENDED TOAST TIMEOUT (2.5 seconds so user can comfortably read their username)
       setTimeout(() => {
         setSuccessMessage('');
         if (onSuccessLogin) {
-          const resolvedName = formData.email.split('@')[0];
-          onSuccessLogin(resolvedName, formData.email.trim(), false);
+          onSuccessLogin(resolvedName, resolvedEmail, isSignup);
         }
       }, 1500);
-
-    }, 2000); 
+    } catch (error) {
+      setErrorMessage(error.message || `Unable to ${isSignup ? 'create your account' : 'sign in'}. Please try again.`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

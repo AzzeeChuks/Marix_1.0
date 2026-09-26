@@ -1,9 +1,8 @@
 const { Resend } = require('resend');
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 const sendEmail = async (options) => {
   try {
+    const resend = new Resend(process.env.RESEND_API_KEY);
     const { data, error } = await resend.emails.send({
       from: 'Marix Store <onboarding@resend.dev>', // Default sender for testing
       to: [options.email],
