@@ -23,23 +23,38 @@ const app = express();
 // Connect to MongoDB
 connectDB();
 
-// Global Middlewares
+// Define all allowed frontend origins
 const allowedOrigins = [
+  'http://localhost:3000',
   'http://localhost:5173',
-  'http://localhost:5174',
-  process.env.CLIENT_URL,
+  'http://localhost:3001',
+  'https://marix-1-0.vercel.app', // Explicit Vercel frontend URL
+  process.env.FRONTEND_URL,
 ].filter(Boolean);
 
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    return callback(new Error('Origin is not allowed by CORS'));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-}));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like Postman or mobile apps)
+      if (!origin) return callback(null, true);
+
+      // Strip trailing slashes to prevent string mismatches
+      const cleanOrigin = origin.replace(/\/$/, '');
+      const isAllowed = allowedOrigins.some(
+        (url) => url.replace(/\/$/, '') === cleanOrigin
+      );
+
+      if (isAllowed) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`Origin ${origin} is not allowed by CORS`));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  })
+);
 
 app.use(express.json());
 
