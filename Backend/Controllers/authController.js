@@ -1,4 +1,5 @@
 const User = require('../Models/User');
+const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const generateToken = require('../Utilities/Utility');
 const sendEmail = require('../Utilities/sendEmail');
@@ -10,7 +11,7 @@ exports.registerUser = async (req, res, next) => {
 
   try {
     // Check if user already exists
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findOne({ email }).select('_id').lean();
     if (userExists) {
       return res.status(400).json({ message: 'User already exists' });
     }
@@ -53,21 +54,34 @@ exports.loginUser = async (req, res, next) => {
 
   try {
     // Find user by email
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select('+password').lean();
     if (!user) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
     // Check if password matches
-    const isMatch = await user.comparePassword(password);
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
+    const safeUser = {
+      _id: user._id,
+      fullName: user.fullName,
+      email: user.email,
+      isVerified: user.isVerified,
+      campusLocation: user.campusLocation,
+      isSeller: user.isSeller,
+      shopName: user.shopName,
+      whatsappNumber: user.whatsappNumber,
+      aboutShop: user.aboutShop,
+      createdAt: user.createdAt,
+    };
+
     res.status(200).json({
       message: 'Login successful',
       token: generateToken(user._id),
-      user
+      user: safeUser,
     });
   } catch (error) {
     return next(error);
@@ -147,10 +161,22 @@ exports.resetPassword = async (req, res, next) => {
 // @route   GET /api/auth/me
 exports.getMe = async (req, res, next) => {
   try {
-    // req.user is populated by the 'protect' middleware
+    const { _id, fullName, email, isVerified, campusLocation, isSeller, shopName, whatsappNumber, aboutShop, createdAt } = req.user;
+
     res.status(200).json({
       success: true,
-      user: req.user
+      user: {
+        _id,
+        fullName,
+        email,
+        isVerified,
+        campusLocation,
+        isSeller,
+        shopName,
+        whatsappNumber,
+        aboutShop,
+        createdAt,
+      },
     });
   } catch (error) {
     return next(error);

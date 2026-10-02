@@ -16,8 +16,10 @@ const protect = async (req, res, next) => {
       // Extract user ID safely from either id or _id
       const userId = decoded.id || decoded._id;
 
-      // Attach the full user record (excluding sensitive fields) to req.user
-      req.user = await User.findById(userId).select('-password');
+      // Load only the identity and profile fields used by protected handlers.
+      req.user = await User.findById(userId)
+        .select('_id fullName email isVerified campusLocation isSeller shopName whatsappNumber aboutShop createdAt')
+        .lean();
 
       if (!req.user) {
         return res.status(401).json({ message: 'User not found' });
