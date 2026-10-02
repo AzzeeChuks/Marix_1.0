@@ -30,6 +30,25 @@ export const formatWhatsAppNumber = (rawPhone = '') => {
   return digits || '2348012345678';
 };
 
+const normalizeCatalogProduct = (product) => {
+  const seller = product.sellerId && typeof product.sellerId === 'object'
+    ? product.sellerId
+    : {};
+
+  return {
+    ...product,
+    id: product._id || product.id,
+    price: `₦${Number(product.price || 0).toLocaleString()}`,
+    shopName: product.shopName || seller.shopName || seller.fullName || 'Campus Seller',
+    whatsappNumber: product.whatsappNumber || seller.whatsappNumber || '',
+    images: (product.images || []).map((image, index) => (
+      typeof image === 'string'
+        ? { id: `${product._id || product.id}-image-${index}`, imageUrl: image, isCover: index === 0 }
+        : image
+    )),
+  };
+};
+
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -104,6 +123,33 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('marix_saved_items', JSON.stringify(savedProducts));
   }, [savedProducts]);
+
+  useEffect(() => {
+    let isCurrent = true;
+
+    const loadCatalog = async () => {
+      try {
+        const response = await fetch(`${apiBaseUrl}/api/products?limit=100`);
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(data.message || 'Could not load products');
+        }
+
+        if (isCurrent && Array.isArray(data.products)) {
+          setProducts(data.products.map(normalizeCatalogProduct));
+        }
+      } catch (error) {
+        console.error('Catalog request failed; using local products:', error.message);
+      }
+    };
+
+    loadCatalog();
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [apiBaseUrl]);
 
   useEffect(() => {
     let isCurrent = true;
