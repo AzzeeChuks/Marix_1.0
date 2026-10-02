@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import imageCompression from 'browser-image-compression';
 
-export default function CreateListing({ onProductCreated, onCancel, editInitialData = null }) {
+export default function CreateListing({ onProductCreated, onCancel, editInitialData = null, campus = '' }) {
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [activeStep, setActiveStep] = useState(1);
   const [isCompressing, setIsCompressing] = useState(false);
 
@@ -397,26 +398,53 @@ export default function CreateListing({ onProductCreated, onCancel, editInitialD
     }));
   };
 
-  const handlePublish = (e) => {
+  const handlePublish = async (e) => {
     e.preventDefault();
     if (!isFormComplete || isCompressing) return;
 
     setIsLoading(true);
+    setErrorMessage('');
 
-    setTimeout(() => {
-      setIsLoading(false);
-      setSuccess(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Please sign in again before publishing a listing.');
+      }
 
-      const fallbackPlaceholderUrl = "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800&q=80";
+      const apiBaseUrl = (import.meta.env.VITE_API_URL || 'https://marix-store-api.onrender.com').replace(/\/$/, '');
+      const uploadedImageUrls = await Promise.all(uploadedImages.map(async (image) => {
+        if (!image.fileBlob) return image.imageUrl;
+
+        const imageForm = new FormData();
+        imageForm.append('image', image.fileBlob, image.fileName || 'product-image.webp');
+
+        const uploadResponse = await fetch(`${apiBaseUrl}/api/upload`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { Authorization: `Bearer ${token}` },
+          body: imageForm,
+        });
+        const uploadData = await uploadResponse.json().catch(() => ({}));
+
+        if (!uploadResponse.ok || !uploadData.imageUrl) {
+          throw new Error(uploadData.message || 'A product image could not be uploaded.');
+        }
+
+        return new URL(uploadData.imageUrl, `${apiBaseUrl}/`).toString();
+      }));
+
+      const fallbackPlaceholderUrl = 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800&q=80';
       const coverImageObj = uploadedImages.find(img => img.isCover) || uploadedImages[0];
       const coverUrl = coverImageObj ? coverImageObj.imageUrl : fallbackPlaceholderUrl;
 
       const compatibleColorVariants = variantsList.map(variantOption => {
-        const variantImages = uploadedImages.filter(img => img.variantName === variantOption.name);
+        const variantImages = uploadedImages
+          .map((img, index) => ({ ...img, uploadedUrl: uploadedImageUrls[index] }))
+          .filter(img => img.variantName === variantOption.name);
         const hasCoverImage = variantImages.find(img => img.isCover);
-        const selectedImgUrl = hasCoverImage 
-          ? hasCoverImage.imageUrl 
-          : (variantImages[0]?.imageUrl || coverUrl);
+        const selectedImgUrl = hasCoverImage
+          ? hasCoverImage.uploadedUrl
+          : (variantImages[0]?.uploadedUrl || uploadedImageUrls[0] || coverUrl);
 
         return {
           colorName: variantOption.name || 'Standard Variant',
@@ -449,36 +477,56 @@ export default function CreateListing({ onProductCreated, onCancel, editInitialD
         }
       }
 
-      const basePriceString = calculatedPrice 
-        ? `₦${Number(calculatedPrice).toLocaleString()}` 
-        : (variantsList[0]?.customPrice ? `₦${Number(variantsList[0].customPrice).toLocaleString()}` : 'Contact Seller');
+      const numericPrice = calculatedPrice
+        ? Number(calculatedPrice)
+        : Number(variantsList[0]?.customPrice || 0);
 
-      const finalProductObj = {
-        id: editInitialData ? editInitialData.id : crypto.randomUUID(),
+      const requestBody = {
         productTitle: basicInfo.productTitle.trim(),
-        price: basePriceString,
+        price: numericPrice,
         category: basicInfo.category,
+        campus: campus || editInitialData?.campus || '',
         description: basicInfo.productDescription.trim(),
-        condition: basicInfo.category === 'Food & Snacks' ? 'Freshly Made' : (productCondition || 'Unspecified'),
-        availableSizes: globalSpecs.length > 0 ? globalSpecs : ['Standard Spec'],
-        images: uploadedImages.map(img => ({
-          id: img.id,
-          imageUrl: img.imageUrl,
-          variantName: img.variantName,
-          isCover: img.isCover
-        })),
-        variants: variantsList.map(v => v.name),
-        colorVariants: compatibleColorVariants,
-        isOptionPricing: isOptionPricingCategory,
-        shopName: editInitialData ? editInitialData.shopName : '',
-        campus: editInitialData ? editInitialData.campus : '',
-        whatsappNumber: editInitialData ? editInitialData.whatsappNumber : ''
+        images: uploadedImageUrls,
       };
 
-      if (onProductCreated) {
-        onProductCreated(finalProductObj);
+      if (!requestBody.campus) {
+        throw new Error('Select your campus before publishing a listing.');
       }
 
+      const productEndpoint = editInitialData
+        ? `${apiBaseUrl}/api/products/${editInitialData.id}`
+        : `${apiBaseUrl}/api/products`;
+      const response = await fetch(productEndpoint, {
+        method: editInitialData ? 'PUT' : 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !data.product) {
+        throw new Error(data.message || 'Unable to publish this listing. Please try again.');
+      }
+
+      const finalProductObj = {
+        ...data.product,
+        id: data.product._id,
+        price: `₦${Number(data.product.price).toLocaleString()}`,
+        images: uploadedImageUrls.map((imageUrl, index) => ({
+          id: `${data.product._id}-image-${index}`,
+          imageUrl,
+          variantName: uploadedImages[index]?.variantName || '',
+          isCover: uploadedImages[index]?.isCover || index === 0,
+        })),
+        colorVariants: compatibleColorVariants,
+      };
+
+      await onProductCreated?.(finalProductObj);
+      setSuccess(true);
       setBasicInfo({ productTitle: '', category: '', price: '', productDescription: '' });
       setProductCondition('');
       setVariantsList([{ name: '', overridePrice: false, customPrice: '', enabledSpecs: ['M'], optionPrices: {} }]);
@@ -486,7 +534,11 @@ export default function CreateListing({ onProductCreated, onCancel, editInitialD
       setActiveStep(1);
 
       setTimeout(() => setSuccess(false), 1000);
-    }, 1200);
+    } catch (error) {
+      setErrorMessage(error.message || 'Unable to publish this listing. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const inputStyles = "w-full border border-gray-200 rounded-xl px-3 py-2 text-base md:text-sm focus:outline-none focus:border-marix-teal text-[#111111] font-medium transition-colors placeholder:text-gray-400/70";
@@ -507,10 +559,16 @@ export default function CreateListing({ onProductCreated, onCancel, editInitialD
         </div>
       )}
 
+      {errorMessage && (
+        <div role="alert" className="mb-4 w-full bg-red-50 border border-red-200 text-red-700 px-3 py-2.5 rounded-xl text-xs font-semibold">
+          {errorMessage}
+        </div>
+      )}
+
       <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-4 select-none">
         <button type="button" onClick={onCancel} className="w-7 h-7 rounded-full bg-gray-50 flex items-center justify-center text-gray-500 focus:outline-none cursor-pointer"><i className="ph ph-x text-sm"></i></button>
         <h2 className="text-sm font-bold uppercase tracking-wide text-gray-400">{editInitialData ? "Edit Listing" : "New Listing Details"}</h2>
-        <button type="button" onClick={handlePublish} disabled={!isFormComplete || isCompressing} className={`px-4 py-1.5 rounded-full text-xs font-bold tracking-tight focus:outline-none cursor-pointer transition-all ${isFormComplete && !isCompressing ? 'bg-marix-brown text-white hover:opacity-95' : 'bg-marix-brown/10 text-[#111111]/30 cursor-not-allowed'}`}>{editInitialData ? "Save" : "Publish"}</button>
+        <button type="button" onClick={handlePublish} disabled={!isFormComplete || isCompressing || isLoading} className={`px-4 py-1.5 rounded-full text-xs font-bold tracking-tight focus:outline-none cursor-pointer transition-all ${isFormComplete && !isCompressing && !isLoading ? 'bg-marix-brown text-white hover:opacity-95' : 'bg-marix-brown/10 text-[#111111]/30 cursor-not-allowed'}`}>{editInitialData ? "Save" : "Publish"}</button>
       </div>
 
       <div className="flex items-center justify-center gap-3 text-xs font-bold text-gray-400 mb-5 select-none">

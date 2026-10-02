@@ -536,6 +536,7 @@ export default function App() {
           <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto relative p-1 animate-scaleIn">
             <CreateListing
               editInitialData={editingProductData}
+              campus={userLocation || shopDetails.campus}
               onProductCreated={handleNewProduct}
               onCancel={() => {
                 setShowCreateModal(false);
