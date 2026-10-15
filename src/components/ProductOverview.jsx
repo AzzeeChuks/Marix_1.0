@@ -70,6 +70,7 @@ export default function ProductOverview({
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [selectedSize, setSelectedSize] = useState(null);
   const [isDescExpanded, setIsDescExpanded] = useState(false);
+  const [apiRecommendations, setApiRecommendations] = useState(null);
 
   useEffect(() => {
     const scrollContainer = wrapperRef.current?.parentElement;
@@ -173,10 +174,26 @@ export default function ProductOverview({
     const message = `Hello, I saw your listing for "${product.productTitle}" (${displayedPrice}) on Marix.${variantDetail}${sizeDetail}\n\nIs this item still available?`;
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/${cleanNumber}?text=${encodedMessage}`, '_blank');
+
+    const productId = product._id || product.id;
+    if (typeof productId === 'string' && /^[a-f\d]{24}$/i.test(productId)) {
+      const apiBaseUrl = (import.meta.env.VITE_API_URL || 'https://marix-store-api.onrender.com').replace(/\/$/, '');
+      fetch(`${apiBaseUrl}/api/products/${productId}/track-whatsapp`, { method: 'POST' })
+        .catch((error) => {
+          console.error('Could not track WhatsApp click:', error.message);
+        });
+      fetch(`${apiBaseUrl}/api/events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId, eventType: 'whatsapp_click' }),
+      }).catch((error) => {
+        console.error('Could not log WhatsApp event:', error.message);
+      });
+    }
   };
 
   // 🚀 FUZZY CAMPUS MATCHING RECOMMENDATIONS ENGINE
-  const recommendations = useMemo(() => {
+  const localRecommendations = useMemo(() => {
     const shuffleArray = (arr) => {
       const copy = [...arr];
       for (let i = copy.length - 1; i > 0; i--) {
@@ -208,6 +225,62 @@ export default function ProductOverview({
     }
     return combined;
   }, [product, allProducts]);
+
+  useEffect(() => {
+    const productId = product._id || product.id;
+    if (typeof productId !== 'string' || !/^[a-f\d]{24}$/i.test(productId)) {
+      setApiRecommendations(null);
+      return;
+    }
+
+    const controller = new AbortController();
+    const apiBaseUrl = (import.meta.env.VITE_API_URL || 'https://marix-store-api.onrender.com').replace(/\/$/, '');
+
+    const loadRecommendations = async () => {
+      try {
+        const response = await fetch(`${apiBaseUrl}/api/products/${productId}/recommendations`, {
+          signal: controller.signal,
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok || !Array.isArray(data.recommendations)) {
+          throw new Error(data.message || 'Could not load campus recommendations');
+        }
+
+        const normalizedRecommendations = data.recommendations.map((recommendation) => {
+          const existingProduct = allProducts.find(
+            (item) => String(item._id || item.id) === String(recommendation._id)
+          ) || {};
+
+          return {
+            ...existingProduct,
+            ...recommendation,
+            id: recommendation._id || recommendation.id,
+            price: `₦${Number(recommendation.price || existingProduct.price || 0).toLocaleString()}`,
+            shopName: recommendation.shopName || existingProduct.shopName || 'Campus Seller',
+            whatsappNumber: recommendation.whatsappNumber || existingProduct.whatsappNumber || '',
+            images: (recommendation.images || []).map((image, index) => (
+              typeof image === 'string'
+                ? { id: `${recommendation._id}-image-${index}`, imageUrl: image, isCover: index === 0 }
+                : image
+            )),
+          };
+        });
+
+        setApiRecommendations(normalizedRecommendations);
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error('Campus recommendations request failed:', error.message);
+          setApiRecommendations(null);
+        }
+      }
+    };
+
+    loadRecommendations();
+    return () => controller.abort();
+  }, [product._id, product.id, allProducts]);
+
+  const recommendations = apiRecommendations ?? localRecommendations;
 
   const isLiked = savedProducts.some(p => p.id === product.id);
   const cleanCampusName = extractPrimaryCampus(product.campus).toUpperCase();

@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import AuthForm from './components/RegisterForm';
-import CreateListing from './components/CreateListing';
+import React, { Suspense, lazy, useState, useEffect } from 'react';
 import Homepage from './pages/Homepage';
-import ProductListings from './pages/ProductListings';
-import ProductOverview from './components/ProductOverview';
-import HowItWorks from './pages/HowItWorks';
-import About from './pages/About';
-import Faq from './pages/Faq';
-import Privacy from './pages/Privacy';
-import Terms from './pages/Terms';
 import { initialProducts } from './data/products';
+
+const AuthForm = lazy(() => import('./components/RegisterForm'));
+const CreateListing = lazy(() => import('./components/CreateListing'));
+const ProductListings = lazy(() => import('./pages/ProductListings'));
+const ProductOverview = lazy(() => import('./components/ProductOverview'));
+const About = lazy(() => import('./pages/About'));
+const Faq = lazy(() => import('./pages/Faq'));
+const HowItWorks = lazy(() => import('./pages/HowItWorks'));
+const Privacy = lazy(() => import('./pages/Privacy'));
+const Terms = lazy(() => import('./pages/Terms'));
 
 // 🚀 HELPER 1: SMART CAMPUS EXTRACTOR (Extracts primary term like "Absu" or "Abuja")
 export const extractPrimaryCampus = (rawLocation = '') => {
@@ -56,6 +57,7 @@ export default function App() {
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   const [products, setProducts] = useState(initialProducts || []);
+  const [platformStats, setPlatformStats] = useState(null);
   const [userUploads, setUserUploads] = useState([]);
 
   const [activeTab, setActiveTab] = useState('browse');
@@ -104,16 +106,10 @@ export default function App() {
   const [showBecomeSellerModal, setShowBecomeSellerModal] = useState(false);
   const [sellerRegistrationSource, setSellerRegistrationSource] = useState('dock');
 
-  // Dynamic Notification List
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      title: "Welcome to Marix! 🎉",
-      message: "Thanks for joining Marix. Discover amazing products on your campus and start connecting!",
-      createdAt: new Date().toISOString(),
-      read: false
-    }
-  ]);
+  const [notifications, setNotifications] = useState([]);
+  const [isMarkingNotificationsRead, setIsMarkingNotificationsRead] = useState(false);
+  const [notificationActionError, setNotificationActionError] = useState('');
+  const [savedActionError, setSavedActionError] = useState('');
 
   const [savedProducts, setSavedProducts] = useState(() => {
     const saved = localStorage.getItem('marix_saved_items');
@@ -123,6 +119,40 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('marix_saved_items', JSON.stringify(savedProducts));
   }, [savedProducts]);
+
+  useEffect(() => {
+    if (!isLoggedIn) return undefined;
+
+    const token = localStorage.getItem('token');
+    if (!token) return undefined;
+
+    const controller = new AbortController();
+    const loadSavedProducts = async () => {
+      try {
+        const response = await fetch(`${apiBaseUrl}/api/saved-products`, {
+          headers: { Authorization: `Bearer ${token}` },
+          credentials: 'include',
+          signal: controller.signal,
+        });
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok || !Array.isArray(result.data)) {
+          throw new Error(result.message || 'Could not load saved products');
+        }
+
+        setSavedProducts(result.data
+          .filter((savedItem) => savedItem.product)
+          .map((savedItem) => normalizeCatalogProduct(savedItem.product)));
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error('Saved products request failed:', error.message);
+        }
+      }
+    };
+
+    loadSavedProducts();
+    return () => controller.abort();
+  }, [apiBaseUrl, isLoggedIn]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -150,6 +180,106 @@ export default function App() {
       isCurrent = false;
     };
   }, [apiBaseUrl]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const loadPlatformStats = async () => {
+      try {
+        const response = await fetch(`${apiBaseUrl}/api/stats/summary`, {
+          signal: controller.signal,
+        });
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok || !result.stats) {
+          throw new Error(result.message || 'Could not load platform stats');
+        }
+
+        setPlatformStats(result.stats);
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error('Platform stats request failed:', error.message);
+        }
+      }
+    };
+
+    loadPlatformStats();
+    return () => controller.abort();
+  }, [apiBaseUrl]);
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setNotifications([]);
+      return undefined;
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) return undefined;
+
+    const controller = new AbortController();
+
+    const loadNotifications = async () => {
+      try {
+        const response = await fetch(`${apiBaseUrl}/api/notifications`, {
+          headers: { Authorization: `Bearer ${token}` },
+          credentials: 'include',
+          signal: controller.signal,
+        });
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok || !Array.isArray(result.data)) {
+          throw new Error(result.message || 'Could not load notifications');
+        }
+
+        setNotifications(result.data.map((notification) => ({
+          ...notification,
+          id: notification._id || notification.id,
+          read: notification.isRead,
+        })));
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error('Notifications request failed:', error.message);
+        }
+      }
+    };
+
+    loadNotifications();
+    return () => controller.abort();
+  }, [apiBaseUrl, isLoggedIn]);
+
+  const handleMarkAllNotificationsAsRead = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setNotificationActionError('Please sign in again to update notifications.');
+      return;
+    }
+
+    setIsMarkingNotificationsRead(true);
+    setNotificationActionError('');
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/notifications/mark-read`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Could not mark notifications as read.');
+      }
+
+      setNotifications((current) => current.map((notification) => ({
+        ...notification,
+        read: true,
+        isRead: true,
+      })));
+    } catch (error) {
+      setNotificationActionError(error.message || 'Could not mark notifications as read.');
+    } finally {
+      setIsMarkingNotificationsRead(false);
+    }
+  };
 
   useEffect(() => {
     let isCurrent = true;
@@ -231,21 +361,78 @@ export default function App() {
     return () => window.removeEventListener('marix_trigger_edit_listing', handleTriggerEditListingModal);
   }, []);
 
-  const handleToggleSaveProduct = (product) => {
-    setSavedProducts((prevSaved) => {
-      const isAlreadySaved = prevSaved.some((p) => p.id === product.id);
-      if (isAlreadySaved) {
-        return prevSaved.filter((p) => p.id !== product.id);
-      } else {
-        return [product, ...prevSaved];
+  const handleToggleSaveProduct = async (product) => {
+    const productId = product?._id || product?.id;
+    if (!productId) return;
+
+    const isAlreadySaved = savedProducts.some(
+      (savedProduct) => String(savedProduct._id || savedProduct.id) === String(productId)
+    );
+    const isPersistedProduct = typeof productId === 'string' && /^[a-f\d]{24}$/i.test(productId);
+
+    setSavedActionError('');
+    if (!isPersistedProduct) {
+      setSavedProducts((current) => isAlreadySaved
+        ? current.filter((item) => String(item._id || item.id) !== String(productId))
+        : [product, ...current]);
+      return;
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setSavedActionError('Sign in to save products to your account.');
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        isAlreadySaved
+          ? `${apiBaseUrl}/api/saved-products/${encodeURIComponent(productId)}`
+          : `${apiBaseUrl}/api/saved-products`,
+        {
+          method: isAlreadySaved ? 'DELETE' : 'POST',
+          credentials: 'include',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            ...(isAlreadySaved ? {} : { 'Content-Type': 'application/json' }),
+          },
+          ...(!isAlreadySaved && { body: JSON.stringify({ productId }) }),
+        }
+      );
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Could not update saved products.');
       }
-    });
+
+      setSavedProducts((current) => isAlreadySaved
+        ? current.filter((item) => String(item._id || item.id) !== String(productId))
+        : [product, ...current]);
+    } catch (error) {
+      setSavedActionError(error.message || 'Could not update saved products.');
+    }
   };
 
   const handleProductCardClick = (clickedProduct) => {
     if (!clickedProduct || (!clickedProduct.productTitle && !clickedProduct.name)) return;
 
     setSelectedProduct(clickedProduct);
+
+    const productId = clickedProduct._id || clickedProduct.id;
+    if (typeof productId === 'string' && /^[a-f\d]{24}$/i.test(productId)) {
+      fetch(`${apiBaseUrl}/api/products/${productId}/track-view`, {
+        method: 'POST',
+      }).catch((error) => {
+        console.error('Could not track product view:', error.message);
+      });
+      fetch(`${apiBaseUrl}/api/events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId, eventType: 'view' }),
+      }).catch((error) => {
+        console.error('Could not log product view event:', error.message);
+      });
+    }
 
     setRecentlyViewed((prev) => {
       const now = new Date().toISOString();
@@ -287,6 +474,7 @@ export default function App() {
 
   const handleSignOut = () => {
     localStorage.removeItem('token');
+    setNotifications([]);
     setUserName('Student');
     setUserEmail('');
     setIsLoggedIn(false);
@@ -352,7 +540,23 @@ export default function App() {
     setShowCreateModal(true);
   };
 
-  const handleProductDelete = (productId) => {
+  const handleProductDelete = async (productId) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('Please sign in again before deleting a listing.');
+    }
+
+    const response = await fetch(`${apiBaseUrl}/api/products/${encodeURIComponent(productId)}`, {
+      method: 'DELETE',
+      credentials: 'include',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Unable to delete this listing. Please try again.');
+    }
+
     setProducts(prev => prev.filter(p => p.id !== productId));
     setUserUploads(prev => prev.filter(p => p.id !== productId));
     setSavedProducts(prev => prev.filter(p => p.id !== productId));
@@ -429,7 +633,19 @@ export default function App() {
   }
 
   return (
+    <Suspense fallback={
+      <div className="fixed inset-0 flex items-center justify-center bg-marix-cream" role="status" aria-label="Loading page">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-marix-teal/20 border-t-marix-teal" />
+      </div>
+    }>
     <div className="fixed inset-0 bg-marix-cream text-[#111111] flex flex-col overflow-hidden selection:bg-marix-teal/20">
+
+      {savedActionError && (
+        <div role="alert" className="fixed top-4 left-4 right-4 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 z-[300] max-w-sm bg-red-700 text-white px-4 py-3 rounded-xl shadow-xl text-xs font-semibold flex items-start gap-3">
+          <span className="flex-1">{savedActionError}</span>
+          <button type="button" onClick={() => setSavedActionError('')} aria-label="Dismiss" className="font-bold">×</button>
+        </div>
+      )}
 
       <div className="w-full flex-1 flex flex-col relative overflow-hidden">
 
@@ -459,12 +675,16 @@ export default function App() {
         <div className={`absolute inset-0 flex flex-col ${currentView === 'home' ? '' : 'hidden'}`}>
           <Homepage
             products={products} isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} userName={userName} userEmail={userEmail} onSignOut={handleSignOut}
+            platformStats={platformStats}
             showCreateModal={showCreateModal} setShowCreateModal={handleCreateActionIntercept} activeTab={activeTab} setActiveTab={handleHomepageTabBackClick}  
             userUploads={userUploads} savedProducts={savedProducts} setSavedProducts={handleToggleSaveProduct}     
             onNavigateToLogin={() => setCurrentView('auth-login')} onNavigateToSignup={() => setCurrentView('auth-signup')}
             onNavigateToExplore={routeToExploreWithContext} activeSearchTerm={activeSearchTerm} setActiveSearchTerm={setActiveSearchTerm}
             onNavigateToView={(view) => setCurrentView(view)} onProductCardClick={handleProductCardClick}
-            notifications={notifications} onClearNotificationsCount={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))}
+            notifications={notifications}
+            onMarkAllNotificationsAsRead={handleMarkAllNotificationsAsRead}
+            isMarkingNotificationsRead={isMarkingNotificationsRead}
+            notificationActionError={notificationActionError}
             historyFallbackTab={previousTab} editingProductData={editingProductData} setEditingProductData={handleEditInitActionIntercept}
             onProductDeleted={handleProductDelete}
             hasCompletedSellerOnboarding={hasCompletedSellerOnboarding} onBecomeSellerTrigger={handleProfileSellerIntercept}
@@ -477,7 +697,8 @@ export default function App() {
         </div>
 
         {/* EXPLORE PAGE VIEW */}
-        <div className={`absolute inset-0 overflow-y-auto flex flex-col animate-fadeIn ${currentView === 'explore' ? '' : 'hidden'}`}>
+        {currentView === 'explore' && (
+        <div className="absolute inset-0 overflow-y-auto flex flex-col animate-fadeIn">
           <ProductListings
             allProducts={products} isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} userName={userName}
             onNavigateHome={() => { setCurrentView('home'); setActiveTab('browse'); }} savedProducts={savedProducts} setSavedProducts={handleToggleSaveProduct}
@@ -488,6 +709,7 @@ export default function App() {
             initialCategory={exploreCategoryFilter} onProductCardClick={handleProductCardClick}
           />
         </div>
+        )}
 
         {/* AUTH FORMS */}
         {(currentView === 'auth-login' || currentView === 'auth-signup') && (
@@ -505,6 +727,8 @@ export default function App() {
 
         {/* STATIC PAGES CONTAINER (INCLUDES HOW IT WORKS) */}
         {['about', 'faq', 'privacy', 'terms', 'how-it-works'].map((staticView) => {
+          if (currentView !== staticView) return null;
+
           const Comp = staticView === 'about' 
             ? About 
             : staticView === 'faq' 
@@ -516,7 +740,7 @@ export default function App() {
             : HowItWorks;
 
           return (
-            <div key={staticView} className={`absolute inset-0 overflow-y-auto bg-marix-cream z-40 text-left ${currentView === staticView ? '' : 'hidden'}`}>
+            <div key={staticView} className="absolute inset-0 overflow-y-auto bg-marix-cream z-40 text-left">
               <Comp
                 onNavigateHome={() => { setCurrentView('home'); setActiveTab('browse'); }} isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} userName={userName}
                 onNavigateToLogin={() => setCurrentView('auth-login')} onNavigateToSignup={() => setCurrentView('auth-signup')} savedCount={savedProducts.length}
@@ -784,7 +1008,7 @@ export default function App() {
                       <div
                         key={p.id}
                         onClick={() => {
-                          setSelectedProduct(p);
+                          handleProductCardClick(p);
                           setPublicSellerData(null);
                         }}
                         className="w-[125px] sm:w-[145px] shrink-0 snap-start bg-white p-2 rounded-[16px] border border-gray-100 shadow-sm cursor-pointer hover:scale-[1.02] transition-transform flex flex-col gap-1"
@@ -812,5 +1036,6 @@ export default function App() {
       )}
 
     </div>
+    </Suspense>
   );
 }

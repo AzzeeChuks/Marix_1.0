@@ -31,6 +31,7 @@ export default function Profile({
   onBecomeSellerTrigger,
   shopDetails,
   activeUploadsCount = 0,
+  userUploads = [],
   setShopDetails,
   userLocation,
   setUserLocation,
@@ -78,6 +79,9 @@ export default function Profile({
   // Recently Viewed Filter State
   const [timeFilter, setTimeFilter] = useState('Today');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  const [productEvents, setProductEvents] = useState([]);
+  const [isLoadingProductEvents, setIsLoadingProductEvents] = useState(false);
+  const [productEventsError, setProductEventsError] = useState('');
 
   // Password Rules Validation Logic
   const hasEightChars = newPassword.length >= 8;
@@ -96,6 +100,65 @@ export default function Profile({
       }
     }
   }, [currentView]);
+
+  useEffect(() => {
+    if (currentView !== 'analytics') return undefined;
+
+    const trackedProducts = userUploads
+      .filter((product) => /^[a-f\d]{24}$/i.test(String(product._id || product.id || '')))
+      .slice(0, 8);
+
+    if (trackedProducts.length === 0) {
+      setProductEvents([]);
+      setProductEventsError('Publish or load your listings to see product activity.');
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    const loadProductEvents = async () => {
+      setIsLoadingProductEvents(true);
+      setProductEventsError('');
+
+      const results = await Promise.allSettled(trackedProducts.map(async (product) => {
+        const productId = product._id || product.id;
+        const apiBaseUrl = (import.meta.env.VITE_API_URL || 'https://marix-store-api.onrender.com').replace(/\/$/, '');
+        const response = await fetch(`${apiBaseUrl}/api/events/${productId}`, {
+          signal: controller.signal,
+        });
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok || !Array.isArray(result.data)) {
+          throw new Error(result.message || 'Could not load product events');
+        }
+
+        return result.data.map((event) => ({
+          ...event,
+          productTitle: product.productTitle || 'Product listing',
+        }));
+      }));
+
+      if (controller.signal.aborted) return;
+
+      const loadedEvents = results
+        .filter((result) => result.status === 'fulfilled')
+        .flatMap((result) => result.value)
+        .sort((first, second) => new Date(second.createdAt) - new Date(first.createdAt));
+
+      setProductEvents(loadedEvents);
+      if (results.some((result) => result.status === 'rejected')) {
+        setProductEventsError(loadedEvents.length > 0
+          ? 'Some listing activity could not be loaded.'
+          : 'Product activity could not be loaded.');
+      }
+      setIsLoadingProductEvents(false);
+    };
+
+    loadProductEvents();
+    return () => controller.abort();
+  }, [currentView, userUploads]);
+
+  const totalProductViews = productEvents.filter((event) => event.eventType === 'view').length;
+  const totalWhatsappClicks = productEvents.filter((event) => event.eventType === 'whatsapp_click').length;
 
   useEffect(() => {
     const handleContextRedirect = () => {
@@ -925,7 +988,9 @@ export default function Profile({
               <div className="bg-white border border-gray-200/70 p-4 rounded-2xl shadow-sm flex items-center justify-between gap-2">
                 <div className="flex flex-col gap-y-0.5">
                   <span className="text-[10px] md:text-xs font-bold text-gray-400">Product Views</span>
-                  <span className="text-xl md:text-2xl font-black text-[#111111] tracking-tight">0</span>
+                  <span className="text-xl md:text-2xl font-black text-[#111111] tracking-tight">
+                    {isLoadingProductEvents ? '...' : totalProductViews}
+                  </span>
                 </div>
                 <div className="w-9 h-9 rounded-xl bg-marix-teal/5 text-marix-teal flex items-center justify-center shrink-0">
                   <i className="ph ph-eye text-lg font-bold"></i>
@@ -935,7 +1000,9 @@ export default function Profile({
               <div className="bg-white border border-gray-200/70 p-4 rounded-2xl shadow-sm flex items-center justify-between gap-2">
                 <div className="flex flex-col gap-y-0.5">
                   <span className="text-[10px] md:text-xs font-bold text-gray-400">WhatsApp Clicks</span>
-                  <span className="text-xl md:text-2xl font-black text-[#111111] tracking-tight">0</span>
+                  <span className="text-xl md:text-2xl font-black text-[#111111] tracking-tight">
+                    {isLoadingProductEvents ? '...' : totalWhatsappClicks}
+                  </span>
                 </div>
                 <div className="w-9 h-9 rounded-xl bg-marix-teal/5 text-marix-teal flex items-center justify-center shrink-0">
                   <i className="ph ph-whatsapp-logo text-lg font-bold"></i>
@@ -976,6 +1043,42 @@ export default function Profile({
                 </div>
               </div>
             </div>
+
+            <section className="w-full bg-white border border-gray-200/70 p-4 rounded-2xl shadow-sm flex flex-col gap-3 mb-8">
+              <div className="flex items-center justify-between gap-3">
+                <h4 className="text-[10px] font-black uppercase tracking-wider text-gray-400">Recent Product Activity</h4>
+                <span className="text-[10px] font-bold text-gray-400">Latest 8 listings</span>
+              </div>
+
+              {productEventsError && (
+                <p className="text-xs font-medium text-gray-500">{productEventsError}</p>
+              )}
+
+              {isLoadingProductEvents ? (
+                <p className="text-xs font-medium text-gray-400">Loading product activity...</p>
+              ) : productEvents.length === 0 ? (
+                <p className="text-xs font-medium text-gray-400">No tracked activity for these listings yet.</p>
+              ) : (
+                <div className="flex flex-col divide-y divide-gray-100">
+                  {productEvents.slice(0, 8).map((event) => (
+                    <div key={event._id} className="py-2.5 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <i className={`ph ${event.eventType === 'whatsapp_click' ? 'ph-whatsapp-logo' : event.eventType === 'save' ? 'ph-heart' : 'ph-eye'} text-marix-teal`} />
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-[#111111] truncate">
+                            {event.eventType === 'whatsapp_click' ? 'WhatsApp contact' : event.eventType === 'save' ? 'Product saved' : 'Product viewed'}
+                          </p>
+                          <p className="text-[10px] text-gray-500 truncate">{event.productTitle}</p>
+                        </div>
+                      </div>
+                      <time className="text-[10px] font-medium text-gray-400 shrink-0">
+                        {event.createdAt ? new Date(event.createdAt).toLocaleString() : ''}
+                      </time>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
           </div>
         </div>
       )}

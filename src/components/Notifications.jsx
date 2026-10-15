@@ -35,7 +35,9 @@ export default function Notifications({
   firstLetter = 'M',
   onDeleteNotification,
   onMarkAllAsRead,
-  onMarkAsRead
+  onMarkAsRead,
+  isMarkingAsRead = false,
+  actionError = ''
 }) {
   const hasUnread = notifications.some(n => n.read === false || n.isRead === false);
 
@@ -91,12 +93,19 @@ export default function Notifications({
                   <button 
                     type="button"
                     onClick={onMarkAllAsRead}
+                    disabled={isMarkingAsRead}
                     className="text-[10px] font-bold text-marix-teal hover:underline focus:outline-none cursor-pointer"
                   >
-                    Mark all as read
+                    {isMarkingAsRead ? 'Marking as read...' : 'Mark all as read'}
                   </button>
                 )}
               </div>
+
+              {actionError && (
+                <p role="alert" className="text-xs font-semibold text-red-700 bg-red-50 border border-red-200 rounded-lg p-2">
+                  {actionError}
+                </p>
+              )}
               
               {notifications.map(notif => {
                 const formattedTime = formatTimeAgo(notif.createdAt || notif.time);

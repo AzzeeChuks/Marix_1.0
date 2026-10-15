@@ -6,6 +6,7 @@ import Uploads from '../components/Uploads';
 
 export default function Homepage({ 
   products = [], 
+  platformStats,
   isLoggedIn, 
   setIsLoggedIn,
   activeUploadsCount, 
@@ -28,7 +29,9 @@ export default function Homepage({
   setActiveSearchTerm,
   onSignOut,
   notifications = [], 
-  onClearNotificationsCount, 
+  onMarkAllNotificationsAsRead,
+  isMarkingNotificationsRead = false,
+  notificationActionError = '',
   historyFallbackTab = 'browse',
   editingProductData,
   setEditingProductData,
@@ -45,9 +48,12 @@ export default function Homepage({
 }) {
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [isAtAbsoluteBottom, setIsAtAbsoluteBottom] = useState(false); 
+  const [trendingProductIds, setTrendingProductIds] = useState([]);
   const scrollContainerRef = useRef(null);
   const [profileSubView, setProfileSubView] = useState('main');
   const [productToDelete, setProductToDelete] = useState(null);
+  const [isDeletingProduct, setIsDeletingProduct] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   // 🚀 ISOLATED SEARCH STATE FOR SAVED ITEMS TAB ONLY
   const [savedSearchQuery, setSavedSearchQuery] = useState('');
@@ -64,6 +70,33 @@ export default function Homepage({
     return () => window.removeEventListener('blur', handleBlurOnWindowSwitch);
   }, []);
 
+  useEffect(() => {
+    const controller = new AbortController();
+    const apiBaseUrl = (import.meta.env.VITE_API_URL || 'https://marix-store-api.onrender.com').replace(/\/$/, '');
+
+    const loadTrendingEvents = async () => {
+      try {
+        const response = await fetch(`${apiBaseUrl}/api/events/trending`, {
+          signal: controller.signal,
+        });
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok || !Array.isArray(result.data)) {
+          throw new Error(result.message || 'Could not load trending activity');
+        }
+
+        setTrendingProductIds(result.data.map((event) => String(event._id)));
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error('Trending events request failed:', error.message);
+        }
+      }
+    };
+
+    loadTrendingEvents();
+    return () => controller.abort();
+  }, []);
+
   const handleTabChange = (newTab) => {
     if (!newTab) return;
     if (scrollContainerRef.current) {
@@ -74,9 +107,6 @@ export default function Homepage({
       return;
     }
     setActiveTab(newTab);
-    if (newTab === 'notifications' && onClearNotificationsCount) {
-      onClearNotificationsCount();
-    }
     if (newTab !== 'profile') {
       setProfileSubView('main');
     }
@@ -128,12 +158,19 @@ export default function Homepage({
     window.requestAnimationFrame(animateStep);
   };
 
-  const executeLocalDelete = () => {
+  const executeLocalDelete = async () => {
     if (!productToDelete) return;
-    if (onProductDeleted) {
-      onProductDeleted(productToDelete.id);
+
+    setIsDeletingProduct(true);
+    setDeleteError('');
+    try {
+      await onProductDeleted?.(productToDelete.id);
+      setProductToDelete(null);
+    } catch (error) {
+      setDeleteError(error.message || 'Unable to delete this listing. Please try again.');
+    } finally {
+      setIsDeletingProduct(false);
     }
-    setProductToDelete(null);
   };
 
   // 🚀 FILTER SAVED PRODUCTS IN REAL-TIME
@@ -166,7 +203,11 @@ export default function Homepage({
   ];
 
   const featuredDeck = products.slice(0, 6);
-  const trendingDeck = products.slice(6, 12);
+  const apiTrendingDeck = trendingProductIds
+    .map((productId) => products.find((product) => String(product._id || product.id) === productId))
+    .filter(Boolean)
+    .slice(0, 6);
+  const trendingDeck = apiTrendingDeck.length > 0 ? apiTrendingDeck : products.slice(6, 12);
   const firstLetter = userName ? userName.charAt(0).toUpperCase() : 'M';
 
   return (
@@ -295,8 +336,8 @@ export default function Homepage({
                 {/* Stats Section */}
                 <section className="w-full max-w-[95%] mx-auto px-2 lg:px-4 py-2 grid grid-cols-2 md:grid-cols-4 gap-3 select-none">
                   {[
-                    { metric: '120+', text: 'Products Listed', icon: 'ph-shopping-bag' },
-                    { metric: '25+', text: 'Campus Sellers', icon: 'ph-storefront' },
+                    { metric: platformStats ? platformStats.totalProducts.toLocaleString() : '120+', text: 'Products Listed', icon: 'ph-shopping-bag' },
+                    { metric: platformStats ? platformStats.totalSellers.toLocaleString() : '25+', text: 'Campus Sellers', icon: 'ph-storefront' },
                     { metric: '100%', text: 'WhatsApp Contact', icon: 'ph-whatsapp-logo' },
                     { metric: 'Built for', text: 'Students', icon: 'ph-graduation-cap' }
                   ].map((stat, i) => (
@@ -495,6 +536,9 @@ export default function Homepage({
                   notifications={notifications}
                   firstLetter={firstLetter}
                   onBack={() => handleTabChange(historyFallbackTab)} 
+                  onMarkAllAsRead={onMarkAllNotificationsAsRead}
+                  isMarkingAsRead={isMarkingNotificationsRead}
+                  actionError={notificationActionError}
                 />
               </section>
             )}
@@ -506,6 +550,7 @@ export default function Homepage({
                   userName={userName}
                   userEmail={userEmail}
                   userLocation={userLocation}
+                  userUploads={userUploads}
                   setUserLocation={setUserLocation}
                   onUpdateUserName={onUpdateUserName}
                   onNavigateTab={(targetTab) => handleTabChange(targetTab)}
@@ -625,19 +670,27 @@ export default function Homepage({
             <p className="text-xs text-gray-500 max-w-[240px] mt-1.5 leading-relaxed font-semibold">
               Are you sure you want to delete <span className="text-[#111111] font-black">"{productToDelete.productTitle}"</span>? This action cannot be undone.
             </p>
+
+            {deleteError && (
+              <p role="alert" className="w-full mt-3 text-xs font-semibold text-red-700 bg-red-50 border border-red-200 rounded-lg p-2">
+                {deleteError}
+              </p>
+            )}
             
             <div className="grid grid-cols-2 gap-3 w-full mt-6">
               <button 
                 onClick={() => setProductToDelete(null)}
+                disabled={isDeletingProduct}
                 className="w-full bg-marix-teal/10 hover:bg-marix-teal/20 text-marix-teal font-black text-xs py-3 rounded-xl transition-colors focus:outline-none cursor-pointer"
               >
                 Cancel
               </button>
               <button 
                 onClick={executeLocalDelete}
-                className="w-full bg-marix-brown hover:opacity-95 text-white font-black text-xs py-3 rounded-xl shadow-md transition-all focus:outline-none cursor-pointer"
+                disabled={isDeletingProduct}
+                className="w-full bg-marix-brown hover:opacity-95 disabled:opacity-60 text-white font-black text-xs py-3 rounded-xl shadow-md transition-all focus:outline-none cursor-pointer"
               >
-                Yes, Delete
+                {isDeletingProduct ? 'Deleting...' : 'Yes, Delete'}
               </button>
             </div>
           </div>

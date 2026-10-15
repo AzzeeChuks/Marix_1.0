@@ -36,7 +36,10 @@ export default function Navbar({
     return [];
   });
 
-  const popularSearches = ['iPhone', 'Sneakers', 'Wrist Watch', 'Backpack', 'Laptop', 'Jersey', 'Headphones', 'Books', 'Makeup', 'PS5'];
+  const [popularSearches, setPopularSearches] = useState([
+    'iPhone', 'Sneakers', 'Wrist Watch', 'Backpack', 'Laptop',
+    'Jersey', 'Headphones', 'Books', 'Makeup', 'PS5',
+  ]);
 
   const generalizedTerms = [
     "Jeans", "Sneakers", "Shirts", "Perfumes", "Bags", "Hoodies", "Crocs", "Watches", 
@@ -97,6 +100,76 @@ export default function Navbar({
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
+
+    const loadPopularSearches = async () => {
+      try {
+        const apiBaseUrl = (import.meta.env.VITE_API_URL || 'https://marix-store-api.onrender.com').replace(/\/$/, '');
+        const response = await fetch(`${apiBaseUrl}/api/searches/popular`, {
+          signal: controller.signal,
+        });
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok || !Array.isArray(result.data)) {
+          throw new Error(result.message || 'Could not load popular searches');
+        }
+
+        const terms = result.data
+          .map((entry) => entry._id)
+          .filter((term) => typeof term === 'string' && term.trim());
+        if (terms.length > 0) {
+          setPopularSearches(terms);
+        }
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error('Popular searches request failed:', error.message);
+        }
+      }
+    };
+
+    loadPopularSearches();
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    if (!isLoggedIn) return undefined;
+
+    const token = localStorage.getItem('token');
+    if (!token) return undefined;
+
+    const controller = new AbortController();
+    const loadRecentSearches = async () => {
+      try {
+        const apiBaseUrl = (import.meta.env.VITE_API_URL || 'https://marix-store-api.onrender.com').replace(/\/$/, '');
+        const response = await fetch(`${apiBaseUrl}/api/searches/recent`, {
+          headers: { Authorization: `Bearer ${token}` },
+          credentials: 'include',
+          signal: controller.signal,
+        });
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok || !Array.isArray(result.data)) {
+          throw new Error(result.message || 'Could not load recent searches');
+        }
+
+        const searches = result.data
+          .map((entry) => entry.searchTerm)
+          .filter((term) => typeof term === 'string' && term.trim())
+          .slice(0, 5);
+        setRecentSearches(searches);
+        localStorage.setItem('marix_recent_searches', JSON.stringify(searches));
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error('Recent searches request failed:', error.message);
+        }
+      }
+    };
+
+    loadRecentSearches();
+    return () => controller.abort();
+  }, [isLoggedIn]);
+
+  useEffect(() => {
     setLocalSearchInput(activeSearchTerm);
   }, [activeSearchTerm]);
 
@@ -111,6 +184,29 @@ export default function Navbar({
 
     localStorage.setItem('marix_recent_searches', JSON.stringify(updatedHistory));
     setRecentSearches(updatedHistory);
+
+    const token = localStorage.getItem('token');
+    if (isLoggedIn && token) {
+      const apiBaseUrl = (import.meta.env.VITE_API_URL || 'https://marix-store-api.onrender.com').replace(/\/$/, '');
+      fetch(`${apiBaseUrl}/api/searches/recent`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ searchTerm: cleanTerm }),
+      })
+        .then(async (response) => {
+          if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            throw new Error(data.message || 'Could not save recent search');
+          }
+        })
+        .catch((error) => {
+          console.error('Recent search save failed:', error.message);
+        });
+    }
     
     window.dispatchEvent(new Event('storage'));
     
