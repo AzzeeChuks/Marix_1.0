@@ -1,5 +1,40 @@
 const Product = require('../Models/Product');
-const Order = require('../Models/Order');
+const User = require('../Models/User');
+
+exports.onboardSeller = async (req, res, next) => {
+  try {
+    const { shopName, whatsappNumber, aboutShop, campusLocation } = req.body;
+    if (![shopName, whatsappNumber, campusLocation].every((value) => typeof value === 'string' && value.trim())) {
+      return res.status(400).json({ message: 'shopName, whatsappNumber, and campusLocation are required' });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        $set: {
+          isSeller: true,
+          shopName: shopName.trim(),
+          whatsappNumber: whatsappNumber.trim(),
+          aboutShop: typeof aboutShop === 'string' ? aboutShop.trim() : '',
+          campusLocation: campusLocation.trim(),
+        },
+      },
+      { new: true, runValidators: true }
+    ).select('_id fullName email campusLocation isSeller isEarlySeller earlySellerBadgeNumber shopName whatsappNumber aboutShop');
+
+    const countSellers = await User.countDocuments({ isSeller: true });
+    const isEarlySeller = countSellers <= 50;
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      { $set: { isEarlySeller, earlySellerBadgeNumber: isEarlySeller ? countSellers : null } },
+      { new: true }
+    ).select('_id fullName email campusLocation isSeller isEarlySeller earlySellerBadgeNumber shopName whatsappNumber aboutShop');
+
+    return res.status(200).json({ success: true, user: updatedUser || user });
+  } catch (error) {
+    return next(error);
+  }
+};
 
 // @desc    Get seller dashboard analytics
 // @route   GET /api/seller/analytics
@@ -7,34 +42,30 @@ const Order = require('../Models/Order');
 exports.getSellerAnalytics = async (req, res, next) => {
   try {
     const sellerId = req.user._id;
-
-    // Count total products listed by this seller
-    const totalProducts = await Product.countDocuments({ seller: sellerId });
-
-    // Fetch orders containing products from this seller
-    const orders = await Order.find({ 'orderItems.seller': sellerId });
-
-    const totalOrders = orders.length;
-
-    // Calculate revenue for this seller's products only
-    const totalRevenue = orders.reduce((acc, order) => {
-      const sellerItems = order.orderItems.filter(
-        (item) => item.seller.toString() === sellerId.toString()
-      );
-      const sellerItemTotal = sellerItems.reduce(
-        (itemAcc, item) => itemAcc + (item.price * (item.quantity || 1)),
-        0
-      );
-      return acc + sellerItemTotal;
-    }, 0);
+    const products = await Product.find({ sellerId })
+      .select('_id productTitle status viewCount whatsappClicks images price campus')
+      .lean();
+    const activeListingsCount = products.filter((product) => product.status === 'active').length;
+    const totalViews = products.reduce((total, product) => total + (product.viewCount || 0), 0);
+    const totalWhatsAppClicks = products.reduce((total, product) => total + (product.whatsappClicks || 0), 0);
+    const rankedProducts = [...products].sort((first, second) => (second.viewCount || 0) - (first.viewCount || 0));
+    const toSummary = (product) => product ? {
+      id: product._id,
+      title: product.productTitle,
+      views: product.viewCount || 0,
+      whatsappClicks: product.whatsappClicks || 0,
+      images: product.images,
+      price: product.price,
+      campus: product.campus,
+    } : null;
 
     res.status(200).json({
       success: true,
-      analytics: {
-        totalProducts,
-        totalOrders,
-        totalRevenue,
-      },
+      activeListingsCount,
+      totalViews,
+      totalWhatsAppClicks,
+      topProduct: toSummary(rankedProducts[0]),
+      lowestProduct: toSummary(rankedProducts.at(-1)),
     });
   } catch (error) {
     return next(error);

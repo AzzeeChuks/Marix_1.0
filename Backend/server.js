@@ -17,6 +17,7 @@ const savedProductRoutes = require('./Router/savedProductRoute');
 const recentSearchRoutes = require('./Router/recentSearchRoute');
 const statsRoutes = require('./Router/statsRoute');
 const productEventRoutes = require('./Router/productEventRoute');
+const userRoutes = require('./Router/userRoute');
 
 const app = express();
 
@@ -71,6 +72,7 @@ app.post('/api/auth/logout', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/admin', require('./Router/adminRoute'));
 app.use('/api/saved-products', savedProductRoutes);
 app.use('/api/searches', recentSearchRoutes);
 app.use('/api/stats', statsRoutes);
@@ -78,6 +80,7 @@ app.use('/api/events', productEventRoutes);
 app.use('/api/upload', require('./Router/uploadRoutes'));
 app.use('/api/support', require('./Router/supportRoute'));
 app.use('/api/seller', require('./Router/sellerRoute'));
+app.use('/api/user', userRoutes);
 
 // 3. Static File Uploads Directory
 app.use('/uploads', express.static(path.join(__dirname, '/uploads')));

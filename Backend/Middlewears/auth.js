@@ -18,7 +18,7 @@ const protect = async (req, res, next) => {
 
       // Load only the identity and profile fields used by protected handlers.
       req.user = await User.findById(userId)
-        .select('_id fullName email isVerified campusLocation isSeller shopName whatsappNumber aboutShop createdAt')
+        .select('_id fullName email isVerified isAdmin campusLocation isSeller isEarlySeller earlySellerBadgeNumber shopName whatsappNumber aboutShop createdAt')
         .lean();
 
       if (!req.user) {
@@ -52,4 +52,15 @@ const requireVerified = (req, res, next) => {
   next();
 };
 
-module.exports = { protect, requireVerified };
+const requireAdmin = (req, res, next) => {
+  const configuredAdminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  const isConfiguredAdmin = configuredAdminEmail && req.user?.email?.toLowerCase() === configuredAdminEmail;
+
+  if (!req.user || (!req.user.isAdmin && !isConfiguredAdmin)) {
+    return res.status(403).json({ message: 'Administrator access required' });
+  }
+
+  return next();
+};
+
+module.exports = { protect, requireVerified, requireAdmin };

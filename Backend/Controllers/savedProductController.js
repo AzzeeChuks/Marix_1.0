@@ -60,7 +60,8 @@ exports.getSavedProducts = async (req, res, next) => {
   try {
     const savedItems = await SavedProduct.find({ user: req.user._id })
       .populate('product')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
     res.status(200).json({
       success: true,

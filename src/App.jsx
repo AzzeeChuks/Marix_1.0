@@ -285,7 +285,13 @@ export default function App() {
     let isCurrent = true;
 
     const restoreSession = async () => {
-      const token = localStorage.getItem('token');
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      const oauthToken = hashParams.get('authToken');
+      if (oauthToken) {
+        localStorage.setItem('token', oauthToken);
+        window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+      }
+      const token = oauthToken || localStorage.getItem('token');
       if (!token) {
         setIsCheckingAuth(false);
         return;

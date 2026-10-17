@@ -12,6 +12,7 @@ const {
   trackWhatsapp,
 } = require('../Controllers/productController');
 const { protect } = require('../Middlewears/auth');
+const { enforceDailyProductLimit } = require('../Middlewears/productRateLimit');
 
 // Public catalog route
 router.get('/', getProducts);
@@ -20,7 +21,7 @@ router.get('/', getProducts);
 router.get('/search-recommendations', getSearchRecommendations);
 
 // Create product (Protected)
-router.post('/', protect, createProduct);
+router.post('/', protect, enforceDailyProductLimit, createProduct);
 
 // Seller-owned product updates/deletes
 router.put('/:id', protect, updateProduct);

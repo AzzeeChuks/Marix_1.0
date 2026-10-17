@@ -31,11 +31,17 @@ exports.getProducts = async (req, res, next) => {
       filter.category = category.trim();
     }
 
-    if (campus) {
-      const campusList = Array.isArray(campus)
-        ? campus
-        : campus.split(',').map((c) => c.trim());
+    if (Array.isArray(campus) && campus.length > 0) {
+      const campusList = campus.map((value) => value.trim()).filter(Boolean);
       filter.campus = { $in: campusList };
+    }
+
+    const requestedCampus = typeof campus === 'string' && campus.trim() && !campus.includes(',')
+      ? campus.trim()
+      : null;
+
+    if (typeof campus === 'string' && campus.includes(',')) {
+      filter.campus = { $in: campus.split(',').map((value) => value.trim()).filter(Boolean) };
     }
 
     if (maxPrice && !isNaN(maxPrice)) {
@@ -56,16 +62,48 @@ exports.getProducts = async (req, res, next) => {
     const limitNum = parseInt(limit, 10) || 20;
     const skip = (pageNum - 1) * limitNum;
 
-    const [products, totalProducts] = await Promise.all([
-      Product.find(filter)
+    const totalProducts = await Product.countDocuments(filter);
+    let rankedProducts;
+
+    if (requestedCampus) {
+      const campusFilter = { ...filter, campus: requestedCampus };
+      const otherCampusFilter = { ...filter, campus: { $ne: requestedCampus } };
+      const tierOneCount = await Product.countDocuments(campusFilter);
+      const tierOneSkip = Math.min(skip, tierOneCount);
+      const tierOneLimit = Math.max(0, Math.min(limitNum, tierOneCount - tierOneSkip));
+      const tierTwoSkip = Math.max(0, skip - tierOneCount);
+      const tierTwoLimit = limitNum - tierOneLimit;
+
+      const [tierOneProducts, tierTwoProducts] = await Promise.all([
+        tierOneLimit > 0
+          ? Product.find(campusFilter)
+              .populate('sellerId', 'fullName shopName campusLocation whatsappNumber')
+              .sort(sortOptions)
+              .skip(tierOneSkip)
+              .limit(tierOneLimit)
+          : [],
+        tierTwoLimit > 0
+          ? Product.find(otherCampusFilter)
+              .populate('sellerId', 'fullName shopName campusLocation whatsappNumber')
+              .sort(sortOptions)
+              .skip(tierTwoSkip)
+              .limit(tierTwoLimit)
+          : [],
+      ]);
+
+      rankedProducts = [
+        ...rankProducts(tierOneProducts, requestedCampus),
+        ...rankProducts(tierTwoProducts, null),
+      ];
+    } else {
+      const products = await Product.find(filter)
         .populate('sellerId', 'fullName shopName campusLocation whatsappNumber')
         .sort(sortOptions)
         .skip(skip)
-        .limit(limitNum),
-      Product.countDocuments(filter),
-    ]);
+        .limit(limitNum);
+      rankedProducts = rankProducts(products, req.query.userCampus || null);
+    }
 
-    const rankedProducts = rankProducts(products, campus || req.query.userCampus || null);
     const totalPages = Math.ceil(totalProducts / limitNum);
 
     res.status(200).json({
@@ -217,7 +255,7 @@ exports.getCampusRecommendations = async (req, res, next) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    const sameCategory = await Product.aggregate([
+    const recommendations = await Product.aggregate([
       {
         $match: {
           campus: currentProduct.campus,
@@ -226,24 +264,8 @@ exports.getCampusRecommendations = async (req, res, next) => {
           status: 'active',
         },
       },
-      { $sample: { size: 4 } },
+      { $sample: { size: 6 } },
     ]);
-
-    const excludedIds = [currentProduct._id, ...sameCategory.map((p) => p._id)];
-
-    const crossCategory = await Product.aggregate([
-      {
-        $match: {
-          campus: currentProduct.campus,
-          category: { $ne: currentProduct.category },
-          _id: { $nin: excludedIds },
-          status: 'active',
-        },
-      },
-      { $sample: { size: 2 } },
-    ]);
-
-    const recommendations = [...sameCategory, ...crossCategory];
 
     res.status(200).json({
       success: true,

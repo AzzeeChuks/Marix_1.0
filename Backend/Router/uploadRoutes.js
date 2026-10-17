@@ -33,15 +33,16 @@ const upload = multer({ storage, fileFilter });
 
 // @route   POST /api/upload
 // @access  Private
-router.post('/', protect, upload.single('image'), (req, res, next) => {
-  if (!req.file) {
+router.post('/', protect, upload.array('images', 5), (req, res) => {
+  if (!req.files || req.files.length === 0) {
     return res.status(400).json({ message: 'No image uploaded' });
   }
 
-  const imageUrl = `/${req.file.path.replace(/\\/g, '/')}`;
+  const imageUrls = req.files.map((file) => `/${file.path.replace(/\\/g, '/')}`);
   res.status(200).json({
     success: true,
-    imageUrl,
+    imageUrls,
+    imageUrl: imageUrls[0],
   });
 });
 

@@ -412,12 +412,14 @@ export default function CreateListing({ onProductCreated, onCancel, editInitialD
       }
 
       const apiBaseUrl = (import.meta.env.VITE_API_URL || 'https://marix-store-api.onrender.com').replace(/\/$/, '');
-      const uploadedImageUrls = await Promise.all(uploadedImages.map(async (image) => {
-        if (!image.fileBlob) return image.imageUrl;
+      const newImages = uploadedImages.filter((image) => image.fileBlob);
+      let newUploadedImageUrls = [];
 
+      if (newImages.length > 0) {
         const imageForm = new FormData();
-        imageForm.append('image', image.fileBlob, image.fileName || 'product-image.webp');
-
+        newImages.forEach((image) => {
+          imageForm.append('images', image.fileBlob, image.fileName || 'product-image.webp');
+        });
         const uploadResponse = await fetch(`${apiBaseUrl}/api/upload`, {
           method: 'POST',
           credentials: 'include',
@@ -426,12 +428,19 @@ export default function CreateListing({ onProductCreated, onCancel, editInitialD
         });
         const uploadData = await uploadResponse.json().catch(() => ({}));
 
-        if (!uploadResponse.ok || !uploadData.imageUrl) {
+        if (!uploadResponse.ok || !Array.isArray(uploadData.imageUrls) || uploadData.imageUrls.length !== newImages.length) {
           throw new Error(uploadData.message || 'A product image could not be uploaded.');
         }
 
-        return new URL(uploadData.imageUrl, `${apiBaseUrl}/`).toString();
-      }));
+        newUploadedImageUrls = uploadData.imageUrls.map((imageUrl) => new URL(imageUrl, `${apiBaseUrl}/`).toString());
+      }
+
+      let uploadedImageIndex = 0;
+      const uploadedImageUrls = uploadedImages.map((image) => (
+        image.fileBlob
+          ? newUploadedImageUrls[uploadedImageIndex++]
+          : image.imageUrl
+      ));
 
       const fallbackPlaceholderUrl = 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800&q=80';
       const coverImageObj = uploadedImages.find(img => img.isCover) || uploadedImages[0];

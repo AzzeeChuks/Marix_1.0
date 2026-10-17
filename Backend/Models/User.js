@@ -29,6 +29,10 @@ const userSchema = new mongoose.Schema({
   // Profile & Seller Fields (Phase 1 Spec)
   campusLocation: { type: String, default: null },
   isSeller: { type: Boolean, default: false },
+  isEarlySeller: { type: Boolean, default: false },
+  earlySellerBadgeNumber: { type: Number, default: null },
+  isAdmin: { type: Boolean, default: false },
+  googleId: { type: String, unique: true, sparse: true },
   shopName: { type: String, default: null },
   whatsappNumber: { type: String, default: null },
   aboutShop: { type: String, default: null },
@@ -36,6 +40,8 @@ const userSchema = new mongoose.Schema({
   // Password Reset Token Fields
   passwordResetToken: String,
   passwordResetExpires: Date,
+  emailVerificationToken: String,
+  emailVerificationExpires: Date,
 }, { timestamps: true });
 
 // Hash password before saving
@@ -65,6 +71,8 @@ userSchema.methods.toJSON = function () {
   delete obj.password;
   delete obj.passwordResetToken;
   delete obj.passwordResetExpires;
+  delete obj.emailVerificationToken;
+  delete obj.emailVerificationExpires;
   return obj;
 };
 

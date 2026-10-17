@@ -227,6 +227,10 @@ export default function AuthForm({ initialMode = 'signup', onSuccessLogin, onCan
             <button 
               type="button"
               disabled={isLoading}
+              onClick={() => {
+                const apiBaseUrl = (import.meta.env.VITE_API_URL || 'https://marix-store-api.onrender.com').replace(/\/$/, '');
+                window.location.assign(`${apiBaseUrl}/api/auth/google`);
+              }}
               className="w-full bg-white border border-gray-200 text-[#111111] font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-3 transition-colors mb-5 disabled:opacity-50 shadow-sm outline-none focus:outline-none focus:ring-0 active:outline-none cursor-pointer"
             >
               <img src={googleIcon} alt="Google" className="w-5 h-5 object-contain" />
