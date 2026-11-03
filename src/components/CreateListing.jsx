@@ -497,6 +497,19 @@ export default function CreateListing({ onProductCreated, onCancel, editInitialD
         campus: campus || editInitialData?.campus || '',
         description: basicInfo.productDescription.trim(),
         images: uploadedImageUrls,
+        productCondition: productCondition || 'Brand New',
+        basePrice: basicInfo.price ? Number(basicInfo.price) : undefined,
+        variants: variantsList.map(v => ({
+          variantTitle: labels.colorLabel || 'Variant Option',
+          options: v.enabledSpecs.map(spec => ({
+            optionName: spec,
+            price: Number(v.optionPrices?.[spec] || numericPrice),
+            overridePrice: !!v.overridePrice
+          })),
+          images: uploadedImages
+            .filter(img => img.variantName === v.name)
+            .map(img => img.imageUrl)
+        }))
       };
 
       if (!requestBody.campus) {
