@@ -124,7 +124,8 @@ exports.getProducts = async (req, res, next) => {
 // @access  Private (Seller/Verified)
 exports.createProduct = async (req, res, next) => {
   try {
-    const { productTitle, category, campus, price, description, images } = req.body;
+    // Added productCondition, basePrice, and variants to catch frontend payload
+    const { productTitle, category, campus, price, description, images, productCondition, basePrice, variants } = req.body;
 
     const product = await Product.create({
       sellerId: req.user._id,
@@ -134,6 +135,9 @@ exports.createProduct = async (req, res, next) => {
       price,
       description,
       images,
+      productCondition,
+      basePrice,
+      variants,
     });
 
     res.status(201).json({
@@ -162,7 +166,8 @@ exports.updateProduct = async (req, res, next) => {
       });
     }
 
-    const allowedFields = ['productTitle', 'category', 'campus', 'price', 'description', 'images', 'status'];
+    // Added productCondition, basePrice, and variants to allowed update fields
+    const allowedFields = ['productTitle', 'category', 'campus', 'price', 'description', 'images', 'status', 'productCondition', 'basePrice', 'variants'];
     const updates = {};
 
     Object.keys(req.body).forEach((key) => {
