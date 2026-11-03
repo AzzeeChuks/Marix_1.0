@@ -1,5 +1,17 @@
 const mongoose = require('mongoose');
 
+const variantOptionSchema = new mongoose.Schema({
+  optionName: { type: String, required: true },
+  price: { type: Number, required: true },
+  overridePrice: { type: Boolean, default: false }
+});
+
+const productVariantSchema = new mongoose.Schema({
+  variantTitle: { type: String, required: true },
+  options: [variantOptionSchema],
+  images: [{ type: String }] 
+});
+
 const productSchema = new mongoose.Schema({
   sellerId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -19,9 +31,19 @@ const productSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  
+  productCondition: {
+    type: String,
+    default: 'Brand New',
+  },
+
+  basePrice: {
+    type: Number,
+    required: false,
+  },
   price: {
     type: Number,
-    required: true,
+    required: true, 
   },
   description: {
     type: String,
@@ -30,6 +52,8 @@ const productSchema = new mongoose.Schema({
   images: [{
     type: String,
   }],
+  variants: [productVariantSchema],
+  
   status: {
     type: String,
     enum: ['active', 'sold'],
