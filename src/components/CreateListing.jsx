@@ -1,4 +1,4 @@
-Import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import imageCompression from 'browser-image-compression';
 
 export default function CreateListing({ onProductCreated, onCancel, editInitialData = null, campus = '' }) {
