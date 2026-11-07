@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+Import React, { useState, useEffect, useMemo } from 'react';
 import imageCompression from 'browser-image-compression';
 
 export default function CreateListing({ onProductCreated, onCancel, editInitialData = null, campus = '' }) {
@@ -490,26 +490,13 @@ export default function CreateListing({ onProductCreated, onCancel, editInitialD
         ? Number(calculatedPrice)
         : Number(variantsList[0]?.customPrice || 0);
 
-            const requestBody = {
+      const requestBody = {
         productTitle: basicInfo.productTitle.trim(),
         price: numericPrice,
         category: basicInfo.category,
         campus: campus || editInitialData?.campus || '',
         description: basicInfo.productDescription.trim(),
         images: uploadedImageUrls,
-        productCondition: productCondition || 'Brand New',
-        basePrice: basicInfo.price ? Number(basicInfo.price) : undefined,
-        variants: variantsList.map(v => ({
-          variantTitle: v.name || 'Standard Variant', // ✅ Correct: Sends "Black", "White", etc.
-          options: v.enabledSpecs.map(spec => ({
-            optionName: spec,
-            price: Number(v.optionPrices?.[spec] || numericPrice),
-            overridePrice: !!v.overridePrice
-          })),
-          images: uploadedImages
-            .filter(img => img.variantName === v.name)
-            .map(img => img.imageUrl)
-        }))
       };
 
       if (!requestBody.campus) {
